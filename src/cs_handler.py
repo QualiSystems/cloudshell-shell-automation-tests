@@ -1,0 +1,318 @@
+import os
+import re
+
+from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
+    AttributeNameValue, InputNameValue
+from cloudshell.api.common_cloudshell_api import CloudShellAPIError
+from cloudshell.rest.api import PackagingRestApiClient
+
+
+class CloudShellHandler(object):
+    REST_API_PORT = 9000
+    DEFAULT_DOMAIN = 'Global'
+    PYPI_SHARE = 'C$'
+    PYPI_PATH = 'Program Files (x86)\QualiSystems\CloudShell\Server\Config\Pypi Server Repository'
+
+    def __init__(self, host, user, password, logger, domain=DEFAULT_DOMAIN, smb=None):
+        """Handler for CloudShell
+
+        :param str host: CloudShell ip
+        :param str user: CloudShell admin user
+        :param str password: password for user
+        :param logging.Logger logger:
+        :param str domain: CloudShell domain
+        :param src.smb_handler.SMB smb: smb client
+        """
+
+        self.host = host
+        self.user = user
+        self.password = password
+        self.domain = domain
+        self.logger = logger
+        self.smb = smb
+        self._api = None
+        self._rest_api = None
+
+    @property
+    def rest_api(self):
+        if self._rest_api is None:
+            self.logger.debug('Connecting to REST API')
+            self._rest_api = PackagingRestApiClient(
+                self.host, self.REST_API_PORT, self.user, self.password, self.domain)
+            self.logger.debug('Connected to REST API')
+        return self._rest_api
+
+    @property
+    def api(self):
+        if self._api is None:
+            self.logger.debug('Connecting to Automation API')
+            self._api = CloudShellAPISession(self.host, self.user, self.password, self.domain)
+            self.logger.debug('Connected to Automation API')
+        return self._api
+
+    def install_shell(self, shell_path):
+        """Install Shell driver in the CloudShell
+
+        :param str shell_path: path to shell in zip file
+        """
+
+        self.logger.info('Installing the Shell {}'.format(shell_path))
+
+        try:
+            self.rest_api.add_shell(shell_path)
+            self.logger.debug('Installed the new Shell')
+        except Exception as e:
+            if 'already exists' not in e.message:
+                raise e
+
+            shell_name = re.search(
+                "named '(?P<name>.+)' already exists",
+                e.message,
+            ).group('name')
+
+            self.rest_api.update_shell(shell_path, shell_name)
+            self.logger.debug('Updated {} Shell'.format(shell_name))
+
+    def create_reservation(self, name, duration=120):
+        """Create reservation
+
+        :param str name: reservation name
+        :param int duration: duration of reservation
+        :return: reservation id  (uuid)
+        :rtype: str
+        """
+
+        self.logger.info('Creating the reservation {}'.format(name))
+        resp = self.api.CreateImmediateReservation(name, self.api.username, duration)
+        id_ = resp.Reservation.Id
+        self.logger.debug('Created the reservation id={}'.format(id_))
+        return id_
+
+    def create_topology_reservation(self, name, topology_name, duration=24*60):
+        """Create topology reservation
+
+        :param str topology_name: Topology Name
+        :param str name: reservation name
+        :param int duration: duration of reservation
+        :return: reservation id (uuid)
+        :rtype: str
+        """
+
+        self.logger.info('Creating a topology reservation {} for {}'.format(name, topology_name))
+        resp = self.api.CreateImmediateTopologyReservation(
+            name, self.api.username, duration, topologyFullPath=topology_name)
+        id_ = resp.Reservation.Id
+        self.logger.debug('Created a topology reservation id={}'.format(id_))
+        return id_
+
+    def create_resource(self, name, family, model, address):
+        """Create resource
+
+        :param str name: resource name
+        :param str family: resource family, CS_Switch, CS_Firewall, ...
+        :param str model: resource model
+        :param str address: resource address
+        :return: resource name
+        :rtype: str
+        """
+
+        self.logger.info('Creating the resource {}'.format(name))
+        self.logger.debug('Name: {}, family: {}, model: {}, address: {}'.format(
+            name, family, model, address))
+
+        while True:
+            try:
+                self.api.CreateResource(family, model, name, address)
+            except CloudShellAPIError as e:
+                if str(e.code) != '114':
+                    raise
+
+                try:
+                    match = re.search(r'^(?P<name>.+)-(?P<v>\d+)$', name)
+                    version = int(match.group('v'))
+                    name = match.group('name')
+                except (AttributeError, KeyError):
+                    version = 0
+
+                name = '{}-{}'.format(name, version + 1)
+
+            else:
+                break
+
+        self.logger.debug('Created the resource {}'.format(name))
+
+        return name
+
+    def set_resource_attributes(self, resource_name, model, attributes):
+        """Set attributes for the resource
+
+        :param str resource_name: resource name
+        :param str model: resource model
+        :param dict attributes: resource attributes
+        """
+
+        self.logger.info('Setting attributes for {}\n{}'.format(resource_name, attributes))
+
+        self.api.SetAttributesValues([
+            ResourceAttributesUpdateRequest(resource_name, [
+                AttributeNameValue('{}.{}'.format(model, key), value)
+                for key, value in attributes.items()
+            ])
+        ])
+
+    def resource_autoload(self, resource_name):
+        """Start autoload for the resource
+
+        :param str resource_name: resource name
+        """
+
+        self.logger.info('Start Autoload for the {}'.format(resource_name))
+        self.api.AutoLoad(resource_name)
+        self.logger.debug('Finished Autoload')
+
+    def add_resource_to_reservation(self, reservation_id, resource_name):
+        """Adding the resource to the reservation
+
+        :param str reservation_id: reservation id
+        :param str resource_name: reservation name
+        """
+
+        self.logger.info('Adding a resource {} to a reservation {}'.format(
+            resource_name, reservation_id))
+        self.api.AddResourcesToReservation(reservation_id, [resource_name])
+        self.logger.debug('Added a resource to the reservation')
+
+    def delete_resource(self, resource_name):
+        """Delete the resource
+
+        :param str resource_name: resource name
+        """
+
+        self.logger.info('Deleting a resource {}'.format(resource_name))
+        self.api.DeleteResource(resource_name)
+        self.logger.debug('Deleted a resource')
+
+    def delete_reservation(self, reservation_id):
+        """Delete the reservation
+
+        :param str reservation_id: reservation id
+        """
+
+        self.logger.info('Deleting the reservation {}'.format(reservation_id))
+        self.api.DeleteReservation(reservation_id)
+        self.logger.debug('Deleted the reservation')
+
+    def end_reservation(self, reservation_id):
+        """End the reservation
+
+        :param str reservation_id:
+        """
+
+        self.logger.info('Ending a reservation for {}'.format(reservation_id))
+        self.api.EndReservation(reservation_id)
+
+    def execute_command_on_resource(
+            self, reservation_id, resource_name, command_name, command_kwargs):
+        """Execute a command on the resource
+
+        :param str reservation_id: reservation id
+        :param str resource_name: resource name
+        :param str command_name: command name
+        :param dict command_kwargs: command params
+        :rtype: str
+        """
+
+        self.logger.debug(
+            'Executing command {} with kwargs {} for resource {} in reservation {}'.format(
+                command_name, command_kwargs, resource_name, reservation_id))
+        command_kwargs = [InputNameValue(key, value) for key, value in command_kwargs.items()]
+        resp = self.api.ExecuteCommand(
+            reservation_id, resource_name, 'Resource', command_name, command_kwargs, True)
+        self.logger.debug('Executed command, output {}'.format(resp.Output))
+        return resp.Output
+
+    def get_resource_details(self, resource_name):
+        """Get resource details
+
+        :param str resource_name: resource name
+        :return: resource info
+        :rtype: cloudshell.api.cloudshell_api.ResourceInfo
+        """
+
+        self.logger.info('Getting resource details for {}'.format(resource_name))
+        output = self.api.GetResourceDetails(resource_name)
+        self.logger.debug('Got details {}'.format(output))
+        return output
+
+    def get_topologies_by_category(self, category_name):
+        """Get available topology names by category name
+
+        :param str category_name:
+        :return: Topology names
+        :rtype: list[str]
+        """
+
+        self.logger.info('Getting topologies for a category {}'.format(category_name))
+        output = self.api.GetTopologiesByCategory(category_name).Topologies
+        self.logger.debug('Got topologies {}'.format(output))
+        return output
+
+    def get_reservation_details(self, reservation_id):
+        """Get reservation details
+
+        :param str reservation_id:
+        :return: reservation details
+        :rtype: cloudshell.api.cloudshell_api.GetReservationDescriptionResponseInfo
+        """
+
+        self.logger.info('Getting reservation details for the {}'.format(reservation_id))
+        output = self.api.GetReservationDetails(reservation_id)
+        self.logger.debug('Got reservation details {}'.format(output))
+        return output
+
+    def get_reservation_status(self, reservation_id):
+        """Check that the reservation ready
+
+        :param str reservation_id: reservation id
+        :rtype: cloudshell.api.cloudshell_api.ReservationSlimStatus
+        """
+
+        self.logger.debug('Getting reservation status for a {}'.format(reservation_id))
+        output = self.api.GetReservationStatus(reservation_id).ReservationSlimStatus
+        self.logger.debug('Got status {}'.format(output))
+        return output
+
+    def add_file_to_offline_pypi(self, file_obj, file_name):
+        """Upload file to offline PyPI
+
+        :param str file_name:
+        :param file file_obj:
+        """
+
+        excluded = ('.', './', '..', '../')
+        if file_name in excluded:
+            return
+
+        file_path = os.path.join(self.PYPI_PATH, file_name)
+        self.logger.debug('Adding a file {} to offline PyPI'.format(file_path))
+        self.smb.put_file(self.PYPI_SHARE, file_path, file_obj)
+
+    def get_package_names_from_offline_pypi(self):
+        """Get package names from offline PyPI"""
+
+        self.logger.debug('Getting packages in offline PyPI')
+        excluded = ('.', '..', 'PlaceHolder.txt')
+        file_names = [f.filename for f in self.smb.ls(self.PYPI_SHARE, self.PYPI_PATH)
+                      if f.filename not in excluded]
+        self.logger.debug('Got packages {}'.format(file_names))
+        return file_names
+
+    def remove_file_from_offline_pypi(self, file_name):
+        """Remove file from offline PyPI
+
+        :param str file_name:
+        """
+
+        file_path = os.path.join(self.PYPI_PATH, file_name)
+        self.logger.debug('Removing a file {} from offline PyPI'.format(file_path))
+        self.smb.remove_file(self.PYPI_SHARE, file_path)
