@@ -9,11 +9,10 @@ from src.run_tests import main
 def get_logger():
     log_level = logging.INFO
 
-    logger = logging.getLogger('')
+    logger = logging.getLogger('Automation Tests')
     logger.setLevel(log_level)
 
     handler = logging.StreamHandler()
-    handler.setLevel(log_level)
 
     formater = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formater)
