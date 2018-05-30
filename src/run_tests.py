@@ -24,8 +24,8 @@ def _run_tests(resource_handler, *test_cases):
         for test_name in test_loader.getTestCaseNames(test_case):
             suite.addTest(test_case(test_name, resource_handler))
 
-    unittest.TextTestRunner(test_result).run(suite)
-    return test_result.getvalue()
+    success = unittest.TextTestRunner(test_result, verbosity=2).run(suite).wasSuccessful()
+    return success, test_result.getvalue()
 
 
 def tests_without_device(conf, cs_handler, logger):
@@ -67,12 +67,10 @@ def run_tests(conf, logger):
     cs_handler = CloudShellHandler(
         conf.cs.host, conf.cs.user, conf.cs.password, logger, conf.cs.domain, smb)
 
-    if conf.device_ip:  # todo decide what tests to run
-        result = tests_with_device(conf, cs_handler, logger)
-    else:
-        result = tests_without_device(conf, cs_handler, logger)
+    # todo decide what tests to run
+    tests = tests_with_device if conf.device_ip else tests_without_device
 
-    return result
+    return tests(conf, cs_handler, logger)
 
 
 def main(conf, logger):
@@ -90,11 +88,11 @@ def main(conf, logger):
             ip, user, password, os_user, os_password = do_handler.get_new_cloudshell(
                 CLOUDSHELL_VERSION)
             conf.cs = CloudShellConfig(ip, user, password, os_user, os_password)
-            result = run_tests(conf, logger)
+            success, result = run_tests(conf, logger)
         finally:
             do_handler.end_reservation()
 
     else:
-        result = run_tests(conf, logger)
+        success, result = run_tests(conf, logger)
 
-    return result
+    return success, result

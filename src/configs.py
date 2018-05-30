@@ -13,13 +13,21 @@ class CloudShellConfig(object):
         self.domain = domain
 
 
+class ReportConfig(object):
+    def __init__(self, user, password, recipients):
+        self.user = user
+        self.password = password
+        self.recipients = recipients
+
+
 class ResourceConfig(object):
-    def __init__(self, do_conf, cs_conf, shell_path, dependencies_path, resource_name, device_ip,
-                 attributes):
+    def __init__(self, do_conf, cs_conf, report_conf, shell_path, dependencies_path, resource_name,
+                 device_ip, attributes):
         """Main config
 
         :param CloudShellConfig do_conf:
         :param CloudShellConfig cs_conf:
+        :param ReportConfig report_conf:
         :param str shell_path:
         :param str dependencies_path:
         :param str resource_name:
@@ -29,6 +37,7 @@ class ResourceConfig(object):
 
         self.do = do_conf
         self.cs = cs_conf
+        self.report = report_conf
         self.shell_path = shell_path
         self.dependencies_path = dependencies_path
         self.resource_name = resource_name
@@ -62,9 +71,19 @@ class ResourceConfig(object):
         else:
             cs_conf = None
 
+        if config.get('Report'):
+            report_conf = ReportConfig(
+                config['Report']['User'],
+                config['Report']['Password'],
+                config['Report']['Recipients'],
+            )
+        else:
+            report_conf = None
+
         return cls(
             do_conf,
             cs_conf,
+            report_conf,
             config['Shell']['Path'],
             config['Shell'].get('Dependencies Path'),
             config['Resource']['Name'],

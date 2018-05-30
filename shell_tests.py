@@ -3,6 +3,7 @@ import logging
 import click
 
 from src.configs import ResourceConfig
+from src.report_result import SMTPClient
 from src.run_tests import main
 
 
@@ -27,9 +28,14 @@ def get_logger():
 def run_tests(config_path):
     logger = get_logger()
     conf = ResourceConfig.parse_config_from_yaml(config_path)
-    result = main(conf, logger)
-    print result
-    return result
+
+    success, result = main(conf, logger)
+
+    if conf.report_conf:
+        smtp_client = SMTPClient(conf.report.user, conf.report.password, conf.report.recipients)
+        smtp_client.send_tests_result(success, result, conf.shell_path)
+
+    return success, result
 
 
 if __name__ == '__main__':
