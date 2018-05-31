@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 import click
 
@@ -29,7 +30,15 @@ def run_tests(config_path):
     logger = get_logger()
     conf = ResourceConfig.parse_config_from_yaml(config_path)
 
-    is_success, result = TestsRunner(conf, logger).run()
+    try:
+        is_success, result = TestsRunner(conf, logger).run()
+    except Exception:
+        if conf.report:
+            error_msg = traceback.format_exc()
+            smtp_client = SMTPClient(conf.report.user, conf.report.password, conf.report.recipients)
+            smtp_client.send_error(error_msg, conf.shell_path)
+
+        raise
 
     if conf.report:
         smtp_client = SMTPClient(conf.report.user, conf.report.password, conf.report.recipients)

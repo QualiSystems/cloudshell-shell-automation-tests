@@ -28,13 +28,21 @@ class SMTPClient(object):
 
         return self._session
 
-    def send_email(self, msg):
+    def send_email(self, subject, text):
         """Sends email
 
-        :param str msg: email as a string
+        :param str subject: email subject
+        :param str text: email text
         """
 
-        return self.session.sendmail(self.user, self.recipients, msg)
+        msg = MIMEMultipart()
+        msg['From'] = self.user
+        msg['To'] = ', '.join(self.recipients)
+        msg['Subject'] = subject
+
+        msg.attach(MIMEText(text, 'plain'))
+
+        return self.session.sendmail(self.user, self.recipients, msg.as_string())
 
     @staticmethod
     def _get_shell_name(shell_path):
@@ -50,16 +58,20 @@ class SMTPClient(object):
 
         shell_name = self._get_shell_name(shell_path)
         success_str = 'successful' if success else 'unsuccessful'
-
         subject = 'Test was {} for "{}"'.format(success_str, shell_name)
+        text = '{}\n\nTests output:\n{}'.format(subject, result)
 
-        msg = MIMEMultipart()
-        msg['From'] = self.user
-        msg['To'] = ', '.join(self.recipients)
-        msg['Subject'] = subject
+        self.send_email(subject, text)
 
-        body = '{}\n\nTests output:\n{}'.format(subject, result)
+    def send_error(self, error_msg, shell_path):
+        """Send error message
 
-        msg.attach(MIMEText(body, 'plain'))
+        :param str error_msg:
+        :param str shell_path: path to Shell
+        """
 
-        self.send_email(msg.as_string())
+        shell_name = self._get_shell_name(shell_path)
+        subject = 'Test failed with an error for "{}"'.format(shell_name)
+        text = '{}\n\nError message:\n{}'.format(subject, error_msg)
+
+        self.send_email(subject, text)
