@@ -11,88 +11,117 @@ from automation_tests.test_driver_installed import TestDriverInstalled
 from automation_tests.test_run_custom_command import TestRunCustomCommand
 
 
-CLOUDSHELL_SERVER_NAME = 'User-PC'
-CLOUDSHELL_VERSION = '8.3'
+class TestsRunner(object):
+    CLOUDSHELL_SERVER_NAME = 'User-PC'
+    CLOUDSHELL_VERSION = '8.3'
 
+    def __init__(self, conf, logger):
+        """Decide for tests need to run and run it
 
-def _run_tests(resource_handler, *test_cases):
-    test_result = StringIO()
-    test_loader = unittest.TestLoader()
-    suite = unittest.TestSuite()
+        :param ResourceConfig conf:
+        :param logging.Logger logger:
+        """
 
-    for test_case in test_cases:
-        for test_name in test_loader.getTestCaseNames(test_case):
-            suite.addTest(test_case(test_name, resource_handler))
+        self.conf = conf
+        self.logger = logger
 
-    success = unittest.TextTestRunner(test_result, verbosity=2).run(suite).wasSuccessful()
-    return success, test_result.getvalue()
+        self._do_handler = None
+        self._smb_handler = None
 
+    @property
+    def do_handler(self):
+        if self._do_handler is None and self.conf.do:
+            cs_handler = CloudShellHandler(
+                self.conf.do.host,
+                self.conf.do.user,
+                self.conf.do.password,
+                self.logger,
+                self.conf.do.domain,
+            )
+            self._do_handler = DoHandler(cs_handler, self.logger)
 
-def tests_without_device(conf, cs_handler, logger):
-    with ResourceHandler(
-            cs_handler,
-            conf.shell_path,
-            conf.dependencies_path,
-            '127.0.0.1',
-            conf.resource_name,
-            logger) as fake_resource_handler:
+        return self._do_handler
 
-        if conf.attributes:
-            fake_resource_handler.set_attributes(conf.attributes)
+    @property
+    def smb_handler(self):
+        if self._smb_handler is None and self.conf.cs.os_user:
+            self._smb_handler = SMB(
+                self.conf.cs.os_user,
+                self.conf.cs.os_password,
+                self.conf.cs.host,
+                self.CLOUDSHELL_SERVER_NAME,
+                self.logger,
+            )
 
-        return _run_tests(fake_resource_handler, TestDriverInstalled)
+        return self._smb_handler
 
+    @property
+    def test_cases(self):
+        """Return TestsCases based on config"""
 
-def tests_with_device(conf, cs_handler, logger):
-    with ResourceHandler(
-            cs_handler,
-            conf.shell_path,
-            conf.dependencies_path,
-            conf.device_ip,
-            conf.resource_name,
-            logger) as resource_handler:
+        if self.conf.device_ip is None:
+            return [TestDriverInstalled]
+        else:
+            return [TestAutoload, TestRunCustomCommand]
 
-        resource_handler.set_attributes(conf.attributes)
+    def create_cloudshell_on_do(self):
+        """Create CloudShell instance on Do"""
 
-        return _run_tests(resource_handler, TestAutoload, TestRunCustomCommand)
+        if self.do_handler:
+            cs_config = CloudShellConfig(
+                *self.do_handler.get_new_cloudshell(self.CLOUDSHELL_VERSION)
+            )
+            self.conf.cs = cs_config
 
+    def delete_cloudshell_on_do(self):
+        """Ends CloudShell reservation on Do"""
 
-def run_tests(conf, logger):
-    if conf.cs.os_user and conf.cs.os_password:
-        smb = SMB(
-            conf.cs.os_user, conf.cs.os_password, conf.cs.host, CLOUDSHELL_SERVER_NAME, logger)
-    else:
-        smb = None
+        if self.do_handler:
+            self.do_handler.end_reservation()
 
-    cs_handler = CloudShellHandler(
-        conf.cs.host, conf.cs.user, conf.cs.password, logger, conf.cs.domain, smb)
+    def run_test_cases(self, resource_handler):
+        """Run tests for resource handler"""
 
-    # todo decide what tests to run
-    tests = tests_with_device if conf.device_ip else tests_without_device
+        test_result = StringIO()
+        test_loader = unittest.TestLoader()
+        suite = unittest.TestSuite()
 
-    return tests(conf, cs_handler, logger)
+        for test_case in self.test_cases:
+            for test_name in test_loader.getTestCaseNames(test_case):
+                suite.addTest(test_case(test_name, resource_handler))
 
+        is_success = unittest.TextTestRunner(test_result, verbosity=2).run(suite).wasSuccessful()
 
-def main(conf, logger):
-    """
-    :param ResourceConfig conf:
-    :param logging.Logger logger:
-    """
+        return is_success, test_result.getvalue()
 
-    if conf.do:
+    def run_tests(self):
         cs_handler = CloudShellHandler(
-            conf.do.host, conf.do.user, conf.do.password, logger, conf.do.domain)
-        do_handler = DoHandler(cs_handler, logger)
+            self.conf.cs.host,
+            self.conf.cs.user,
+            self.conf.cs.password,
+            self.logger,
+            self.conf.cs.domain,
+            self.smb_handler,
+        )
 
+        with ResourceHandler(
+                cs_handler,
+                self.conf.shell_path,
+                self.conf.dependencies_path,
+                self.conf.device_ip or '127.0.0.1',  # if we don't have a device to tests
+                self.conf.resource_name,
+                self.logger) as resource_handler:
+
+            if self.conf.attributes:
+                resource_handler.set_attributes(self.conf.attributes)
+
+            return self.run_test_cases(resource_handler)
+
+    def run(self):
         try:
-            ip, user, password, os_user, os_password = do_handler.get_new_cloudshell(
-                CLOUDSHELL_VERSION)
-            conf.cs = CloudShellConfig(ip, user, password, os_user, os_password)
-            success, result = run_tests(conf, logger)
+            self.create_cloudshell_on_do()
+            is_success, result = self.run_tests()
         finally:
-            do_handler.end_reservation()
+            self.delete_cloudshell_on_do()
 
-    else:
-        success, result = run_tests(conf, logger)
-
-    return success, result
+        return is_success, result
