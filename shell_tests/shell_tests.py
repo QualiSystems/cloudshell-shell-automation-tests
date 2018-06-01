@@ -3,9 +3,9 @@ import traceback
 
 import click
 
-from shell_tests.configs import ResourceConfig
-from shell_tests.report_result import SMTPClient
-from shell_tests.run_tests import TestsRunner
+from configs import ResourceConfig
+from report_result import SMTPClient
+from run_tests import TestsRunner
 
 
 def get_logger():
