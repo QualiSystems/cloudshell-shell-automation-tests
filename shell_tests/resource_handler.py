@@ -5,7 +5,7 @@ import zipfile
 import requests
 import yaml
 
-from src.cs_handler import CloudShellHandler
+from shell_tests.cs_handler import CloudShellHandler
 
 
 class ResourceHandler(object):

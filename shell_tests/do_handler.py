@@ -1,6 +1,6 @@
 import time
 
-from src.errors import BaseAutomationException
+from shell_tests.errors import BaseAutomationException
 
 
 class DoHandler(object):
