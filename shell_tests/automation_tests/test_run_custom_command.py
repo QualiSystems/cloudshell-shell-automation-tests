@@ -1,4 +1,4 @@
-from shell_tests.automation_tests.base import BaseTestCase
+from automation_tests.base import BaseTestCase
 
 
 class TestRunCustomCommand(BaseTestCase):

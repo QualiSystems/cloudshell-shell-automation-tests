@@ -8,6 +8,11 @@ from report_result import SMTPClient
 from run_tests import TestsRunner
 
 
+@click.group()
+def cli():
+    pass
+
+
 def get_logger():
     log_level = logging.INFO
 
@@ -24,7 +29,7 @@ def get_logger():
     return logger
 
 
-@click.command()
+@cli.command()
 @click.argument('config_path')
 def run_tests(config_path):
     logger = get_logger()
@@ -48,4 +53,4 @@ def run_tests(config_path):
 
 
 if __name__ == '__main__':
-    run_tests()
+    cli()

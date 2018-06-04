@@ -1,6 +1,6 @@
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.automation_tests.base import BaseTestCase
+from automation_tests.base import BaseTestCase
 
 
 class TestDriverInstalled(BaseTestCase):
