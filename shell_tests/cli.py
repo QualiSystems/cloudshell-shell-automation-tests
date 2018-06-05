@@ -23,9 +23,11 @@ def get_logger():
 
     handler = logging.StreamHandler(stream)
     std_handler = logging.StreamHandler()
+    std_handler.setLevel(logging.INFO)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
+    std_handler.setFormatter(formatter)
 
     logger.addHandler(handler)
     logger.addHandler(std_handler)
@@ -58,6 +60,7 @@ def run_tests(shell_conf, env_conf=None):
         smtp_client = SMTPClient(conf.report.user, conf.report.password, conf.report.recipients)
         smtp_client.send_tests_result(is_success, result, conf.shell_path, get_log_msg(logger))
 
+    print '\n\nTest results:\n{}'.format(result)
     return is_success, result
 
 
