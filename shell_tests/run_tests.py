@@ -1,14 +1,14 @@
 import unittest
 from StringIO import StringIO
 
-from configs import ResourceConfig, CloudShellConfig
-from cs_handler import CloudShellHandler
-from do_handler import DoHandler
-from resource_handler import ResourceHandler
-from smb_handler import SMB
-from automation_tests.test_autoload import TestAutoload
-from automation_tests.test_driver_installed import TestDriverInstalled
-from automation_tests.test_run_custom_command import TestRunCustomCommand
+from shell_tests.configs import ResourceConfig, CloudShellConfig
+from shell_tests.cs_handler import CloudShellHandler
+from shell_tests.do_handler import DoHandler
+from shell_tests.resource_handler import ResourceHandler
+from shell_tests.smb_handler import SMB
+from shell_tests.automation_tests.test_autoload import TestAutoload
+from shell_tests.automation_tests.test_driver_installed import TestDriverInstalled
+from shell_tests.automation_tests.test_run_custom_command import TestRunCustomCommand
 
 
 class TestsRunner(object):

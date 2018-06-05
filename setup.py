@@ -15,5 +15,5 @@ setup(
     version=get_file_content('version.txt'),
     description='QualiSystems automation tests for Shells',
     include_package_data=True,
-    entry_points={'console_scripts': ['shell_tests = shell_tests.shell_tests:cli']},
+    entry_points={'console_scripts': ['shell_tests = shell_tests.cli:cli']},
 )

@@ -1,4 +1,5 @@
 import os
+import tempfile
 import urlparse
 import zipfile
 
@@ -10,7 +11,7 @@ from cs_handler import CloudShellHandler
 
 class ResourceHandler(object):
     RESERVATION_NAME = 'automation_tests'
-    DOWNLOAD_FOLDER = 'downloads'
+    DOWNLOAD_FOLDER = 'shell_tests'
 
     def __init__(
             self, cs_handler, shell_path, dependencies_path, device_ip, resource_name, logger,
@@ -59,10 +60,12 @@ class ResourceHandler(object):
     @property
     def download_folder(self):
         if not self._download_folder:
-            path = os.path.abspath(
-                os.path.join(__file__, '../../{}'.format(self.DOWNLOAD_FOLDER)))
+            tmp_dir = tempfile.gettempdir()
+            path = os.path.join(tmp_dir, self.DOWNLOAD_FOLDER)
+
             if not os.path.exists(path):
                 os.mkdir(path)
+
             self._download_folder = path
 
         return self._download_folder

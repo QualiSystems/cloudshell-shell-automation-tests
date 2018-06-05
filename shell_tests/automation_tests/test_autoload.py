@@ -1,4 +1,4 @@
-from automation_tests.base import BaseTestCase
+from shell_tests.automation_tests.base import BaseTestCase
 
 
 class TestAutoload(BaseTestCase):
