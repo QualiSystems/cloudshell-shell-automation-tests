@@ -6,9 +6,9 @@ from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
 from shell_tests.resource_handler import ResourceHandler
 from shell_tests.smb_handler import SMB
-from shell_tests.automation_tests.test_autoload import TestAutoload
-from shell_tests.automation_tests.test_driver_installed import TestDriverInstalled
-from shell_tests.automation_tests.test_run_custom_command import TestRunCustomCommand
+from shell_tests.automation_tests.test_autoload import TestAutoload, TestAutoloadWithoutDevice
+from shell_tests.automation_tests.test_run_custom_command import TestRunCustomCommand, \
+    TestRunCustomCommandWithoutDevice
 
 
 class TestsRunner(object):
@@ -57,12 +57,22 @@ class TestsRunner(object):
 
     @property
     def test_cases(self):
-        """Return TestsCases based on config"""
+        """Return TestsCases based on config
 
-        if self.conf.device_ip is None:
-            return [TestDriverInstalled]
-        else:
+        If we don't have a device (device IP) then just try to execute and wait for expected error
+        If we have Attributes to connect to device via CLI then execute all tests
+        Otherwise it's a simulator and we test only Autoload
+        """
+
+        if not self.conf.device_ip:
+            self.logger.warning('We doesn\'t have a device so test only installing env and getting'
+                                'an expected error')
+            return [TestAutoloadWithoutDevice, TestRunCustomCommandWithoutDevice]
+        elif self.conf.attributes.get('User'):
             return [TestAutoload, TestRunCustomCommand]
+        else:
+            self.logger.warning('We have only simulator so testing only an Autoload')
+            return [TestAutoload]
 
     def create_cloudshell_on_do(self):
         """Create CloudShell instance on Do"""

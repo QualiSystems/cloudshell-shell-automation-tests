@@ -1,3 +1,5 @@
+from cloudshell.api.common_cloudshell_api import CloudShellAPIError
+
 from shell_tests.automation_tests.base import BaseTestCase
 
 
@@ -27,3 +29,13 @@ class TestAutoload(BaseTestCase):
         structure = self._get_structure(info)
 
         self.assertIn('CS_Port', str(structure))
+
+
+class TestAutoloadWithoutDevice(BaseTestCase):
+
+    def test_structure(self):
+        self.assertRaisesRegexp(
+            CloudShellAPIError,
+            r'SessionManagerException',
+            self.resource_handler.autoload,
+        )
