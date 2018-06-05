@@ -38,10 +38,11 @@ def get_log_msg(logger):
 
 
 @cli.command()
-@click.argument('config_path')
-def run_tests(config_path):
+@click.argument('shell_conf')
+@click.argument('env_conf', required=False)
+def run_tests(shell_conf, env_conf=None):
     logger = get_logger()
-    conf = ResourceConfig.parse_config_from_yaml(config_path)
+    conf = ResourceConfig.parse_config_from_yaml(shell_conf, env_conf)
 
     try:
         is_success, result = TestsRunner(conf, logger).run()

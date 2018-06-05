@@ -45,9 +45,16 @@ class ResourceConfig(object):
         self.attributes = attributes
 
     @classmethod
-    def parse_config_from_yaml(cls, file_name):
-        with open(file_name) as f:
-            config = yaml.load(f.read())
+    def parse_config_from_yaml(cls, shell_conf_path, env_conf_path=None):
+        env_conf = {}
+        if env_conf_path is not None:
+            with open(env_conf_path) as f:
+                env_conf = yaml.load(f.read())
+
+        with open(shell_conf_path) as f:
+            shell_conf = yaml.load(f.read())
+
+        config = merge_dicts(shell_conf, env_conf)
 
         if config.get('Do'):
             do_conf = CloudShellConfig(
@@ -90,3 +97,26 @@ class ResourceConfig(object):
             config['Resource'].get('Device IP'),
             config['Resource'].get('Attributes'),
         )
+
+
+def merge_dicts(first, second):
+    """Create a new dict from two dicts, first replaced second
+
+    :param dict first:
+    :param dict second:
+    :rtype: dict
+    """
+
+    new_dict = second.copy()
+
+    for key, val in first.iteritems():
+        if isinstance(val, dict):
+            new_dict[key] = merge_dicts(val, new_dict.get(key, {}))
+        elif isinstance(val, list):
+            lst = first.get(key, [])
+            lst.extend(val)
+            new_dict[key] = lst
+        else:
+            new_dict[key] = val
+
+    return new_dict
