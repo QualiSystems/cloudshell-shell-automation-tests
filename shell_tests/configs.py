@@ -14,12 +14,31 @@ class CloudShellConfig(object):
         self.os_password = os_password
         self.domain = domain
 
+    @classmethod
+    def from_dict(cls, config):
+        return cls(
+            config['Host'],
+            config['User'],
+            config['Password'],
+            config.get('OS User'),
+            config.get('OS Password'),
+            config.get('Domain', CloudShellConfig.DEFAULT_DOMAIN),
+        )
+
 
 class ReportConfig(object):
     def __init__(self, user, password, recipients):
         self.user = user
         self.password = password
         self.recipients = recipients
+
+    @classmethod
+    def from_dict(cls, config):
+        return cls(
+            config['Report']['User'],
+            config['Report']['Password'],
+            config['Report']['Recipients'],
+        )
 
 
 class ResourceConfig(object):
@@ -34,6 +53,14 @@ class ResourceConfig(object):
         self.resource_name = resource_name
         self.device_ip = device_ip
         self.attributes = attributes
+
+    @classmethod
+    def from_dict(cls, config):
+        return cls(
+            config['Name'],
+            config.get('Device IP'),
+            config.get('Attributes'),
+        )
 
 
 class ShellConfig(object):
@@ -72,41 +99,11 @@ class ShellConfig(object):
 
         config = merge_dicts(shell_conf, env_conf)
 
-        if config.get('Do'):
-            do_conf = CloudShellConfig(
-                config['Do']['Host'],
-                config['Do']['User'],
-                config['Do']['Password'],
-                domain=config['Do'].get('Domain', CloudShellConfig.DEFAULT_DOMAIN),
-            )
-        else:
-            do_conf = None
-
-        if config.get('CloudShell'):
-            cs_conf = CloudShellConfig(
-                config['CloudShell']['Host'],
-                config['CloudShell']['User'],
-                config['CloudShell']['Password'],
-                config['CloudShell'].get('OS User'),
-                config['CloudShell'].get('OS Password'),
-                config['CloudShell'].get('Domain', CloudShellConfig.DEFAULT_DOMAIN),
-            )
-        else:
-            cs_conf = None
-
-        if config.get('Report'):
-            report_conf = ReportConfig(
-                config['Report']['User'],
-                config['Report']['Password'],
-                config['Report']['Recipients'],
-            )
-        else:
-            report_conf = None
-
-        resources = [
-            ResourceConfig(c['Name'], c.get('Device IP'), c.get('Attributes'))
-            for c in config['Resources']
-        ]
+        do_conf = CloudShellConfig.from_dict(config['Do']) if 'Do' in config else None
+        cs_conf = (CloudShellConfig.from_dict(config['CloudShell'])
+                   if 'CloudShell' in config else None)
+        report_conf = ReportConfig.from_dict(config) if 'Report' in config else None
+        resources = map(ResourceConfig.from_dict, config['Resources'])
 
         return cls(
             do_conf,
