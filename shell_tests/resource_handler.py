@@ -12,6 +12,9 @@ from cs_handler import CloudShellHandler
 class ResourceHandler(object):
     RESERVATION_NAME = 'automation_tests'
     DOWNLOAD_FOLDER = 'shell_tests'
+    REAL_DEVICE = 'Real device'
+    SIMULATOR = 'Simulator'
+    WITHOUT_DEVICE = 'Without device'
 
     def __init__(
             self, cs_handler, shell_path, dependencies_path, device_ip, resource_name, logger,
@@ -34,12 +37,22 @@ class ResourceHandler(object):
         self.logger = logger
         self.reservation_name = reservation_name
 
+        self.attributes = {}
         self.reservation_id = None
         self._resource_family = None
         self._resource_model = None
         self.dependencies_file = None
         self.shell_file = None
         self._download_folder = None
+
+    @property
+    def device_type(self):
+        if not self.device_ip:
+            return self.WITHOUT_DEVICE
+        elif self.attributes.get('User'):
+            return self.REAL_DEVICE
+        else:
+            return self.SIMULATOR
 
     def _get_resource_family_and_model(self):
         """Get resource family and model from shell-definition.yaml
@@ -121,7 +134,11 @@ class ResourceHandler(object):
         self.install_shell()
         self.reservation_id = self.cs_handler.create_reservation(self.reservation_name)
         self.resource_name = self.cs_handler.create_resource(
-            self.resource_name, self.resource_family, self.resource_model, self.device_ip)
+            self.resource_name,
+            self.resource_family,
+            self.resource_model,
+            self.device_ip or '127.0.0.1',  # if we don't have a real device
+        )
         self.cs_handler.add_resource_to_reservation(self.reservation_id, self.resource_name)
 
         self.logger.info('The resource {} prepared'.format(self.resource_name))
@@ -182,9 +199,10 @@ class ResourceHandler(object):
             os.remove(self.dependencies_path)
 
     def set_attributes(self, attributes):
-        """Set attributes for the resource"""
+        """Set attributes for the resource and update internal dict"""
 
         self.cs_handler.set_resource_attributes(self.resource_name, self.resource_model, attributes)
+        self.attributes.update(attributes)
 
     def autoload(self):
         """Run Autoload for the resource"""

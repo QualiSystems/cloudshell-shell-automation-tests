@@ -1,3 +1,5 @@
+import re
+
 import yaml
 
 
@@ -21,8 +23,22 @@ class ReportConfig(object):
 
 
 class ResourceConfig(object):
-    def __init__(self, do_conf, cs_conf, report_conf, shell_path, dependencies_path, resource_name,
-                 device_ip, attributes):
+    def __init__(self, resource_name, device_ip, attributes):
+        """Resource config
+
+        :param str resource_name:
+        :param str device_ip:
+        :param dict attributes:
+        """
+
+        self.resource_name = resource_name
+        self.device_ip = device_ip
+        self.attributes = attributes
+
+
+class ShellConfig(object):
+    def __init__(
+            self, do_conf, cs_conf, report_conf, shell_path, dependencies_path, resources_conf):
         """Main config
 
         :param CloudShellConfig do_conf:
@@ -30,9 +46,7 @@ class ResourceConfig(object):
         :param ReportConfig report_conf:
         :param str shell_path:
         :param str dependencies_path:
-        :param str resource_name:
-        :param str device_ip:
-        :param dict attributes:
+        :param list[ResourceConfig] resources_conf:
         """
 
         self.do = do_conf
@@ -40,9 +54,11 @@ class ResourceConfig(object):
         self.report = report_conf
         self.shell_path = shell_path
         self.dependencies_path = dependencies_path
-        self.resource_name = resource_name
-        self.device_ip = device_ip
-        self.attributes = attributes
+        self.resources = resources_conf
+
+    @property
+    def shell_name(self):
+        return re.split(r'[\\/]', self.shell_path)[-1]
 
     @classmethod
     def parse_config_from_yaml(cls, shell_conf_path, env_conf_path=None):
@@ -87,15 +103,18 @@ class ResourceConfig(object):
         else:
             report_conf = None
 
+        resources = [
+            ResourceConfig(c['Name'], c.get('Device IP'), c.get('Attributes'))
+            for c in config['Resources']
+        ]
+
         return cls(
             do_conf,
             cs_conf,
             report_conf,
             config['Shell']['Path'],
             config['Shell'].get('Dependencies Path'),
-            config['Resource']['Name'],
-            config['Resource'].get('Device IP'),
-            config['Resource'].get('Attributes'),
+            resources,
         )
 
 
@@ -113,7 +132,7 @@ def merge_dicts(first, second):
         if isinstance(val, dict):
             new_dict[key] = merge_dicts(val, new_dict.get(key, {}))
         elif isinstance(val, list):
-            lst = first.get(key, [])
+            lst = second.get(key, [])
             lst.extend(val)
             new_dict[key] = lst
         else:

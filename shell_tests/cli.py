@@ -4,7 +4,7 @@ from StringIO import StringIO
 
 import click
 
-from shell_tests.configs import ResourceConfig
+from shell_tests.configs import ShellConfig
 from shell_tests.report_result import SMTPClient
 from shell_tests.run_tests import TestsRunner
 
@@ -44,24 +44,25 @@ def get_log_msg(logger):
 @click.argument('env_conf', required=False)
 def run_tests(shell_conf, env_conf=None):
     logger = get_logger()
-    conf = ResourceConfig.parse_config_from_yaml(shell_conf, env_conf)
+    conf = ShellConfig.parse_config_from_yaml(shell_conf, env_conf)
 
     try:
-        is_success, result = TestsRunner(conf, logger).run()
+        report = TestsRunner(conf, logger).run()
     except Exception:
         if conf.report:
             error_msg = traceback.format_exc()
             smtp_client = SMTPClient(conf.report.user, conf.report.password, conf.report.recipients)
-            smtp_client.send_error(error_msg, conf.shell_path, get_log_msg(logger))
+            smtp_client.send_error(error_msg, conf.shell_name, get_log_msg(logger))
 
         raise
 
     if conf.report:
         smtp_client = SMTPClient(conf.report.user, conf.report.password, conf.report.recipients)
-        smtp_client.send_tests_result(is_success, result, conf.shell_path, get_log_msg(logger))
+        smtp_client.send_tests_result(
+            report.is_success, report.get_result(), conf.shell_name, get_log_msg(logger))
 
-    print '\n\nTest results:\n{}'.format(result)
-    return is_success, result
+    print '\n\nTest results:\n{}'.format(report.get_result())
+    return report.is_success, report.get_result()
 
 
 if __name__ == '__main__':

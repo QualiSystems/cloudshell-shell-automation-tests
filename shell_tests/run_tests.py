@@ -1,9 +1,10 @@
 import unittest
 from StringIO import StringIO
 
-from shell_tests.configs import ResourceConfig, CloudShellConfig
+from shell_tests.configs import ShellConfig, CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
+from shell_tests.report_result import Reporting
 from shell_tests.resource_handler import ResourceHandler
 from shell_tests.smb_handler import SMB
 from shell_tests.automation_tests.test_autoload import TestAutoload, TestAutoloadWithoutDevice
@@ -18,7 +19,7 @@ class TestsRunner(object):
     def __init__(self, conf, logger):
         """Decide for tests need to run and run it
 
-        :param ResourceConfig conf:
+        :param ShellConfig conf:
         :param logging.Logger logger:
         """
 
@@ -55,21 +56,23 @@ class TestsRunner(object):
 
         return self._smb_handler
 
-    @property
-    def test_cases(self):
-        """Return TestsCases based on config
+    def get_test_cases(self, resource_handler):
+        """Return TestsCases based on resource
 
         If we don't have a device (device IP) then just try to execute and wait for expected error
         If we have Attributes to connect to device via CLI then execute all tests
         Otherwise it's a simulator and we test only Autoload
         """
 
-        if not self.conf.device_ip:
-            self.logger.warning('We doesn\'t have a device so test only installing env and getting'
-                                'an expected error')
+        if resource_handler.device_type == resource_handler.WITHOUT_DEVICE:
+            self.logger.warning(
+                'We doesn\'t have a device so test only installing env and getting an expected '
+                'error')
             return [TestAutoloadWithoutDevice, TestRunCustomCommandWithoutDevice]
-        elif self.conf.attributes.get('User'):
+
+        elif resource_handler.device_type == resource_handler.REAL_DEVICE:
             return [TestAutoload, TestRunCustomCommand]
+
         else:
             self.logger.warning('We have only simulator so testing only an Autoload')
             return [TestAutoload]
@@ -96,7 +99,7 @@ class TestsRunner(object):
         test_loader = unittest.TestLoader()
         suite = unittest.TestSuite()
 
-        for test_case in self.test_cases:
+        for test_case in self.get_test_cases(resource_handler):
             for test_name in test_loader.getTestCaseNames(test_case):
                 suite.addTest(test_case(test_name, resource_handler))
 
@@ -105,6 +108,11 @@ class TestsRunner(object):
         return is_success, test_result.getvalue()
 
     def run_tests(self):
+        """Run tests in CloudShell for Shell on one or several devices
+
+        :rtype: Reporting
+        """
+
         cs_handler = CloudShellHandler(
             self.conf.cs.host,
             self.conf.cs.user,
@@ -114,24 +122,37 @@ class TestsRunner(object):
             self.smb_handler,
         )
 
-        with ResourceHandler(
-                cs_handler,
-                self.conf.shell_path,
-                self.conf.dependencies_path,
-                self.conf.device_ip or '127.0.0.1',  # if we don't have a device to tests
-                self.conf.resource_name,
-                self.logger) as resource_handler:
+        report = Reporting(self.conf.shell_name)
 
-            if self.conf.attributes:
-                resource_handler.set_attributes(self.conf.attributes)
+        for resource_conf in self.conf.resources:
+            with ResourceHandler(
+                    cs_handler,
+                    self.conf.shell_path,
+                    self.conf.dependencies_path,
+                    resource_conf.device_ip,
+                    resource_conf.resource_name,
+                    self.logger) as resource_handler:
 
-            return self.run_test_cases(resource_handler)
+                if resource_conf.attributes:
+                    resource_handler.set_attributes(resource_conf.attributes)
+
+                is_success, result = self.run_test_cases(resource_handler)
+
+                report.add_resource_report(
+                    resource_conf.resource_name,
+                    resource_conf.device_ip,
+                    resource_handler.device_type,
+                    is_success,
+                    result,
+                )
+
+        return report
 
     def run(self):
         try:
             self.create_cloudshell_on_do()
-            is_success, result = self.run_tests()
+            report = self.run_tests()
         finally:
             self.delete_cloudshell_on_do()
 
-        return is_success, result
+        return report
