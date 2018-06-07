@@ -1,2 +1,5 @@
 .idea/
 configs/
+build/
+dist/
+shell_tests.egg-info/
