@@ -261,3 +261,21 @@ class ResourceHandler(object):
         )
         self.logger.debug('Save command output: {}'.format(output))
         return output
+
+    def orchestration_save(self, mode, custom_params=''):
+        """Execute orchestration save command
+
+        :param str mode: shallow or deep
+        :param str custom_params:
+        """
+
+        self.logger.info('Start a "orchestration save" command')
+        self.logger.debug('Mode: {}, custom params: {}'.format(mode, custom_params))
+
+        output = self.execute_command(
+            'orchestration_save',
+            {'mode': mode, 'custom_params': custom_params},
+        )
+
+        self.logger.debug('Orchestration save command output: {}'.format(output))
+        return output

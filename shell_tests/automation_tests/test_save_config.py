@@ -38,6 +38,12 @@ class TestSaveConfig(BaseTestCase):
         )
         self.ftp_handler.delete_file(file_name)
 
+    def test_orchestration_save_shallow(self):
+        self.assertTrue(self.resource_handler.orchestration_save('shallow'))
+
+    def test_orchestration_save_deep(self):
+        self.assertTrue(self.resource_handler.orchestration_save('deep'))
+
 
 class TestSaveConfigWithoutDevice(TestSaveConfig):
     def test_save_running_config(self):
@@ -56,4 +62,20 @@ class TestSaveConfigWithoutDevice(TestSaveConfig):
             self.resource_handler.save,
             self.ftp_path,
             'startup',
+        )
+
+    def test_orchestration_save_shallow(self):
+        self.assertRaisesRegexp(
+            CloudShellAPIError,
+            r'SessionManagerException',
+            self.resource_handler.orchestration_save,
+            'shallow',
+        )
+
+    def test_orchestration_save_deep(self):
+        self.assertRaisesRegexp(
+            CloudShellAPIError,
+            r'SessionManagerException',
+            self.resource_handler.orchestration_save,
+            'deep',
         )
