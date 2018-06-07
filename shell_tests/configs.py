@@ -16,14 +16,15 @@ class CloudShellConfig(object):
 
     @classmethod
     def from_dict(cls, config):
-        return cls(
-            config['Host'],
-            config['User'],
-            config['Password'],
-            config.get('OS User'),
-            config.get('OS Password'),
-            config.get('Domain', CloudShellConfig.DEFAULT_DOMAIN),
-        )
+        if config:
+            return cls(
+                config['Host'],
+                config['User'],
+                config['Password'],
+                config.get('OS User'),
+                config.get('OS Password'),
+                config.get('Domain', CloudShellConfig.DEFAULT_DOMAIN),
+            )
 
 
 class ReportConfig(object):
@@ -34,11 +35,12 @@ class ReportConfig(object):
 
     @classmethod
     def from_dict(cls, config):
-        return cls(
-            config['Report']['User'],
-            config['Report']['Password'],
-            config['Report']['Recipients'],
-        )
+        if config:
+            return cls(
+                config['User'],
+                config['Password'],
+                config['Recipients'],
+            )
 
 
 class ResourceConfig(object):
@@ -56,16 +58,35 @@ class ResourceConfig(object):
 
     @classmethod
     def from_dict(cls, config):
-        return cls(
-            config['Name'],
-            config.get('Device IP'),
-            config.get('Attributes'),
-        )
+        if config:
+            return cls(
+                config['Name'],
+                config.get('Device IP'),
+                config.get('Attributes'),
+            )
+
+
+class FTPConfig(object):
+    def __init__(self, host, user, password):
+        self.host = host
+        self.user = user
+        self.password = password
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Host'],
+                config['User'],
+                config['Password'],
+            )
 
 
 class ShellConfig(object):
     def __init__(
-            self, do_conf, cs_conf, report_conf, shell_path, dependencies_path, resources_conf):
+            self, do_conf, cs_conf, report_conf, shell_path, dependencies_path, resources_conf,
+            ftp_conf,
+    ):
         """Main config
 
         :param CloudShellConfig do_conf:
@@ -74,6 +95,7 @@ class ShellConfig(object):
         :param str shell_path:
         :param str dependencies_path:
         :param list[ResourceConfig] resources_conf:
+        :param FTPConfig ftp_conf:
         """
 
         self.do = do_conf
@@ -82,6 +104,7 @@ class ShellConfig(object):
         self.shell_path = shell_path
         self.dependencies_path = dependencies_path
         self.resources = resources_conf
+        self.ftp = ftp_conf
 
     @property
     def shell_name(self):
@@ -99,11 +122,11 @@ class ShellConfig(object):
 
         config = merge_dicts(shell_conf, env_conf)
 
-        do_conf = CloudShellConfig.from_dict(config['Do']) if 'Do' in config else None
-        cs_conf = (CloudShellConfig.from_dict(config['CloudShell'])
-                   if 'CloudShell' in config else None)
-        report_conf = ReportConfig.from_dict(config) if 'Report' in config else None
+        do_conf = CloudShellConfig.from_dict(config.get('Do'))
+        cs_conf = CloudShellConfig.from_dict(config.get('CloudShell'))
+        report_conf = ReportConfig.from_dict(config.get('Report'))
         resources = map(ResourceConfig.from_dict, config['Resources'])
+        ftp_conf = FTPConfig.from_dict(config.get('FTP'))
 
         return cls(
             do_conf,
@@ -112,6 +135,7 @@ class ShellConfig(object):
             config['Shell']['Path'],
             config['Shell'].get('Dependencies Path'),
             resources,
+            ftp_conf,
         )
 
 

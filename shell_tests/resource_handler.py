@@ -247,3 +247,17 @@ class ResourceHandler(object):
         output = self.execute_command('run_custom_config_command', {'custom_command': command})
         self.logger.debug('Run custom config command output: {}'.format(output))
         return output
+
+    def save(self, ftp_path, configuration_type):
+        """Execute save command on the resource"""
+
+        self.logger.info('Start a "save" command')
+        self.logger.debug(
+            'FTP path: {}, configuration type: {}'.format(ftp_path, configuration_type))
+
+        output = self.execute_command(
+            'save',
+            {'folder_path': ftp_path, 'configuration_type': configuration_type}
+        )
+        self.logger.debug('Save command output: {}'.format(output))
+        return output

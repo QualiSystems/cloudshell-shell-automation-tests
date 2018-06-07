@@ -1,6 +1,8 @@
 import unittest
 from StringIO import StringIO
 
+from shell_tests.automation_tests.test_save_config import TestSaveConfig, \
+    TestSaveConfigWithoutDevice
 from shell_tests.configs import ShellConfig, CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
@@ -68,10 +70,11 @@ class TestsRunner(object):
             self.logger.warning(
                 'We doesn\'t have a device so test only installing env and getting an expected '
                 'error')
-            return [TestAutoloadWithoutDevice, TestRunCustomCommandWithoutDevice]
+            return [TestAutoloadWithoutDevice, TestRunCustomCommandWithoutDevice,
+                    TestSaveConfigWithoutDevice]
 
         elif resource_handler.device_type == resource_handler.REAL_DEVICE:
-            return [TestAutoload, TestRunCustomCommand]
+            return [TestAutoload, TestRunCustomCommand, TestSaveConfig]
 
         else:
             self.logger.warning('We have only simulator so testing only an Autoload')
@@ -101,7 +104,7 @@ class TestsRunner(object):
 
         for test_case in self.get_test_cases(resource_handler):
             for test_name in test_loader.getTestCaseNames(test_case):
-                suite.addTest(test_case(test_name, resource_handler))
+                suite.addTest(test_case(test_name, resource_handler, self.conf, self.logger))
 
         is_success = unittest.TextTestRunner(test_result, verbosity=2).run(suite).wasSuccessful()
 
