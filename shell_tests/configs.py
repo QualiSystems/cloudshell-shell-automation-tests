@@ -153,7 +153,7 @@ def merge_dicts(first, second):
         if isinstance(val, dict):
             new_dict[key] = merge_dicts(val, new_dict.get(key, {}))
         elif isinstance(val, list):
-            lst = second.get(key, [])
+            lst = second.get(key, [])[:]
             lst.extend(val)
             new_dict[key] = lst
         else:
