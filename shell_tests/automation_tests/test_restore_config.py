@@ -63,11 +63,14 @@ class TestRestoreConfig(BaseTestCase):
 
 
 class TestRestoreConfigWithoutDevice(TestRestoreConfig):
+    FTP_PATH = 'ftp://localhost/test_conf'
+
     def test_restore_running_config_append(self):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
             self.resource_handler.restore,
+            self.FTP_PATH,
             'running',
             'append',
         )
@@ -77,6 +80,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
             CloudShellAPIError,
             r'SessionManagerException',
             self.resource_handler.restore,
+            self.FTP_PATH,
             'startup',
             'append',
         )
@@ -86,6 +90,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
             CloudShellAPIError,
             r'SessionManagerException',
             self.resource_handler.restore,
+            self.FTP_PATH,
             'running',
             'override',
         )
@@ -95,6 +100,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
             CloudShellAPIError,
             r'SessionManagerException',
             self.resource_handler.restore,
+            self.FTP_PATH,
             'startup',
             'override',
         )

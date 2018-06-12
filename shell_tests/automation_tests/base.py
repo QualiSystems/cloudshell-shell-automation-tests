@@ -17,7 +17,7 @@ class BaseTestCase(unittest.TestCase):
         self.logger = logger
 
     def setUp(self):
-        if self._testMethodName in self.conf.tests_conf.exclude:
+        if self.conf.tests_conf and self._testMethodName in self.conf.tests_conf.exclude:
             reason = self.conf.tests_conf.exclude[self._testMethodName]
             self.logger.debug(
                 'Skipping test {}, because setting in config file: {}'.format(
