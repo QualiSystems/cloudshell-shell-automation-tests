@@ -279,3 +279,26 @@ class ResourceHandler(object):
 
         self.logger.debug('Orchestration save command output: {}'.format(output))
         return output
+
+    def restore(self, path, configuration_type, restore_method):
+        """Execute restore command
+
+        :param str path: path to the file
+        :param str configuration_type: startup or running
+        :param str restore_method: append or override
+        """
+
+        self.logger.info('Start a "restore" command')
+        self.logger.debug(
+            'Path: {}, configuration_type: {}, restore_method: {}'.format(
+                path, configuration_type, restore_method)
+        )
+
+        output = self.execute_command(
+            'restore',
+            {'path': path, 'configuration_type': configuration_type,
+             'restore_method': restore_method}
+        )
+
+        self.logger.debug('Restore command output: {}'.format(output))
+        return output

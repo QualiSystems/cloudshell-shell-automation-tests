@@ -15,3 +15,11 @@ class BaseTestCase(unittest.TestCase):
         self.resource_handler = resource_handler
         self.conf = conf
         self.logger = logger
+
+    def setUp(self):
+        if self._testMethodName in self.conf.tests_conf.exclude:
+            reason = self.conf.tests_conf.exclude[self._testMethodName]
+            self.logger.debug(
+                'Skipping test {}, because setting in config file: {}'.format(
+                    self._testMethodName, reason))
+            self.skipTest('Skipping test because setting in config file: {}'.format(reason))

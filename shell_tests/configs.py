@@ -82,10 +82,27 @@ class FTPConfig(object):
             )
 
 
+class TestsConfig(object):
+    def __init__(self, exclude):
+        """Tests config
+
+        :param dict exclude:
+        """
+
+        self.exclude = exclude
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Exclude'],
+            )
+
+
 class ShellConfig(object):
     def __init__(
             self, do_conf, cs_conf, report_conf, shell_path, dependencies_path, resources_conf,
-            ftp_conf,
+            ftp_conf, tests_conf,
     ):
         """Main config
 
@@ -96,6 +113,7 @@ class ShellConfig(object):
         :param str dependencies_path:
         :param list[ResourceConfig] resources_conf:
         :param FTPConfig ftp_conf:
+        :param TestsConfig tests_conf:
         """
 
         self.do = do_conf
@@ -105,6 +123,7 @@ class ShellConfig(object):
         self.dependencies_path = dependencies_path
         self.resources = resources_conf
         self.ftp = ftp_conf
+        self.tests_conf = tests_conf
 
     @property
     def shell_name(self):
@@ -127,6 +146,7 @@ class ShellConfig(object):
         report_conf = ReportConfig.from_dict(config.get('Report'))
         resources = map(ResourceConfig.from_dict, config['Resources'])
         ftp_conf = FTPConfig.from_dict(config.get('FTP'))
+        tests_conf = TestsConfig.from_dict(config.get('Tests'))
 
         return cls(
             do_conf,
@@ -136,6 +156,7 @@ class ShellConfig(object):
             config['Shell'].get('Dependencies Path'),
             resources,
             ftp_conf,
+            tests_conf,
         )
 
 

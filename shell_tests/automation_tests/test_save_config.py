@@ -7,6 +7,7 @@ from shell_tests.ftp_handler import FTPHandler
 class TestSaveConfig(BaseTestCase):
 
     def setUp(self):
+        super(TestSaveConfig, self).setUp()
         self.ftp_handler = FTPHandler(
             self.conf.ftp.host.split('://', 1)[-1],
             self.conf.ftp.user,
