@@ -302,3 +302,22 @@ class ResourceHandler(object):
 
         self.logger.debug('Restore command output: {}'.format(output))
         return output
+
+    def orchestration_restore(self, saved_artifact_info, custom_params=''):
+        """Execute orchestration restore command
+
+        :param str saved_artifact_info:
+        :param str custom_params:
+        """
+
+        self.logger.info('Start a "orchestration restore" command')
+        self.logger.debug(
+            'Saved artifact info: {}, custom params: {}'.format(saved_artifact_info, custom_params))
+
+        output = self.execute_command(
+            'orchestration_restore',
+            {'saved_artifact_info': saved_artifact_info, 'custom_params': custom_params},
+        )
+
+        self.logger.debug('Orchestration restore command output: {}'.format(output))
+        return output

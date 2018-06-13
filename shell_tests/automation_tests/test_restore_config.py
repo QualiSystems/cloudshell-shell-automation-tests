@@ -1,3 +1,5 @@
+import json
+
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
 from shell_tests.automation_tests.base import BaseTestCase
@@ -61,6 +63,14 @@ class TestRestoreConfig(BaseTestCase):
         finally:
             self.ftp_handler.delete_file(file_name)
 
+    def test_orchestration_restore(self):
+        saved_artifact_info = self.resource_handler.orchestration_save('shallow')
+        output = self.resource_handler.orchestration_restore(
+            saved_artifact_info,
+            '',
+        )
+        print output
+
 
 class TestRestoreConfigWithoutDevice(TestRestoreConfig):
     FTP_PATH = 'ftp://localhost/test_conf'
@@ -103,4 +113,22 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
             self.FTP_PATH,
             'startup',
             'override',
+        )
+
+    def test_orchestration_restore(self):
+        saved_artifact_info = {
+                'saved_artifacts_info': {
+                    'saved_artifact': {
+                        'artifact_type': 'local',
+                        'identifier': '/device-running-130618-155327'},
+                    'resource_name': self.resource_handler.resource_name,
+                    'restore_rules': {'requires_same_resource': True},
+                    'created_date': '2018-06-13T15:53:34.075000'}
+            }
+
+        self.assertRaisesRegexp(
+            CloudShellAPIError,
+            r'SessionManagerException',
+            self.resource_handler.orchestration_restore,
+            json.dumps(saved_artifact_info),
         )
