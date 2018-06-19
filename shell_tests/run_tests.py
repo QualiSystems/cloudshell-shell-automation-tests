@@ -1,6 +1,7 @@
 import unittest
 from StringIO import StringIO
 
+from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import TestRestoreConfig, \
     TestRestoreConfigWithoutDevice
 from shell_tests.automation_tests.test_save_config import TestSaveConfig, \
@@ -76,7 +77,8 @@ class TestsRunner(object):
                     TestSaveConfigWithoutDevice, TestRestoreConfigWithoutDevice]
 
         elif resource_handler.device_type == resource_handler.REAL_DEVICE:
-            return [TestAutoload, TestRunCustomCommand, TestSaveConfig, TestRestoreConfig]
+            return [TestAutoload, TestRunCustomCommand, TestSaveConfig, TestRestoreConfig,
+                    TestConnectivity]
 
         else:
             self.logger.warning('We have only simulator so testing only an Autoload')

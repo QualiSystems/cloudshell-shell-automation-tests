@@ -1,17 +1,12 @@
 import os
-import tempfile
-import urlparse
 import zipfile
 
-import requests
-import yaml
-
 from cs_handler import CloudShellHandler
+from shell_tests.helpers import get_resource_family_and_model, download_file, is_url
 
 
 class ResourceHandler(object):
     RESERVATION_NAME = 'automation_tests'
-    DOWNLOAD_FOLDER = 'shell_tests'
     REAL_DEVICE = 'Real device'
     SIMULATOR = 'Simulator'
     WITHOUT_DEVICE = 'Without device'
@@ -41,9 +36,8 @@ class ResourceHandler(object):
         self.reservation_id = None
         self._resource_family = None
         self._resource_model = None
-        self.dependencies_file = None
-        self.shell_file = None
-        self._download_folder = None
+        self.downloaded_dependencies_file = False
+        self.downloaded_shell_file = False
 
     @property
     def device_type(self):
@@ -54,69 +48,27 @@ class ResourceHandler(object):
         else:
             return self.SIMULATOR
 
-    def _get_resource_family_and_model(self):
-        """Get resource family and model from shell-definition.yaml
-
-        :return: family and model
-        :rtype: tuple[str, str]"""
-
-        zip_file = zipfile.ZipFile(self.shell_path)
-        data = yaml.load(zip_file.read('shell-definition.yaml'))
-
-        model = data['node_types'].keys()[0].rsplit('.', 1)[-1]
-        family = data['node_types'].values()[0]['derived_from'].rsplit('.', 1)[-1]
-        family = 'CS_{}'.format(family)  # todo get it from standard
-        self.logger.debug('Family: {}, model: {} for the Shell {}'.format(
-            family, model, self.shell_path))
-        return family, model
-
-    @property
-    def download_folder(self):
-        if not self._download_folder:
-            tmp_dir = tempfile.gettempdir()
-            path = os.path.join(tmp_dir, self.DOWNLOAD_FOLDER)
-
-            if not os.path.exists(path):
-                os.mkdir(path)
-
-            self._download_folder = path
-
-        return self._download_folder
-
-    def download_file(self, url):
-        """Download file to tmp folder"""
-
-        file_name = url.rsplit('/', 1)[-1]
-
-        resp = requests.get(url)
-        file_path = os.path.join(self.download_folder, file_name)
-        with open(file_path, 'w') as file_obj:
-            file_obj.write(resp.content)
-
-        return file_path, file_obj
-
-    @staticmethod
-    def is_url(url):
-        return urlparse.urlparse(url).scheme != ''
-
     @property
     def resource_family(self):
         if self._resource_family is None:
-            self._resource_family, self._resource_model = self._get_resource_family_and_model()
+            self._resource_family, self._resource_model = get_resource_family_and_model(
+                self.shell_path, self.logger)
         return self._resource_family
 
     @property
     def resource_model(self):
         if self._resource_model is None:
-            self._resource_family, self._resource_model = self._get_resource_family_and_model()
+            self._resource_family, self._resource_model = get_resource_family_and_model(
+                self.shell_path, self.logger)
         return self._resource_model
 
     def install_shell(self):
         """Install the Shell"""
 
-        if self.is_url(self.shell_path):
+        if is_url(self.shell_path):
             self.logger.info('Downloading the Shell from {}'.format(self.shell_path))
-            self.shell_path, self.shell_file = self.download_file(self.shell_path)
+            self.shell_path = download_file(self.shell_path)
+            self.downloaded_shell_file = True
         self.cs_handler.install_shell(self.shell_path)
 
     def prepare_resource(self):
@@ -171,11 +123,11 @@ class ResourceHandler(object):
 
         self.logger.info('Putting dependencies to offline PyPI')
 
-        if self.is_url(self.dependencies_path):
+        if is_url(self.dependencies_path):
             self.logger.info('Downloading the dependencies file from {}'.format(
                 self.dependencies_path))
-            self.dependencies_path, self.dependencies_file = self.download_file(
-                self.dependencies_path)
+            self.dependencies_path = download_file(self.dependencies_path)
+            self.downloaded_dependencies_file = True
 
         zip_file = zipfile.ZipFile(self.dependencies_path)
         for file_obj in map(zip_file.open, zip_file.filelist):
@@ -191,11 +143,11 @@ class ResourceHandler(object):
     def deleting_downloaded_shell(self):
         """Delete downloaded Shell and dependencies if downloaded"""
 
-        if self.shell_file:
+        if self.downloaded_shell_file:
             self.logger.debug('Delete a downloaded Shell file')
             os.remove(self.shell_path)
-        if self.dependencies_file:
-            self.logger.debug('Delete a downloaded dependenies file')
+        if self.downloaded_dependencies_file:
+            self.logger.debug('Delete a downloaded dependencies file')
             os.remove(self.dependencies_path)
 
     def set_attributes(self, attributes):

@@ -2,7 +2,7 @@ import os
 import re
 
 from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
-    AttributeNameValue, InputNameValue
+    AttributeNameValue, InputNameValue, SetConnectorRequest
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
 
@@ -316,3 +316,41 @@ class CloudShellHandler(object):
         file_path = os.path.join(self.PYPI_PATH, file_name)
         self.logger.debug('Removing a file {} from offline PyPI'.format(file_path))
         self.smb.remove_file(self.PYPI_SHARE, file_path)
+
+    def add_physical_connection(self, reservation_id, port1, port2):
+        """Add physical connection between two ports
+
+        :param str reservation_id:
+        :param str port1: ex, Cisco-IOS-device/Chassis 0/FastEthernet0-1
+        :param str port2: ex, Cisco-IOS-device-1/Chassis 0/FastEthernet0-10
+        """
+
+        self.logger.info('Create physical connection between {} and {}'.format(port1, port2))
+        self.api.UpdatePhysicalConnection(port1, port2)
+        self.api.AddRoutesToReservation(reservation_id, [port1], [port2], 'bi')
+
+    def connect_ports_with_connector(self, reservation_id, port1, port2, connector_name):
+        """Connect two ports with connector
+
+        :param str reservation_id:
+        :param str port1:
+        :param str port2:
+        :param str connector_name:
+        """
+
+        self.logger.info('Creating connector between {} and {}'.format(port1, port2))
+        connector = SetConnectorRequest(port1, port2, 'bi', connector_name)
+        self.api.SetConnectorsInReservation(reservation_id, [connector])
+        self.api.ConnectRoutesInReservation(reservation_id, [port1, port2], 'bi')
+
+    def remove_connector(self, reservation_id, port1, port2):
+        """Remove connector between ports
+
+        :param str reservation_id:
+        :param str port1:
+        :param str port2:
+        """
+
+        self.logger.info('Removing connector between {} and {}'.format(port1, port2))
+        self.api.DisconnectRoutesInReservation(reservation_id, [port1, port2])
+        self.api.RemoveConnectorsFromReservation(reservation_id, [port1, port2])
