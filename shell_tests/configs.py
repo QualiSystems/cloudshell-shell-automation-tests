@@ -83,19 +83,19 @@ class FTPConfig(object):
 
 
 class TestsConfig(object):
-    def __init__(self, exclude):
+    def __init__(self, expected_failures):
         """Tests config
 
-        :param dict exclude:
+        :param dict expected_failures:
         """
 
-        self.exclude = exclude
+        self.expected_failures = expected_failures
 
     @classmethod
     def from_dict(cls, config):
         if config:
             return cls(
-                config['Exclude'],
+                config['Expected failures'],
             )
 
 

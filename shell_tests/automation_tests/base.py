@@ -1,5 +1,7 @@
 import unittest
 
+from cloudshell.api.common_cloudshell_api import CloudShellAPIError
+
 
 class BaseTestCase(unittest.TestCase):
     def __init__(self, method_name, resource_handler, conf, logger):
@@ -16,10 +18,19 @@ class BaseTestCase(unittest.TestCase):
         self.conf = conf
         self.logger = logger
 
-    def setUp(self):
-        if self.conf.tests_conf and self._testMethodName in self.conf.tests_conf.exclude:
-            reason = self.conf.tests_conf.exclude[self._testMethodName]
-            self.logger.debug(
-                'Skipping test {}, because setting in config file: {}'.format(
-                    self._testMethodName, reason))
-            self.skipTest('Skipping test because setting in config file: {}'.format(reason))
+        if self.conf.tests_conf and method_name in self.conf.tests_conf.expected_failures:
+            reason = self.conf.tests_conf.expected_failures[method_name]
+            func = getattr(self, method_name)
+            wrapped_func = self.expect_failure(func, reason)
+            setattr(self, method_name, wrapped_func)
+
+    def expect_failure(self, func, expected_message):
+        def wrapped(*args, **kwargs):
+            self.assertRaisesRegexp(
+                CloudShellAPIError,
+                expected_message,
+                func,
+                *args,
+                **kwargs
+            )
+        return wrapped
