@@ -1,5 +1,9 @@
+import io
+import re
 import unittest
+import zipfile
 from StringIO import StringIO
+from lxml import etree
 
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import TestRestoreConfig, \
@@ -15,6 +19,32 @@ from shell_tests.smb_handler import SMB
 from shell_tests.automation_tests.test_autoload import TestAutoload, TestAutoloadWithoutDevice
 from shell_tests.automation_tests.test_run_custom_command import TestRunCustomCommand, \
     TestRunCustomCommandWithoutDevice
+
+
+TEST_CASES_MAP = {
+    ResourceHandler.SIMULATOR: {
+        'autoload': TestAutoload,
+    },
+    ResourceHandler.WITHOUT_DEVICE: {
+        'autoload': TestAutoloadWithoutDevice,
+        'run_custom_command': TestRunCustomCommandWithoutDevice,
+        'run_custom_config_command': TestRunCustomCommandWithoutDevice,
+        'save': TestSaveConfigWithoutDevice,
+        'orchestration_save': TestSaveConfigWithoutDevice,
+        'restore': TestRestoreConfigWithoutDevice,
+        'orchestration_restore': TestRestoreConfigWithoutDevice,
+    },
+    ResourceHandler.REAL_DEVICE: {
+        'autoload': TestAutoload,
+        'run_custom_command': TestRunCustomCommand,
+        'run_custom_config_command': TestRunCustomCommand,
+        'save': TestSaveConfig,
+        'orchestration_save': TestSaveConfig,
+        'restore': TestRestoreConfig,
+        'orchestration_restore': TestRestoreConfig,
+        'applyconnectivitychanges': TestConnectivity,
+    },
+}
 
 
 class TestsRunner(object):
@@ -61,6 +91,14 @@ class TestsRunner(object):
 
         return self._smb_handler
 
+    @staticmethod
+    def get_driver_commands(driver_metadata):
+        doc = etree.fromstring(driver_metadata)
+
+        commands = doc.findall('Layout/Category/Command')
+        commands.extend(doc.findall('Layout/Command'))
+        return [command.get('Name') for command in commands]
+
     def get_test_cases(self, resource_handler):
         """Return TestsCases based on resource
 
@@ -73,16 +111,25 @@ class TestsRunner(object):
             self.logger.warning(
                 'We doesn\'t have a device so test only installing env and getting an expected '
                 'error')
-            return [TestAutoloadWithoutDevice, TestRunCustomCommandWithoutDevice,
-                    TestSaveConfigWithoutDevice, TestRestoreConfigWithoutDevice]
-
-        elif resource_handler.device_type == resource_handler.REAL_DEVICE:
-            return [TestAutoload, TestRunCustomCommand, TestSaveConfig, TestRestoreConfig,
-                    TestConnectivity]
-
-        else:
+        elif resource_handler.device_type == resource_handler.SIMULATOR:
             self.logger.warning('We have only simulator so testing only an Autoload')
-            return [TestAutoload]
+
+        with zipfile.ZipFile(resource_handler.shell_path) as zip_file:
+
+            driver_name = re.search(r'\'(\S+\.zip)', str(zip_file.namelist())).group(1)
+            driver_file = io.BytesIO(zip_file.read(driver_name))
+
+            with zipfile.ZipFile(driver_file) as driver_zip:
+                driver_metadata = driver_zip.read('drivermetadata.xml')
+
+        test_cases = [TEST_CASES_MAP[resource_handler.device_type]['autoload']]
+
+        for command in self.get_driver_commands(driver_metadata):
+            test_case = TEST_CASES_MAP[resource_handler.device_type].get(command.lower())
+            if test_case and test_case not in test_cases:
+                test_cases.append(test_case)
+
+        return test_cases
 
     def create_cloudshell_on_do(self):
         """Create CloudShell instance on Do"""

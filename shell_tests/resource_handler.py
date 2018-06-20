@@ -25,8 +25,8 @@ class ResourceHandler(object):
         """
 
         self.cs_handler = cs_handler
-        self.shell_path = shell_path
-        self.dependencies_path = dependencies_path
+        self._shell_path = shell_path
+        self._dependencies_path = dependencies_path
         self.device_ip = device_ip
         self.resource_name = resource_name
         self.logger = logger
@@ -38,6 +38,23 @@ class ResourceHandler(object):
         self._resource_model = None
         self.downloaded_dependencies_file = False
         self.downloaded_shell_file = False
+
+    @property
+    def shell_path(self):
+        if is_url(self._shell_path):
+            self.logger.info('Downloading the Shell from {}'.format(self._shell_path))
+            self._shell_path = download_file(self._shell_path)
+            self.downloaded_shell_file = True
+        return self._shell_path
+
+    @property
+    def dependencies_path(self):
+        if self._dependencies_path and is_url(self._dependencies_path):
+            self.logger.info('Downloading the dependencies file from {}'.format(
+                self._dependencies_path))
+            self._dependencies_path = download_file(self._dependencies_path)
+            self.downloaded_dependencies_file = True
+        return self._dependencies_path
 
     @property
     def device_type(self):
@@ -65,10 +82,6 @@ class ResourceHandler(object):
     def install_shell(self):
         """Install the Shell"""
 
-        if is_url(self.shell_path):
-            self.logger.info('Downloading the Shell from {}'.format(self.shell_path))
-            self.shell_path = download_file(self.shell_path)
-            self.downloaded_shell_file = True
         self.cs_handler.install_shell(self.shell_path)
 
     def prepare_resource(self):
@@ -123,15 +136,9 @@ class ResourceHandler(object):
 
         self.logger.info('Putting dependencies to offline PyPI')
 
-        if is_url(self.dependencies_path):
-            self.logger.info('Downloading the dependencies file from {}'.format(
-                self.dependencies_path))
-            self.dependencies_path = download_file(self.dependencies_path)
-            self.downloaded_dependencies_file = True
-
-        zip_file = zipfile.ZipFile(self.dependencies_path)
-        for file_obj in map(zip_file.open, zip_file.filelist):
-            self.cs_handler.add_file_to_offline_pypi(file_obj, file_obj.name)
+        with zipfile.ZipFile(self.dependencies_path) as zip_file:
+            for file_obj in map(zip_file.open, zip_file.filelist):
+                self.cs_handler.add_file_to_offline_pypi(file_obj, file_obj.name)
 
     def clear_offline_pypi(self):
         """Delete all packages from offline PyPI"""
