@@ -14,16 +14,20 @@ class DutHandler(object):
 
         self.cs_handler = cs_handler
         self.reservation_id = reservation_id
-        self.shell_path = shell_path
+        self._shell_path = shell_path
         self.logger = logger
         self.name = 'DUT'
         self.downloaded_shell_file = False
 
-    def install_shell(self):
-        if is_url(self.shell_path):
-            self.logger.info('Downloading the DUT Shell from {}'.format(self.shell_path))
-            self.shell_path = download_file(self.shell_path)
+    @property
+    def shell_path(self):
+        if is_url(self._shell_path):
+            self.logger.info('Downloading the DUT Shell from {}'.format(self._shell_path))
+            self._shell_path = download_file(self._shell_path)
             self.downloaded_shell_file = True
+        return self._shell_path
+
+    def install_shell(self):
         self.cs_handler.install_shell(self.shell_path)
 
     def create_and_add_to_reservation(self):
