@@ -12,8 +12,8 @@ setup(
     author_email='info@qualisystems.com',
     packages=find_packages(),
     install_requires=get_file_content('requirements.txt'),
-    version=get_file_content('version.txt'),
+    version=get_file_content('version.txt').strip(),
     description='QualiSystems automation tests for Shells',
     include_package_data=True,
-    entry_points={'console_scripts': ['shell_tests = shell_tests.cli:cli']},
+    entry_points={'console_scripts': ['cloudshell-shell-automation-tests = shell_tests.cli:cli']},
 )
