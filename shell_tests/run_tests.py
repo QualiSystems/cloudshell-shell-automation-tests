@@ -3,7 +3,7 @@ import re
 import unittest
 import zipfile
 from StringIO import StringIO
-from lxml import etree
+from xml.etree import ElementTree
 
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import TestRestoreConfig, \
@@ -93,7 +93,7 @@ class TestsRunner(object):
 
     @staticmethod
     def get_driver_commands(driver_metadata):
-        doc = etree.fromstring(driver_metadata)
+        doc = ElementTree.fromstring(driver_metadata)
 
         commands = doc.findall('Layout/Category/Command')
         commands.extend(doc.findall('Layout/Command'))
