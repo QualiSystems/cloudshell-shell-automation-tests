@@ -7,7 +7,7 @@ def get_file_content(file_path):
 
 
 setup(
-    name='shell_tests',
+    name='cloudshell-shell-automation-tests',
     url='http://www.qualisystem.com/',
     author_email='info@qualisystems.com',
     packages=find_packages(),
