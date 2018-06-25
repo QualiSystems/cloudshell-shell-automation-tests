@@ -47,7 +47,7 @@ def download_file(url, folder_path=None):
             os.mkdir(folder_path)
 
     file_path = os.path.join(folder_path, file_name)
-    with closing(urllib2.urlopen(url)) as data, open(file_path, 'w') as file_obj:
+    with closing(urllib2.urlopen(url)) as data, open(file_path, 'wb') as file_obj:
         file_obj.write(data.read())
 
     return file_path
