@@ -54,4 +54,4 @@ def download_file(url, folder_path=None):
 
 
 def is_url(url):
-    return urlparse.urlparse(url).scheme != ''
+    return urlparse.urlparse(url).scheme in ('http', 'https', 'ftp', 'ftps', 'tftp')
