@@ -5,6 +5,9 @@ import zipfile
 from StringIO import StringIO
 from xml.etree import ElementTree
 
+from teamcity import is_running_under_teamcity
+from teamcity.unittestpy import TeamcityTestRunner
+
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import TestRestoreConfig, \
     TestRestoreConfigWithoutDevice
@@ -157,7 +160,12 @@ class TestsRunner(object):
             for test_name in test_loader.getTestCaseNames(test_case):
                 suite.addTest(test_case(test_name, resource_handler, self.conf, self.logger))
 
-        is_success = unittest.TextTestRunner(test_result, verbosity=2).run(suite).wasSuccessful()
+        if is_running_under_teamcity():
+            runner = TeamcityTestRunner
+        else:
+            runner = unittest.TextTestRunner
+
+        is_success = runner(test_result, verbosity=2).run(suite).wasSuccessful()
 
         return is_success, test_result.getvalue()
 
