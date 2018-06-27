@@ -23,7 +23,7 @@ def get_logger():
 
     handler = logging.StreamHandler(stream)
     std_handler = logging.StreamHandler()
-    std_handler.setLevel(logging.INFO)
+    std_handler.setLevel(log_level)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
