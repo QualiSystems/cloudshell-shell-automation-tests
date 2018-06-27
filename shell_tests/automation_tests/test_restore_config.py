@@ -1,4 +1,5 @@
 import json
+import os
 
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
@@ -64,12 +65,24 @@ class TestRestoreConfig(BaseTestCase):
             self.ftp_handler.delete_file(file_name)
 
     def test_orchestration_restore(self):
-        saved_artifact_info = self.resource_handler.orchestration_save('shallow')
-        output = self.resource_handler.orchestration_restore(
-            saved_artifact_info,
-            '',
-        )
-        print output
+        custom_params = {
+            'custom_params': {
+                'folder_path': self.ftp_path,
+            }
+        }
+
+        saved_artifact_info = self.resource_handler.orchestration_save(
+            'shallow', json.dumps(custom_params))
+        try:
+            self.resource_handler.orchestration_restore(
+                saved_artifact_info,
+                '',
+            )
+        finally:
+            file_name = json.loads(saved_artifact_info)['saved_artifacts_info'][
+                'saved_artifact']['identifier']
+            file_name = os.path.basename(file_name)
+            self.ftp_handler.delete_file(file_name)
 
 
 class TestRestoreConfigWithoutDevice(TestRestoreConfig):
