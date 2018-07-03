@@ -1,10 +1,10 @@
 import json
-import os
 
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
 from shell_tests.automation_tests.base import BaseTestCase
 from shell_tests.ftp_handler import FTPHandler
+from shell_tests.helpers import get_file_name_from_url
 
 
 class TestRestoreConfig(BaseTestCase):
@@ -79,9 +79,9 @@ class TestRestoreConfig(BaseTestCase):
                 '',
             )
         finally:
-            file_name = json.loads(saved_artifact_info)['saved_artifacts_info'][
+            path = json.loads(saved_artifact_info)['saved_artifacts_info'][
                 'saved_artifact']['identifier']
-            file_name = os.path.basename(file_name)
+            file_name = get_file_name_from_url(path)
             self.ftp_handler.delete_file(file_name)
 
 

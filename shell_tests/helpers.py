@@ -55,3 +55,7 @@ def download_file(url, folder_path=None):
 
 def is_url(url):
     return urlparse.urlparse(url).scheme in ('http', 'https', 'ftp', 'ftps', 'tftp')
+
+
+def get_file_name_from_url(url):
+    return os.path.basename(urlparse.urlparse(url).path)

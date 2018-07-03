@@ -82,7 +82,7 @@ class DoHandler(object):
             if self.cs_os_user and self.cs_os_password:
                 break
 
-        self.logger.info('CloudShell created')
+        self.logger.info('CloudShell created IP: {}'.format(self.cs_ip))
         self.logger.debug('IP: {}, User: {}, Password: {}, OS User: {}, OS Password: {}'.format(
             self.cs_ip, self.cs_user, self.cs_password, self.cs_os_user, self.cs_os_password))
 
