@@ -18,8 +18,9 @@ class BaseTestCase(unittest.TestCase):
         self.conf = conf
         self.logger = logger
 
-        if self.conf.tests_conf and method_name in self.conf.tests_conf.expected_failures:
-            reason = self.conf.tests_conf.expected_failures[method_name]
+        test_name = '{}.{}'.format(self.__class__.__name__, method_name)
+        if self.conf.tests_conf and test_name in self.conf.tests_conf.expected_failures:
+            reason = self.conf.tests_conf.expected_failures[test_name]
             func = getattr(self, method_name)
             wrapped_func = self.expect_failure(func, reason)
             setattr(self, method_name, wrapped_func)
