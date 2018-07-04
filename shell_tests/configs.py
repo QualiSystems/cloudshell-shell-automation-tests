@@ -27,22 +27,6 @@ class CloudShellConfig(object):
             )
 
 
-class ReportConfig(object):
-    def __init__(self, user, password, recipients):
-        self.user = user
-        self.password = password
-        self.recipients = recipients
-
-    @classmethod
-    def from_dict(cls, config):
-        if config:
-            return cls(
-                config['User'],
-                config['Password'],
-                config['Recipients'],
-            )
-
-
 class ResourceConfig(object):
     def __init__(self, resource_name, device_ip, attributes):
         """Resource config
@@ -101,14 +85,13 @@ class TestsConfig(object):
 
 class ShellConfig(object):
     def __init__(
-            self, do_conf, cs_conf, report_conf, shell_path, dependencies_path, resources_conf,
+            self, do_conf, cs_conf, shell_path, dependencies_path, resources_conf,
             ftp_conf, tests_conf, dut_shell_path,
     ):
         """Main config
 
         :param CloudShellConfig do_conf:
         :param CloudShellConfig cs_conf:
-        :param ReportConfig report_conf:
         :param str shell_path:
         :param str dependencies_path:
         :param list[ResourceConfig] resources_conf:
@@ -119,7 +102,6 @@ class ShellConfig(object):
 
         self.do = do_conf
         self.cs = cs_conf
-        self.report = report_conf
         self.shell_path = shell_path
         self.dependencies_path = dependencies_path
         self.resources = resources_conf
@@ -145,7 +127,6 @@ class ShellConfig(object):
 
         do_conf = CloudShellConfig.from_dict(config.get('Do'))
         cs_conf = CloudShellConfig.from_dict(config.get('CloudShell'))
-        report_conf = ReportConfig.from_dict(config.get('Report'))
         resources = map(ResourceConfig.from_dict, config['Resources'])
         ftp_conf = FTPConfig.from_dict(config.get('FTP'))
         tests_conf = TestsConfig.from_dict(config.get('Tests'))
@@ -153,7 +134,6 @@ class ShellConfig(object):
         return cls(
             do_conf,
             cs_conf,
-            report_conf,
             config['Shell']['Path'],
             config['Shell'].get('Dependencies Path'),
             resources,
