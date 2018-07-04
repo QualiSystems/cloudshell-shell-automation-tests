@@ -22,15 +22,19 @@ def get_logger():
     logger.setLevel(log_level)
 
     handler = logging.StreamHandler(stream)
+    file_handler = logging.FileHandler('shell-tests.log')
+    file_handler.setLevel(log_level)
     std_handler = logging.StreamHandler()
-    std_handler.setLevel(log_level)
+    std_handler.setLevel(logging.INFO)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     std_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
 
     logger.addHandler(handler)
     logger.addHandler(std_handler)
+    logger.addHandler(file_handler)
 
     return logger
 
