@@ -22,7 +22,7 @@ def get_logger():
     logger.setLevel(log_level)
 
     handler = logging.StreamHandler(stream)
-    file_handler = logging.FileHandler('shell-tests.log')
+    file_handler = logging.FileHandler('shell-tests.log', 'w')
     file_handler.setLevel(log_level)
     std_handler = logging.StreamHandler()
     std_handler.setLevel(logging.INFO)
