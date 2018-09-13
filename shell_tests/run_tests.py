@@ -161,8 +161,10 @@ class TestsRunner(object):
                 suite.addTest(test_case(test_name, resource_handler, self.conf, self.logger))
 
         if is_running_under_teamcity():
+            self.logger.debug('Using TeamCity Test Runner')
             runner = TeamcityTestRunner
         else:
+            self.logger.debug('Using Text Test Runner')
             runner = unittest.TextTestRunner
 
         is_success = runner(test_result, verbosity=2).run(suite).wasSuccessful()
