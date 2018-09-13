@@ -112,8 +112,8 @@ class TestsRunner(object):
 
         if resource_handler.device_type == resource_handler.WITHOUT_DEVICE:
             self.logger.warning(
-                'We doesn\'t have a device so test only installing env and getting an expected '
-                'error')
+                'We doesn\'t have a device so test only installing env and trying to execute commands and '
+                'getting an expected error for connection')
         elif resource_handler.device_type == resource_handler.SIMULATOR:
             self.logger.warning('We have only simulator so testing only an Autoload')
 
