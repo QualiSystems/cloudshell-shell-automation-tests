@@ -210,6 +210,7 @@ class TestsRunner(object):
                     result,
                 )
 
+        cs_handler.download_logs()
         return report
 
     def run(self):
