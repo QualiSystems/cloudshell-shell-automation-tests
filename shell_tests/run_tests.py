@@ -112,8 +112,8 @@ class TestsRunner(object):
 
         if resource_handler.device_type == resource_handler.WITHOUT_DEVICE:
             self.logger.warning(
-                'We doesn\'t have a device so test only installing env and getting an expected '
-                'error')
+                'We doesn\'t have a device so test only installing env and trying to execute commands and '
+                'getting an expected error for connection')
         elif resource_handler.device_type == resource_handler.SIMULATOR:
             self.logger.warning('We have only simulator so testing only an Autoload')
 
@@ -161,8 +161,10 @@ class TestsRunner(object):
                 suite.addTest(test_case(test_name, resource_handler, self.conf, self.logger))
 
         if is_running_under_teamcity():
+            self.logger.debug('Using TeamCity Test Runner')
             runner = TeamcityTestRunner
         else:
+            self.logger.debug('Using Text Test Runner')
             runner = unittest.TextTestRunner
 
         is_success = runner(test_result, verbosity=2).run(suite).wasSuccessful()
@@ -208,6 +210,7 @@ class TestsRunner(object):
                     result,
                 )
 
+        cs_handler.download_logs()
         return report
 
     def run(self):

@@ -28,7 +28,7 @@ class BaseTestCase(unittest.TestCase):
     def expect_failure(self, func, expected_message):
         def wrapped(*args, **kwargs):
             self.assertRaisesRegexp(
-                CloudShellAPIError,
+                Exception,
                 expected_message,
                 func,
                 *args,

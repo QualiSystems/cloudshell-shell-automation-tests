@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 
 from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
     AttributeNameValue, InputNameValue, SetConnectorRequest
@@ -12,6 +13,10 @@ class CloudShellHandler(object):
     DEFAULT_DOMAIN = 'Global'
     PYPI_SHARE = 'C$'
     PYPI_PATH = 'Program Files (x86)\QualiSystems\CloudShell\Server\Config\Pypi Server Repository'
+    CS_LOGS_DIR = 'cs_logs'
+    CS_LOGS_SHELL_DIR = r'ProgramData\QualiSystems\logs'
+    CS_LOGS_INSTALLATION_DIR = (r'Program Files (x86)\QualiSystems\TestShell\ExecutionServer'
+                                r'\Logs\QsPythonDriverHost')
 
     def __init__(self, host, user, password, logger, domain=DEFAULT_DOMAIN, smb=None):
         """Handler for CloudShell
@@ -21,7 +26,7 @@ class CloudShellHandler(object):
         :param str password: password for user
         :param logging.Logger logger:
         :param str domain: CloudShell domain
-        :param src.smb_handler.SMB smb: smb client
+        :param smb_handler.SMB smb: smb client
         """
 
         self.host = host
@@ -316,6 +321,22 @@ class CloudShellHandler(object):
         file_path = os.path.join(self.PYPI_PATH, file_name)
         self.logger.debug('Removing a file {} from offline PyPI'.format(file_path))
         self.smb.remove_file(self.PYPI_SHARE, file_path)
+
+    def download_logs(self):
+        """Download logs from CloudShell"""
+
+        if os.path.exists(self.CS_LOGS_DIR):
+            shutil.rmtree(self.CS_LOGS_DIR)
+
+        os.mkdir(self.CS_LOGS_DIR)
+
+        shell_logs_path = os.path.join(self.CS_LOGS_DIR, 'shell_logs')
+        installation_logs_path = os.path.join(self.CS_LOGS_DIR, 'installation_logs')
+        os.mkdir(shell_logs_path)
+        os.mkdir(installation_logs_path)
+
+        self.smb.download_dir(self.PYPI_SHARE, self.CS_LOGS_SHELL_DIR, shell_logs_path)
+        self.smb.download_dir(self.PYPI_SHARE, self.CS_LOGS_INSTALLATION_DIR, installation_logs_path)
 
     def add_physical_connection(self, reservation_id, port1, port2):
         """Add physical connection between two ports

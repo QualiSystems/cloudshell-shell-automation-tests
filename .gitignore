@@ -5,3 +5,4 @@ dist/
 shell_tests.egg-info/
 *.pyc
 shell-tests.log
+*.egg-info
