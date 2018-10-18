@@ -16,6 +16,8 @@ from shell_tests.automation_tests.test_save_config import TestSaveConfig, \
 from shell_tests.configs import ShellConfig, CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
+from shell_tests.errors import ResourceIsNotAliveError
+from shell_tests.helpers import is_host_alive
 from shell_tests.report_result import Reporting
 from shell_tests.resource_handler import ResourceHandler
 from shell_tests.smb_handler import SMB
@@ -214,6 +216,8 @@ class TestsRunner(object):
         return report
 
     def run(self):
+        self.check_all_resources_is_alive()
+
         try:
             self.create_cloudshell_on_do()
             report = self.run_tests()
@@ -221,3 +225,17 @@ class TestsRunner(object):
             self.delete_cloudshell_on_do()
 
         return report
+
+    def check_all_resources_is_alive(self):
+        resources_to_check = {
+            resource.resource_name: resource.device_ip for resource in self.conf.resources
+        }
+        resources_to_check['FTP'] = self.conf.ftp.host
+        if self.conf.do:
+            resources_to_check['Do'] = self.conf.do.host
+        else:
+            resources_to_check['CloudShell'] = self.conf.cs.host
+
+        for name, host in resources_to_check.iteritems():
+            if not is_host_alive(host):
+                raise ResourceIsNotAliveError('{} ({}) is not alive, check it'.format(name, host))

@@ -1,4 +1,6 @@
 import os
+import platform
+import subprocess
 import tempfile
 import urllib2
 import urlparse
@@ -59,3 +61,15 @@ def is_url(url):
 
 def get_file_name_from_url(url):
     return os.path.basename(urlparse.urlparse(url).path)
+
+
+def is_host_alive(host):
+    ping_count_str = 'n' if platform.system().lower() == 'windows' else 'c'
+    cmd = 'ping -{} 1 {}'.format(ping_count_str, host)
+
+    try:
+        _ = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        return False
+
+    return True
