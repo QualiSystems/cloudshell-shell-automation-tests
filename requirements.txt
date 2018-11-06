@@ -1,7 +1,7 @@
-click>=6.7,<6.8
-cloudshell-automation-api>=8.3,<8.4
-cloudshell-rest-api>=8.2,<8.3
-pysmb>=1.1,<1.2
-PyYAML>=3.12,<3.13
-requests>=2.18,<2.19
-teamcity-messages==1.21
+click>=6.7,<7
+cloudshell-automation-api>=8.3,<9
+cloudshell-rest-api>=8.2,<9
+pysmb>=1.1,<2
+PyYAML>=3.13,<4
+requests>=2.20,<3
+teamcity-messages>=1.21,<2

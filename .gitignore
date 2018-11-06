@@ -1,5 +1,7 @@
 .idea/
 configs/
+installation_logs/
+shell_logs/
 build/
 dist/
 shell_tests.egg-info/
