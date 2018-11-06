@@ -229,6 +229,7 @@ class TestsRunner(object):
     def check_all_resources_is_alive(self):
         resources_to_check = {
             resource.resource_name: resource.device_ip for resource in self.conf.resources
+            if resource.device_ip
         }
         resources_to_check['FTP'] = self.conf.ftp.host
         if self.conf.do:
