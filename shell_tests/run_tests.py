@@ -151,7 +151,7 @@ class TestsRunner(object):
         if self.do_handler:
             self.do_handler.end_reservation()
 
-    def run_test_cases(self, resource_handler):
+    def run_test_cases(self, resource_handler, resource_config):
         """Run tests for resource handler"""
 
         test_result = StringIO()
@@ -160,7 +160,9 @@ class TestsRunner(object):
 
         for test_case in self.get_test_cases(resource_handler):
             for test_name in test_loader.getTestCaseNames(test_case):
-                suite.addTest(test_case(test_name, resource_handler, self.conf, self.logger))
+                suite.addTest(
+                    test_case(test_name, resource_handler, self.conf, resource_config, self.logger)
+                )
 
         if is_running_under_teamcity():
             self.logger.debug('Using TeamCity Test Runner')
@@ -202,7 +204,7 @@ class TestsRunner(object):
                 if resource_conf.attributes:
                     resource_handler.set_attributes(resource_conf.attributes)
 
-                is_success, result = self.run_test_cases(resource_handler)
+                is_success, result = self.run_test_cases(resource_handler, resource_conf)
 
                 report.add_resource_report(
                     resource_conf.resource_name,

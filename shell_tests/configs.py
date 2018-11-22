@@ -28,25 +28,30 @@ class CloudShellConfig(object):
 
 
 class ResourceConfig(object):
-    def __init__(self, resource_name, device_ip, attributes):
+    def __init__(self, resource_name, device_ip, attributes, test_conf):
         """Resource config
 
         :param str resource_name:
         :param str device_ip:
         :param dict attributes:
+        :param TestsConfig test_conf:
         """
 
         self.resource_name = resource_name
         self.device_ip = device_ip
         self.attributes = attributes
+        self.test_conf = test_conf
 
     @classmethod
     def from_dict(cls, config):
+        tests_conf = TestsConfig.from_dict(config.get('Tests'))
+
         if config:
             return cls(
                 config['Name'],
                 config.get('Device IP'),
                 config.get('Attributes'),
+                tests_conf,
             )
 
 
@@ -86,7 +91,7 @@ class TestsConfig(object):
 class ShellConfig(object):
     def __init__(
             self, do_conf, cs_conf, shell_path, dependencies_path, resources_conf,
-            ftp_conf, tests_conf, dut_shell_path,
+            ftp_conf, tests_conf, dut_shell_path, dut_dependencies_path,
     ):
         """Main config
 
@@ -98,6 +103,7 @@ class ShellConfig(object):
         :param FTPConfig ftp_conf:
         :param TestsConfig tests_conf:
         :param str dut_shell_path:
+        :param str dut_dependencies_path:
         """
 
         self.do = do_conf
@@ -108,6 +114,7 @@ class ShellConfig(object):
         self.ftp = ftp_conf
         self.tests_conf = tests_conf
         self.dut_shell_path = dut_shell_path
+        self.dut_dependencies_path = dut_dependencies_path
 
     @property
     def shell_name(self):
@@ -140,6 +147,7 @@ class ShellConfig(object):
             ftp_conf,
             tests_conf,
             config['DUT Shell Path'],
+            config.get('DUT Dependencies Path'),
         )
 
 

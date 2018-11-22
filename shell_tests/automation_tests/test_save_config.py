@@ -12,21 +12,21 @@ class TestSaveConfig(BaseTestCase):
     def setUp(self):
         super(TestSaveConfig, self).setUp()
         self.ftp_handler = FTPHandler(
-            self.conf.ftp.host.split('://', 1)[-1],
-            self.conf.ftp.user,
-            self.conf.ftp.password,
+            self.shell_conf.ftp.host.split('://', 1)[-1],
+            self.shell_conf.ftp.user,
+            self.shell_conf.ftp.password,
             self.logger,
         )
 
     @property
     def ftp_path(self):
         try:
-            scheme, host = self.conf.ftp.host.split('://')
+            scheme, host = self.shell_conf.ftp.host.split('://')
         except ValueError:
             scheme = 'ftp'
-            host = self.conf.ftp.host
+            host = self.shell_conf.ftp.host
 
-        return '{}://{}:{}@{}'.format(scheme, self.conf.ftp.user, self.conf.ftp.password, host)
+        return '{}://{}:{}@{}'.format(scheme, self.shell_conf.ftp.user, self.shell_conf.ftp.password, host)
 
     def test_save_running_config(self):
         file_name = self.resource_handler.save(self.ftp_path, 'running')
