@@ -31,8 +31,8 @@ class TestConnectivity(BaseTestCase):
         with DutHandler(
                 cs_handler,
                 self.resource_handler.reservation_id,
-                self.conf.dut_shell_path,
-                self.conf.dut_dependencies_path if self.conf.dependencies_path else None,
+                self.shell_conf.dut_shell_path,
+                self.shell_conf.dut_dependencies_path if self.shell_conf.dependencies_path else None,
                 self.logger) as dut_handler:
 
             res_info = self.resource_handler.get_details()
