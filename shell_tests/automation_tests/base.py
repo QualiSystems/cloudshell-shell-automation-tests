@@ -1,26 +1,34 @@
 import unittest
 
-from cloudshell.api.common_cloudshell_api import CloudShellAPIError
+from shell_tests.configs import merge_dicts
 
 
 class BaseTestCase(unittest.TestCase):
-    def __init__(self, method_name, resource_handler, conf, logger):
+    def __init__(self, method_name, resource_handler, shell_conf, resource_conf, logger):
         """Base Test Case
 
         :param str method_name:
         :param shell_tests.resource_handler.ResourceHandler resource_handler:
-        :param shell_tests.configs.ShellConfig conf:
+        :param shell_tests.configs.ShellConfig shell_conf:
+        :param shell_tests.configs.ResourceConfig resource_conf:
         :param logging.Logger logger:
         """
 
         super(BaseTestCase, self).__init__(method_name)
         self.resource_handler = resource_handler
-        self.conf = conf
+        self.shell_conf = shell_conf
+        self.resource_conf = resource_conf
         self.logger = logger
 
         test_name = '{}.{}'.format(self.__class__.__name__, method_name)
-        if self.conf.tests_conf and test_name in self.conf.tests_conf.expected_failures:
-            reason = self.conf.tests_conf.expected_failures[test_name]
+
+        expected_failures = merge_dicts(
+            getattr(resource_conf.test_conf, 'expected_failures', {}),
+            getattr(shell_conf.tests_conf, 'expected_failures', {}),
+        )
+
+        reason = expected_failures.get(test_name)
+        if reason:
             func = getattr(self, method_name)
             wrapped_func = self.expect_failure(func, reason)
             setattr(self, method_name, wrapped_func)
