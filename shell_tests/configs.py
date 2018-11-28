@@ -4,12 +4,15 @@ import yaml
 
 
 class CloudShellConfig(object):
-    def __init__(self, host, user, password, os_user=None, os_password=None):
+    DEFAULT_DOMAIN = 'Global'
+
+    def __init__(self, host, user, password, os_user=None, os_password=None, domain=None):
         self.host = host
         self.user = user
         self.password = password
         self.os_user = os_user
         self.os_password = os_password
+        self.domain = domain if domain is not None else self.DEFAULT_DOMAIN
 
     @classmethod
     def from_dict(cls, config):
@@ -20,18 +23,17 @@ class CloudShellConfig(object):
                 config['Password'],
                 config.get('OS User'),
                 config.get('OS Password'),
+                config.get('Domain', cls.DEFAULT_DOMAIN),
             )
 
 
 class DoConfig(CloudShellConfig):
-    DEFAULT_DOMAIN = 'Global'
     DEFAULT_CS_VERSION = 'CloudShell 8.3 GA - IL'
 
-    def __init__(self, host, user, password, os_user=None, os_password=None, domain=DEFAULT_DOMAIN,
+    def __init__(self, host, user, password, os_user=None, os_password=None, domain=None,
                  cs_version=DEFAULT_CS_VERSION):
 
-        super(DoConfig, self).__init__(host, user, password, os_user, os_password)
-        self.domain = domain
+        super(DoConfig, self).__init__(host, user, password, os_user, os_password, domain)
         self.cs_version = cs_version
 
     @classmethod
