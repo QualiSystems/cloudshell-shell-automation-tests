@@ -4,15 +4,12 @@ import yaml
 
 
 class CloudShellConfig(object):
-    DEFAULT_DOMAIN = 'Global'
-
-    def __init__(self, host, user, password, os_user=None, os_password=None, domain=DEFAULT_DOMAIN):
+    def __init__(self, host, user, password, os_user=None, os_password=None):
         self.host = host
         self.user = user
         self.password = password
         self.os_user = os_user
         self.os_password = os_password
-        self.domain = domain
 
     @classmethod
     def from_dict(cls, config):
@@ -23,7 +20,31 @@ class CloudShellConfig(object):
                 config['Password'],
                 config.get('OS User'),
                 config.get('OS Password'),
-                config.get('Domain', CloudShellConfig.DEFAULT_DOMAIN),
+            )
+
+
+class DoConfig(CloudShellConfig):
+    DEFAULT_DOMAIN = 'Global'
+    DEFAULT_CS_VERSION = 'CloudShell 8.3 GA - IL'
+
+    def __init__(self, host, user, password, os_user=None, os_password=None, domain=DEFAULT_DOMAIN,
+                 cs_version=DEFAULT_CS_VERSION):
+
+        super(DoConfig, self).__init__(host, user, password, os_user, os_password)
+        self.domain = domain
+        self.cs_version = cs_version
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Host'],
+                config['User'],
+                config['Password'],
+                config.get('OS User'),
+                config.get('OS Password'),
+                config.get('Domain', cls.DEFAULT_DOMAIN),
+                config.get('CS Version', cls.DEFAULT_CS_VERSION),
             )
 
 
@@ -95,7 +116,7 @@ class ShellConfig(object):
     ):
         """Main config
 
-        :param CloudShellConfig do_conf:
+        :param DoConfig do_conf:
         :param CloudShellConfig cs_conf:
         :param str shell_path:
         :param str dependencies_path:
@@ -132,7 +153,7 @@ class ShellConfig(object):
 
         config = merge_dicts(shell_conf, env_conf)
 
-        do_conf = CloudShellConfig.from_dict(config.get('Do'))
+        do_conf = DoConfig.from_dict(config.get('Do'))
         cs_conf = CloudShellConfig.from_dict(config.get('CloudShell'))
         resources = map(ResourceConfig.from_dict, config['Resources'])
         ftp_conf = FTPConfig.from_dict(config.get('FTP'))
