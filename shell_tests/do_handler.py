@@ -37,7 +37,7 @@ class DoHandler(object):
         cs_names = self.cs_handler.get_topologies_by_category('CloudShell')
 
         for cs_name in cs_names:
-            if '{} GA - IL'.format(version) in cs_name:
+            if cs_name.split('/')[-1] == version:  # 'Environments/CloudShell - Latest 8.3'
                 break
         else:
             raise BaseAutomationException('CloudShell version {} isn\'t correct'.format(version))

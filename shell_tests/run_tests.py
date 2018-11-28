@@ -54,7 +54,6 @@ TEST_CASES_MAP = {
 
 class TestsRunner(object):
     CLOUDSHELL_SERVER_NAME = 'User-PC'
-    CLOUDSHELL_VERSION = '8.3'
 
     def __init__(self, conf, logger):
         """Decide for tests need to run and run it
@@ -141,7 +140,7 @@ class TestsRunner(object):
 
         if self.do_handler:
             cs_config = CloudShellConfig(
-                *self.do_handler.get_new_cloudshell(self.CLOUDSHELL_VERSION)
+                *self.do_handler.get_new_cloudshell(self.conf.do.cs_version)
             )
             self.conf.cs = cs_config
 
