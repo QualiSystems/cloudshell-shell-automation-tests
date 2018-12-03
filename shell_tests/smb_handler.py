@@ -18,6 +18,13 @@ class SMB(object):
 
     @property
     def session(self):
+        if self._session:
+            try:
+                self._session.echo('test connection')
+            except Exception as e:
+                self.logger.debug('Session error, type - {}'.format(type(e)))
+                self._session = None
+
         if not self._session:
             self.logger.info('Creating SMB session to {}'.format(self.server_ip))
             try:
