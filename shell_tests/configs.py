@@ -114,7 +114,7 @@ class TestsConfig(object):
 class ShellConfig(object):
     def __init__(
             self, do_conf, cs_conf, shell_path, dependencies_path, resources_conf,
-            ftp_conf, tests_conf, dut_shell_path, dut_dependencies_path,
+            ftp_conf, tests_conf, dut_shell_path, dut_dependencies_path, not_delete_cs,
     ):
         """Main config
 
@@ -127,6 +127,7 @@ class ShellConfig(object):
         :param TestsConfig tests_conf:
         :param str dut_shell_path:
         :param str dut_dependencies_path:
+        :param bool not_delete_cs:
         """
 
         self.do = do_conf
@@ -138,6 +139,7 @@ class ShellConfig(object):
         self.tests_conf = tests_conf
         self.dut_shell_path = dut_shell_path
         self.dut_dependencies_path = dut_dependencies_path
+        self.not_delete_cs = not_delete_cs
 
     @property
     def shell_name(self):
@@ -171,6 +173,7 @@ class ShellConfig(object):
             tests_conf,
             config['DUT Shell Path'],
             config.get('DUT Dependencies Path'),
+            config.get('Not delete CS') == 'True',
         )
 
 
