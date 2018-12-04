@@ -16,7 +16,7 @@ from shell_tests.automation_tests.test_save_config import TestSaveConfig, \
 from shell_tests.configs import ShellConfig, CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
-from shell_tests.errors import ResourceIsNotAliveError
+from shell_tests.errors import ResourceIsNotAliveError, CSIsNotAliveError
 from shell_tests.helpers import is_host_alive
 from shell_tests.report_result import Reporting
 from shell_tests.resource_handler import ResourceHandler
@@ -174,12 +174,7 @@ class TestsRunner(object):
 
         return is_success, test_result.getvalue()
 
-    def run_tests(self):
-        """Run tests in CloudShell for Shell on one or several devices
-
-        :rtype: Reporting
-        """
-
+    def get_cs_handler(self):
         cs_handler = CloudShellHandler(
             self.conf.cs.host,
             self.conf.cs.user,
@@ -189,6 +184,21 @@ class TestsRunner(object):
             self.smb_handler,
         )
 
+        try:
+            api = cs_handler.api
+        except IOError:
+            raise CSIsNotAliveError
+        else:
+            del api
+
+        return cs_handler
+
+    def run_tests(self, cs_handler):
+        """Run tests in CloudShell for Shell on one or several devices
+
+        :param CloudShellHandler cs_handler:
+        :rtype: Reporting
+        """
         report = Reporting(self.conf.shell_name)
 
         for resource_conf in self.conf.resources:
@@ -219,11 +229,24 @@ class TestsRunner(object):
     def run(self):
         self.check_all_resources_is_alive()
 
-        try:
-            self.create_cloudshell_on_do()
-            report = self.run_tests()
-        finally:
-            self.delete_cloudshell_on_do()
+        report = error = None
+        attempts = 5
+
+        while report is None and attempts:
+            attempts -= 1
+
+            try:
+                self.create_cloudshell_on_do()
+                cs_handler = self.get_cs_handler()
+            except CSIsNotAliveError as error:
+                pass  # try to recreate CS
+            else:
+                report = self.run_tests(cs_handler)
+            finally:
+                self.delete_cloudshell_on_do()
+
+        if not attempts and error:
+            raise error
 
         return report
 
