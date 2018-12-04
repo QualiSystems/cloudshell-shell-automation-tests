@@ -223,7 +223,8 @@ class TestsRunner(object):
             self.create_cloudshell_on_do()
             report = self.run_tests()
         finally:
-            self.delete_cloudshell_on_do()
+            if not self.conf.not_delete_cs:
+                self.delete_cloudshell_on_do()
 
         return report
 
