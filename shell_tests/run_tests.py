@@ -187,6 +187,7 @@ class TestsRunner(object):
         try:
             api = cs_handler.api
         except IOError:
+            self._smb_handler = None
             raise CSIsNotAliveError
         else:
             del api
