@@ -244,7 +244,7 @@ class TestsRunner(object):
             else:
                 report = self.run_tests(cs_handler)
             finally:
-                if not self.conf.not_delete_cs:
+                if self.conf.do.delete_cs:
                     self.delete_cloudshell_on_do()
 
         if not attempts and error:
