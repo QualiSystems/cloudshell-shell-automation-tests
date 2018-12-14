@@ -46,6 +46,26 @@ TEST_CASES_MAP = {
 }
 
 
+class PatchedTestSuite(unittest.TestSuite):
+    def __init__(self, *args, **kwargs):
+        super(PatchedTestSuite, self).__init__(*args, **kwargs)
+        self.result = None
+        self._stop = False
+
+    def run(self, result):
+        if self._stop:
+            result.stop()
+
+        self.result = result
+        super(PatchedTestSuite, self).run(result)
+
+    def stop(self):
+        self._stop = True
+
+        if self.result:
+            self.result.stop()
+
+
 class RunTestsForResource(threading.Thread):
     REPORT_LOCK = threading.Lock()
 
@@ -77,6 +97,14 @@ class RunTestsForResource(threading.Thread):
             logger,
         )
 
+        self._stop = False
+        self._test_suite = None
+
+    def stop(self):
+        if self._test_suite:
+            self._test_suite.stop()
+        self._stop = True
+
     def run(self):
         is_success, result = self.run_test_cases()
 
@@ -92,11 +120,15 @@ class RunTestsForResource(threading.Thread):
     def run_test_cases(self):
         test_result = StringIO()
         test_loader = unittest.TestLoader()
-        suite = unittest.TestSuite()
+        suite = PatchedTestSuite()
+        self._test_suite = suite
 
         with self.resource_handler:
             if self.resource_conf.attributes:
                 self.resource_handler.set_attributes(self.resource_conf.attributes)
+
+            if self._stop:
+                raise KeyboardInterrupt
 
             for test_case in self.resource_test_cases:
                 for test_name in test_loader.getTestCaseNames(test_case):
