@@ -22,7 +22,7 @@ def get_logger():
     std_handler = logging.StreamHandler()
     std_handler.setLevel(logging.INFO)
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
     std_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
 

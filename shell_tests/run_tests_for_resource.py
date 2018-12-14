@@ -59,7 +59,8 @@ class RunTestsForResource(threading.Thread):
         :param logging.Logger logger:
         :param shell_tests.report_result.Reporting report:
         """
-        super(RunTestsForResource, self).__init__()
+        super(RunTestsForResource, self).__init__(
+            name='Thread-{}'.format(resource_conf.resource_name))
 
         self.cs_handler = cs_handler
         self.shell_conf = shell_conf
