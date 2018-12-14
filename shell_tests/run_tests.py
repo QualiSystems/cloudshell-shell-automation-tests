@@ -1,3 +1,6 @@
+import threading
+import time
+
 from shell_tests.configs import ShellConfig, CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
@@ -119,11 +122,21 @@ class TestsRunner(object):
             for thread in threads:
                 thread.start()
 
-            for thread in threads:
-                thread.join()
+            try:
+                self.wait_for_end_threads(threads)
+            except KeyboardInterrupt:
+                for thread in threads:
+                    thread.stop()
+                self.wait_for_end_threads(threads)
+                raise
 
         cs_handler.download_logs()
         return report
+
+    @staticmethod
+    def wait_for_end_threads(threads):
+        while any(map(threading.Thread.is_alive, threads)):
+            time.sleep(1)
 
     def run(self):
         self.check_all_resources_is_alive()
