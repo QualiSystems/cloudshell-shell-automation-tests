@@ -136,13 +136,11 @@ class TestsRunner(object):
         return test_cases
 
     def create_cloudshell_on_do(self):
-        """Create CloudShell instance on Do"""
-
-        if self.do_handler:
-            cs_config = CloudShellConfig(
-                *self.do_handler.get_new_cloudshell(self.conf.do.cs_version)
-            )
-            self.conf.cs = cs_config
+        """Create CloudShell instance on Do."""
+        cs_config = CloudShellConfig(
+            *self.do_handler.get_new_cloudshell(self.conf.do.cs_version)
+        )
+        self.conf.cs = cs_config
 
     def delete_cloudshell_on_do(self):
         """Ends CloudShell reservation on Do"""
@@ -237,14 +235,15 @@ class TestsRunner(object):
             attempts -= 1
 
             try:
-                self.create_cloudshell_on_do()
+                if self.conf.do:
+                    self.create_cloudshell_on_do()
                 cs_handler = self.get_cs_handler()
             except CSIsNotAliveError as error:
                 pass  # try to recreate CS
             else:
                 report = self.run_tests(cs_handler)
             finally:
-                if self.conf.do.delete_cs:
+                if self.conf.do and self.conf.do.delete_cs:
                     self.delete_cloudshell_on_do()
 
         if not attempts and error:
