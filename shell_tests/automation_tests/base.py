@@ -43,3 +43,7 @@ class BaseTestCase(unittest.TestCase):
                 **kwargs
             )
         return wrapped
+
+    def id(self):
+        id_ = super(BaseTestCase, self).id()
+        return '{}-{}'.format(id_, self.resource_conf.resource_name)
