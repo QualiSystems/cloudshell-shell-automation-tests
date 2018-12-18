@@ -31,11 +31,12 @@ class DoConfig(CloudShellConfig):
     DEFAULT_CS_VERSION = 'CloudShell 8.3 GA - IL'
 
     def __init__(self, host, user, password, os_user=None, os_password=None, domain=None,
-                 cs_version=DEFAULT_CS_VERSION, delete_cs=True):
+                 cs_version=DEFAULT_CS_VERSION, delete_cs=True, cs_specific_version=None):
 
         super(DoConfig, self).__init__(host, user, password, os_user, os_password, domain)
         self.cs_version = cs_version
         self.delete_cs = delete_cs
+        self.cs_specific_version = cs_specific_version
 
     @classmethod
     def from_dict(cls, config):
@@ -49,6 +50,7 @@ class DoConfig(CloudShellConfig):
                 config.get('Domain', cls.DEFAULT_DOMAIN),
                 config.get('CS Version', cls.DEFAULT_CS_VERSION),
                 config.get('Delete CS', 'True') == 'True',
+                config.get('CS Specific Version'),
             )
 
 
