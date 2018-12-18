@@ -58,7 +58,8 @@ class TestsRunner(object):
     def create_cloudshell_on_do(self):
         """Create CloudShell instance on Do."""
         cs_config = CloudShellConfig(
-            *self.do_handler.get_new_cloudshell(self.conf.do.cs_version)
+            *self.do_handler.get_new_cloudshell(
+                self.conf.do.cs_version, self.conf.do.cs_specific_version)
         )
         self.conf.cs = cs_config
 
