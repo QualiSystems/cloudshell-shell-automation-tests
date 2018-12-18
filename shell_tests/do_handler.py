@@ -28,10 +28,11 @@ class DoHandler(object):
         self.cs_os_user = None
         self.cs_os_password = None
 
-    def start_cloudshell(self, version):
+    def start_cloudshell(self, version, cs_specific_version=None):
         """Execute a command for starting CloudShell
 
         :param str version: version of CS
+        :param str cs_specific_version:
         """
 
         cs_names = self.cs_handler.get_topologies_by_category('CloudShell')
@@ -45,7 +46,7 @@ class DoHandler(object):
         self.logger.debug('Creating CloudShell {}'.format(cs_name))
 
         self.reservation_id = self.cs_handler.create_topology_reservation(
-            self.reservation_name, cs_name)
+            self.reservation_name, cs_name, specific_version=cs_specific_version)
 
     def _get_resource_name(self):
         """Get CloudShell resource name"""
@@ -53,11 +54,11 @@ class DoHandler(object):
         info = self.cs_handler.get_reservation_details(self.reservation_id)
         return info.ReservationDescription.Resources[0].Name
 
-    def get_new_cloudshell(self, version):
+    def get_new_cloudshell(self, version, cs_specific_version=None):
         """Start CloudShell and wait for starting it"""
 
         self.logger.info('Start creating CloudShell with version {}'.format(version))
-        self.start_cloudshell(version)
+        self.start_cloudshell(version, cs_specific_version)
 
         self.logger.debug('Wait for creating CloudShell')
         time.sleep(5 * 60)

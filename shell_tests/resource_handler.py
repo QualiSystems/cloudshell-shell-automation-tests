@@ -1,8 +1,5 @@
-import os
-import zipfile
-
 from cs_handler import CloudShellHandler
-from shell_tests.helpers import get_resource_family_and_model, download_file, is_url
+from shell_tests.helpers import get_resource_family_and_model
 
 
 class ResourceHandler(object):
@@ -12,49 +9,28 @@ class ResourceHandler(object):
     WITHOUT_DEVICE = 'Without device'
 
     def __init__(
-            self, cs_handler, shell_path, dependencies_path, device_ip, resource_name, logger,
+            self, cs_handler, device_ip, resource_name, shell_path, logger,
             reservation_name=RESERVATION_NAME):
         """Handler for install shell and test it
 
         :param CloudShellHandler cs_handler: CloudShell Handler
-        :param str shell_path: path to zip file
-        :param str dependencies_path: path to zip file
         :param str device_ip: device IP
+        :param str shell_path:
         :param logging.Logger logger:
         :param str reservation_name: Reservation name
         """
 
         self.cs_handler = cs_handler
-        self._shell_path = shell_path
-        self._dependencies_path = dependencies_path
         self.device_ip = device_ip
         self.resource_name = resource_name
+        self.shell_path = shell_path
         self.logger = logger
         self.reservation_name = reservation_name
 
+        self.resource_family, self.resource_model = get_resource_family_and_model(
+            self.shell_path, self.logger)
         self.attributes = {}
         self.reservation_id = None
-        self._resource_family = None
-        self._resource_model = None
-        self.downloaded_dependencies_file = False
-        self.downloaded_shell_file = False
-
-    @property
-    def shell_path(self):
-        if is_url(self._shell_path):
-            self.logger.info('Downloading the Shell from {}'.format(self._shell_path))
-            self._shell_path = download_file(self._shell_path)
-            self.downloaded_shell_file = True
-        return self._shell_path
-
-    @property
-    def dependencies_path(self):
-        if self._dependencies_path and is_url(self._dependencies_path):
-            self.logger.info('Downloading the dependencies file from {}'.format(
-                self._dependencies_path))
-            self._dependencies_path = download_file(self._dependencies_path)
-            self.downloaded_dependencies_file = True
-        return self._dependencies_path
 
     @property
     def device_type(self):
@@ -65,38 +41,13 @@ class ResourceHandler(object):
         else:
             return self.SIMULATOR
 
-    @property
-    def resource_family(self):
-        if self._resource_family is None:
-            self._resource_family, self._resource_model = get_resource_family_and_model(
-                self.shell_path, self.logger)
-        return self._resource_family
-
-    @property
-    def resource_model(self):
-        if self._resource_model is None:
-            self._resource_family, self._resource_model = get_resource_family_and_model(
-                self.shell_path, self.logger)
-        return self._resource_model
-
-    def install_shell(self):
-        """Install the Shell"""
-
-        self.cs_handler.install_shell(self.shell_path)
-
     def prepare_resource(self):
-        """Prepare Shell and Resource
+        """Prepare the Resource.
 
-        Adding dependencies if needed ,install the Shell to the CloudShell, create a reservation,
-        create a resource and add the resource to the reservation
+        Create a reservation, create a resource and add the resource to the reservation
         """
-
         self.logger.info('Start preparing the resource {}'.format(self.resource_name))
 
-        if self.dependencies_path:
-            self.add_dependencies_to_offline_pypi()
-
-        self.install_shell()
         self.reservation_id = self.cs_handler.create_reservation(self.reservation_name)
         self.resource_name = self.cs_handler.create_resource(
             self.resource_name,
@@ -109,14 +60,8 @@ class ResourceHandler(object):
         self.logger.info('The resource {} prepared'.format(self.resource_name))
 
     def delete_resource(self):
-        """Delete reservation and resource"""
-
+        """Delete reservation and resource."""
         self.logger.info('Start deleting the resource {}'.format(self.resource_name))
-
-        if self.dependencies_path:
-            self.clear_offline_pypi()
-
-        self.deleting_downloaded_shell()
 
         self.cs_handler.delete_reservation(self.reservation_id)
         self.cs_handler.delete_resource(self.resource_name)
@@ -130,32 +75,6 @@ class ResourceHandler(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.delete_resource()
         return False
-
-    def add_dependencies_to_offline_pypi(self):
-        """Upload all dependencies from zip file to offline PyPI"""
-
-        self.logger.info('Putting dependencies to offline PyPI')
-
-        with zipfile.ZipFile(self.dependencies_path) as zip_file:
-            for file_obj in map(zip_file.open, zip_file.filelist):
-                self.cs_handler.add_file_to_offline_pypi(file_obj, file_obj.name)
-
-    def clear_offline_pypi(self):
-        """Delete all packages from offline PyPI"""
-
-        self.logger.info('Clearing offline PyPI')
-        for file_name in self.cs_handler.get_package_names_from_offline_pypi():
-            self.cs_handler.remove_file_from_offline_pypi(file_name)
-
-    def deleting_downloaded_shell(self):
-        """Delete downloaded Shell and dependencies if downloaded"""
-
-        if self.downloaded_shell_file:
-            self.logger.debug('Delete a downloaded Shell file')
-            os.remove(self.shell_path)
-        if self.downloaded_dependencies_file:
-            self.logger.debug('Delete a downloaded dependencies file')
-            os.remove(self.dependencies_path)
 
     def set_attributes(self, attributes):
         """Set attributes for the resource and update internal dict"""
