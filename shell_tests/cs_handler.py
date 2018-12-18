@@ -3,7 +3,7 @@ import re
 import shutil
 
 from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
-    AttributeNameValue, InputNameValue, SetConnectorRequest
+    AttributeNameValue, InputNameValue, SetConnectorRequest, UpdateTopologyGlobalInputsRequest
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
 
@@ -93,19 +93,30 @@ class CloudShellHandler(object):
         self.logger.debug('Created the reservation id={}'.format(id_))
         return id_
 
-    def create_topology_reservation(self, name, topology_name, duration=24*60):
+    def create_topology_reservation(
+            self, name, topology_name, duration=24*60, specific_version=None):
         """Create topology reservation
 
         :param str topology_name: Topology Name
         :param str name: reservation name
         :param int duration: duration of reservation
+        :param str specific_version:
         :return: reservation id (uuid)
         :rtype: str
         """
 
-        self.logger.info('Creating a topology reservation {} for {}'.format(name, topology_name))
+        if specific_version:
+            global_input_req = [UpdateTopologyGlobalInputsRequest('Version', specific_version)]
+        else:
+            global_input_req = []
+
+        str_specific_version = ' - {}'.format(specific_version) if specific_version else ''
+        self.logger.info('Creating a topology reservation {} for {}{}'.format(
+            name, topology_name, str_specific_version))
         resp = self.api.CreateImmediateTopologyReservation(
-            name, self.api.username, duration, topologyFullPath=topology_name)
+            name, self.api.username, duration, topologyFullPath=topology_name,
+            globalInputs=global_input_req,
+        )
         id_ = resp.Reservation.Id
         self.logger.debug('Created a topology reservation id={}'.format(id_))
         return id_
