@@ -1,5 +1,11 @@
+import contextlib
+import glob
 import os
+import shutil
+import tarfile
+import tempfile
 import zipfile
+from io import BytesIO
 
 from cs_handler import CloudShellHandler
 from shell_tests.helpers import download_file, is_url
@@ -49,7 +55,52 @@ class ShellHandler(object):
 
         with zipfile.ZipFile(self.dependencies_path) as zip_file:
             for file_obj in map(zip_file.open, zip_file.filelist):
-                self.cs_handler.add_file_to_offline_pypi(file_obj, file_obj.name)
+
+                if 'cloudshell-core' in file_obj.name:
+                    with self.patch_cs_core(file_obj) as new_file_obj:
+                        self.cs_handler.add_file_to_offline_pypi(new_file_obj, file_obj.name)
+                else:
+                    self.cs_handler.add_file_to_offline_pypi(file_obj, file_obj.name)
+
+    @contextlib.contextmanager
+    def patch_cs_core(self, zip_ext_file):
+        """Extract config file from the archive, change log level and pack it back."""
+        buffer_ = BytesIO(zip_ext_file.read())
+        tar_file = tarfile.open(fileobj=buffer_)
+        tmp_dir = tempfile.mkdtemp()
+
+        try:
+            tar_file.extractall(tmp_dir)
+            dir_path = glob.glob('{}/**'.format(tmp_dir))[0]
+
+            self._rewrite_config_file_with_debug(dir_path)
+
+            file_path = os.path.join(tmp_dir, 'cloudshell-core.tar.gz')
+            with tarfile.open(file_path, 'w:gz') as tar_file:
+                tar_file.add(dir_path, os.path.basename(dir_path))
+
+            file_obj = open(file_path, 'rb')
+
+            try:
+                yield file_obj
+            finally:
+                file_obj.close()
+
+        finally:
+            shutil.rmtree(tmp_dir)
+
+    @staticmethod
+    def _rewrite_config_file_with_debug(dir_path):
+        """Change log level in config file to DEBUG."""
+        config_path = os.path.join(dir_path, 'cloudshell/core/logger/qs_config.ini')
+
+        with open(config_path) as f:
+            config_str = f.read()
+
+        config_str = config_str.replace("'INFO'", "'DEBUG'")
+
+        with open(config_path, 'w') as f:
+            f.write(config_str)
 
     def clear_offline_pypi(self):
         """Delete all packages from offline PyPI"""
