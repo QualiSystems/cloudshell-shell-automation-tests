@@ -3,7 +3,7 @@ import logging
 import click
 
 from shell_tests.configs import ShellConfig
-from shell_tests.run_tests import TestsRunner
+from shell_tests.run_tests import AutomatedTestsRunner
 
 
 @click.group()
@@ -39,7 +39,7 @@ def run_tests(shell_conf, env_conf=None):
     logger = get_logger()
     conf = ShellConfig.parse_config_from_yaml(shell_conf, env_conf)
 
-    report = TestsRunner(conf, logger).run()
+    report = AutomatedTestsRunner(conf, logger).run()
 
     print '\n\nTest results:\n{}'.format(report.get_result())
     return report.is_success, report.get_result()
