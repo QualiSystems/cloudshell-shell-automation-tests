@@ -1,3 +1,5 @@
+from cloudshell.api.common_cloudshell_api import CloudShellAPIError
+
 from cs_handler import CloudShellHandler
 from shell_tests.helpers import get_resource_family_and_model
 
@@ -83,9 +85,17 @@ class ResourceHandler(object):
         self.attributes.update(attributes)
 
     def autoload(self):
-        """Run Autoload for the resource"""
+        """Run Autoload for the resource."""
+        try:
+            result = self.cs_handler.resource_autoload(self.resource_name)
+        except CloudShellAPIError as e:
+            if str(e.code) != '129' and e.message != 'no driver associated':
+                raise
 
-        return self.cs_handler.resource_autoload(self.resource_name)
+            self.cs_handler.update_driver_for_the_resource(self.resource_name, self.resource_model)
+            result = self.cs_handler.resource_autoload(self.resource_name)
+
+        return result
 
     def get_details(self):
         """Get resource details"""
