@@ -9,7 +9,7 @@ from shell_tests.configs import ShellConfig
 from shell_tests.run_tests import AutomatedTestsRunner
 
 
-CONFIGS_PATH = os.path.abspath('./configs')
+CONFIGS_PATH = os.path.abspath('./test_configs')
 CS_TOPOLOGIES = [
     'Environment/CloudShell 8.3 GA',
     'Environment/CloudShell - Latest 8.3',
@@ -27,9 +27,9 @@ class BaseTestCase(unittest.TestCase):
     def get_do_api_mock():
         """Create mock object for the API that uses in DO handler."""
         do_api_mock = create_autospec(CloudShellAPISession)
-        do_api_mock.GetTopologiesByCategory.return_value = MagicMock(Topologies=CS_TOPOLOGIES)
-        do_api_mock.CreateImmediateTopologyReservation.return_value = MagicMock(
-            Reservation=MagicMock(Id=CS_RESERVATION_ID))
+        do_api_mock.GetTopologiesByCategory.return_value.Topologies = CS_TOPOLOGIES
+        do_api_mock.CreateImmediateTopologyReservation.return_value.Reservation.Id = \
+            CS_RESERVATION_ID
         do_api_mock.username = DO_USER
         do_api_mock.GetReservationStatus.side_effect = [
             # creating cs
@@ -39,8 +39,8 @@ class BaseTestCase(unittest.TestCase):
             MagicMock(ReservationSlimStatus=MagicMock(Status='Teardown')),
             MagicMock(ReservationSlimStatus=MagicMock(Status='Completed')),
         ]
-        do_api_mock.GetReservationDetails.return_value = MagicMock(
-            ReservationDescription=MagicMock(Resources=[MagicMock(Name='CloudShell 8.3 GA fadf')]))
+        do_api_mock.GetReservationDetails.return_value.ReservationDescription.Resources.Name = \
+            'CloudShell 8.3 GA fadf'
         do_api_mock.GetResourceDetails.return_value = MagicMock(
             FullAddress=CS_IP,
             ResourceAttributes=[
