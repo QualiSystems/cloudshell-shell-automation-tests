@@ -1,0 +1,17 @@
+Do:
+  Host: 192.168.100.1
+  User: user
+  Password: password
+  Domain: Global
+
+  CS Version: CloudShell 8.3 GA
+
+Shell:
+  Path: None
+
+DUT Shell Path: None
+
+FTP:
+  Host: None
+  User: None
+  Password: None
