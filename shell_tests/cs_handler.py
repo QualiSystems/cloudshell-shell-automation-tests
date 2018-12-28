@@ -186,6 +186,15 @@ class CloudShellHandler(object):
         self.api.AutoLoad(resource_name)
         self.logger.debug('Finished Autoload')
 
+    def update_driver_for_the_resource(self, resource_name, driver_name):
+        """Update driver for the resource.
+
+        :type resource_name: str
+        :type driver_name: str"""
+        self.logger.info('Update Driver "{}" for the Resource "{}"'.format(
+            driver_name, resource_name))
+        self.api.UpdateResourceDriver(resource_name, driver_name)
+
     def add_resource_to_reservation(self, reservation_id, resource_name):
         """Adding the resource to the reservation
 
