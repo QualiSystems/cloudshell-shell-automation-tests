@@ -1,11 +1,14 @@
+import io
 import os
 import platform
+import re
 import subprocess
 import tempfile
 import urllib2
 import urlparse
 import zipfile
 from contextlib import closing
+from xml.etree import ElementTree
 
 import yaml
 
@@ -73,3 +76,25 @@ def is_host_alive(host):
         return False
 
     return True
+
+
+def get_driver_metadata(shell_path):
+    with zipfile.ZipFile(shell_path) as zip_file:
+
+        driver_name = re.search(r'\'(\S+\.zip)', str(zip_file.namelist())).group(1)
+        driver_file = io.BytesIO(zip_file.read(driver_name))
+
+        with zipfile.ZipFile(driver_file) as driver_zip:
+            driver_metadata = driver_zip.read('drivermetadata.xml')
+
+    return driver_metadata
+
+
+def get_driver_commands(shell_path):
+    driver_metadata = get_driver_metadata(shell_path)
+
+    doc = ElementTree.fromstring(driver_metadata)
+    commands = doc.findall('Layout/Category/Command')
+    commands.extend(doc.findall('Layout/Command'))
+
+    return [command.get('Name') for command in commands]
