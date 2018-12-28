@@ -12,7 +12,7 @@ from shell_tests.shell_handler import ShellHandler
 from shell_tests.smb_handler import SMB
 
 
-class TestsRunner(object):
+class AutomatedTestsRunner(object):
     CLOUDSHELL_SERVER_NAME = 'User-PC'
 
     def __init__(self, conf, logger):
@@ -83,6 +83,7 @@ class TestsRunner(object):
             api = cs_handler.api
         except IOError:
             self._smb_handler = None
+            self.logger.warning('CloudShell {} is not alive'.format(cs_handler.host))
             raise CSIsNotAliveError
         else:
             del api
@@ -142,6 +143,9 @@ class TestsRunner(object):
             time.sleep(1)
 
     def run(self):
+        """Creat CloudShell, prepare, and run tests for all resources.
+
+        :rtype: Reporting"""
         self.check_all_resources_is_alive()
 
         report = error = None

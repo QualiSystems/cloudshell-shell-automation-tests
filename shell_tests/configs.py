@@ -163,7 +163,7 @@ class ShellConfig(object):
 
         do_conf = DoConfig.from_dict(config.get('Do'))
         cs_conf = CloudShellConfig.from_dict(config.get('CloudShell'))
-        resources = map(ResourceConfig.from_dict, config['Resources'])
+        resources = map(ResourceConfig.from_dict, config.get('Resources', []))
         ftp_conf = FTPConfig.from_dict(config.get('FTP'))
         tests_conf = TestsConfig.from_dict(config.get('Tests'))
 
