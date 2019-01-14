@@ -50,6 +50,16 @@ class BaseTestCase(unittest.TestCase):
 
         return do_api_mock
 
+    @staticmethod
+    def get_cs_api_mock():
+        """Create mock object for the API that uses in CS handler."""
+        cs_api_mock = create_autospec(CloudShellAPISession)
+        cs_api_mock.CreateImmediateReservation.side_effect = lambda *args, **kwargs: MagicMock(
+            Reservation=MagicMock(Id=uuid.uuid4()))
+        cs_api_mock.username = 'cs_user'
+
+        return cs_api_mock
+
     def _get_auto_tests_runner(self, shell_conf_name):
         shell_conf_path = os.path.join(CONFIGS_PATH, shell_conf_name)
         self.conf = ShellConfig.parse_config_from_yaml(shell_conf_path)
@@ -67,4 +77,4 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         self.logger = MagicMock()
         self.do_api_mock = self.get_do_api_mock()
-        self.cs_api_mock = MagicMock()
+        self.cs_api_mock = self.get_cs_api_mock()

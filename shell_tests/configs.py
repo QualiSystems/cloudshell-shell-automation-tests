@@ -93,7 +93,7 @@ class FTPConfig(object):
         if config:
             return cls(
                 config['Host'],
-                config['User'],
+                config['User'],  # fixme not necessary
                 config['Password'],
             )
 
@@ -170,7 +170,7 @@ class ShellConfig(object):
         return cls(
             do_conf,
             cs_conf,
-            config['Shell']['Path'],
+            config['Shell']['Path'],  # fixme not necessary
             config['Shell'].get('Dependencies Path'),
             resources,
             ftp_conf,

@@ -169,7 +169,7 @@ class RunTestsForResource(threading.Thread):
 
         with zipfile.ZipFile(self.resource_handler.shell_path) as zip_file:
 
-            driver_name = re.search(r'\'(\S+\.zip)', str(zip_file.namelist())).group(1)
+            driver_name = re.search(r'\'(\S+\.zip)\'', str(zip_file.namelist())).group(1)
             driver_file = io.BytesIO(zip_file.read(driver_name))
 
             with zipfile.ZipFile(driver_file) as driver_zip:

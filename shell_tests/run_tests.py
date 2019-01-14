@@ -176,7 +176,7 @@ class AutomatedTestsRunner(object):
             resource.resource_name: resource.device_ip for resource in self.conf.resources
             if resource.device_ip
         }
-        resources_to_check['FTP'] = self.conf.ftp.host
+        resources_to_check['FTP'] = self.conf.ftp.host  # fixme not necessary
         if self.conf.do:
             resources_to_check['Do'] = self.conf.do.host
         else:
