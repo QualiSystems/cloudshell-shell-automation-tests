@@ -36,6 +36,7 @@ class DoHandler(object):
         """
 
         cs_names = self.cs_handler.get_topologies_by_category('CloudShell')
+        self.logger.debug('Available CloudShell instances: {}'.format(cs_names))
 
         for cs_name in cs_names:
             if cs_name.split('/')[-1] == version:  # 'Environments/CloudShell - Latest 8.3'
