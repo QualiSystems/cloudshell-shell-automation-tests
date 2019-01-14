@@ -118,7 +118,7 @@ class TestsConfig(object):
 class ShellConfig(object):
     def __init__(
             self, do_conf, cs_conf, shell_path, dependencies_path, resources_conf,
-            ftp_conf, tests_conf, dut_shell_path, dut_dependencies_path,
+            ftp_conf, tests_conf, dut_shell_path, dut_dependencies_path, extra_standards_path,
     ):
         """Main config
 
@@ -131,6 +131,7 @@ class ShellConfig(object):
         :param TestsConfig tests_conf:
         :param str dut_shell_path:
         :param str dut_dependencies_path:
+        :type extra_standards_path: str
         """
 
         self.do = do_conf
@@ -142,6 +143,7 @@ class ShellConfig(object):
         self.tests_conf = tests_conf
         self.dut_shell_path = dut_shell_path
         self.dut_dependencies_path = dut_dependencies_path
+        self.extra_standards = extra_standards_path
 
     @property
     def shell_name(self):
@@ -175,6 +177,7 @@ class ShellConfig(object):
             tests_conf,
             config['DUT Shell Path'],
             config.get('DUT Dependencies Path'),
+            config['Shell'].get('Extra CS Standards', []),
         )
 
 

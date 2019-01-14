@@ -11,12 +11,13 @@ from cloudshell.rest.api import PackagingRestApiClient
 class CloudShellHandler(object):
     REST_API_PORT = 9000
     DEFAULT_DOMAIN = 'Global'
-    PYPI_SHARE = 'C$'
-    PYPI_PATH = 'Program Files (x86)\QualiSystems\CloudShell\Server\Config\Pypi Server Repository'
+    CS_SHARE = 'C$'
+    PYPI_PATH = r'Program Files (x86)\QualiSystems\CloudShell\Server\Config\Pypi Server Repository'
     CS_LOGS_DIR = 'cs_logs'
     CS_LOGS_SHELL_DIR = r'ProgramData\QualiSystems\logs'
     CS_LOGS_INSTALLATION_DIR = (r'Program Files (x86)\QualiSystems\TestShell\ExecutionServer'
                                 r'\Logs\QsPythonDriverHost')
+    TOSCA_STANDARDS_DIR = r'Program Files (x86)\QualiSystems\CloudShell\Server\ToscaStandard'
 
     def __init__(self, host, user, password, logger, domain=DEFAULT_DOMAIN, smb=None):
         """Handler for CloudShell
@@ -77,6 +78,26 @@ class CloudShellHandler(object):
 
             self.rest_api.update_shell(shell_path, shell_name)
             self.logger.debug('Updated {} Shell'.format(shell_name))
+
+    def add_cs_standard(self, standard_path):
+        """Put standard into tosca standards' dir.
+
+        :type standard_path: str"""
+        standard_name = os.path.basename(standard_path)
+        remote_standard_path = os.path.join(self.TOSCA_STANDARDS_DIR, standard_name)
+        self.logger.warning('Adding tosca standard {} to the CloudShell'.format(standard_name))
+
+        with open(standard_path) as fo:
+            self.smb.put_file(self.CS_SHARE, remote_standard_path, fo)
+
+    def get_tosca_standards(self):
+        """Get tosca standards from CloudShell.
+
+        :rtype: list[str]"""
+        standards = [standard.filename for standard in
+                     self.smb.ls(self.CS_SHARE, self.TOSCA_STANDARDS_DIR)]
+        self.logger.debug('Installed tosca standards: {}'.format(standards))
+        return standards
 
     def create_reservation(self, name, duration=120):
         """Create reservation
@@ -320,14 +341,14 @@ class CloudShellHandler(object):
 
         file_path = os.path.join(self.PYPI_PATH, file_name)
         self.logger.debug('Adding a file {} to offline PyPI'.format(file_path))
-        self.smb.put_file(self.PYPI_SHARE, file_path, file_obj)
+        self.smb.put_file(self.CS_SHARE, file_path, file_obj)
 
     def get_package_names_from_offline_pypi(self):
         """Get package names from offline PyPI"""
 
         self.logger.debug('Getting packages in offline PyPI')
         excluded = ('.', '..', 'PlaceHolder.txt')
-        file_names = [f.filename for f in self.smb.ls(self.PYPI_SHARE, self.PYPI_PATH)
+        file_names = [f.filename for f in self.smb.ls(self.CS_SHARE, self.PYPI_PATH)
                       if f.filename not in excluded]
         self.logger.debug('Got packages {}'.format(file_names))
         return file_names
@@ -340,7 +361,7 @@ class CloudShellHandler(object):
 
         file_path = os.path.join(self.PYPI_PATH, file_name)
         self.logger.debug('Removing a file {} from offline PyPI'.format(file_path))
-        self.smb.remove_file(self.PYPI_SHARE, file_path)
+        self.smb.remove_file(self.CS_SHARE, file_path)
 
     def download_logs(self):
         """Download logs from CloudShell"""
@@ -355,8 +376,8 @@ class CloudShellHandler(object):
         os.mkdir(shell_logs_path)
         os.mkdir(installation_logs_path)
 
-        self.smb.download_dir(self.PYPI_SHARE, self.CS_LOGS_SHELL_DIR, shell_logs_path)
-        self.smb.download_dir(self.PYPI_SHARE, self.CS_LOGS_INSTALLATION_DIR, installation_logs_path)
+        self.smb.download_dir(self.CS_SHARE, self.CS_LOGS_SHELL_DIR, shell_logs_path)
+        self.smb.download_dir(self.CS_SHARE, self.CS_LOGS_INSTALLATION_DIR, installation_logs_path)
 
     def add_physical_connection(self, reservation_id, port1, port2):
         """Add physical connection between two ports
