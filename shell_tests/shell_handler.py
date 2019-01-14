@@ -12,12 +12,13 @@ from shell_tests.helpers import download_file, is_url
 
 
 class ShellHandler(object):
-    def __init__(self, cs_handler, shell_path, dependencies_path, logger):
+    def __init__(self, cs_handler, shell_path, dependencies_path, extra_standards, logger):
         """Handler for the Shell driver.
 
         :param CloudShellHandler cs_handler:
         :param str shell_path:
         :param str dependencies_path:
+        :type extra_standards: list
         :param logging.Logger logger:
         """
         self.cs_handler = cs_handler
@@ -25,6 +26,7 @@ class ShellHandler(object):
         self.downloaded_shell_file = False
         self._dependencies_path = dependencies_path
         self.downloaded_dependencies_file = False
+        self.extra_standards = extra_standards
         self.logger = logger
 
     @property
@@ -47,6 +49,18 @@ class ShellHandler(object):
     def install_shell(self):
         """Install the Shell."""
         self.cs_handler.install_shell(self.shell_path)
+
+    def add_extra_standards(self):
+        if not self.extra_standards:
+            return
+
+        installed_standards = self.cs_handler.get_tosca_standards()
+
+        for standard_path in self.extra_standards:
+            standard_name = os.path.basename(standard_path)
+
+            if standard_name not in installed_standards:
+                self.cs_handler.add_cs_standard(standard_path)
 
     def add_dependencies_to_offline_pypi(self):
         """Upload all dependencies from zip file to offline PyPI"""
@@ -126,6 +140,7 @@ class ShellHandler(object):
         if self.dependencies_path:
             self.add_dependencies_to_offline_pypi()
 
+        self.add_extra_standards()
         self.install_shell()
 
         self.logger.info('The Shell prepared')
