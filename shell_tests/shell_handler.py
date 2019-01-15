@@ -2,6 +2,7 @@ import contextlib
 import glob
 import os
 import shutil
+import sys
 import tarfile
 import tempfile
 import zipfile
@@ -21,30 +22,20 @@ class ShellHandler(object):
         :type extra_standards: list
         :param logging.Logger logger:
         """
-        self.cs_handler = cs_handler
-        self._shell_path = shell_path
-        self.downloaded_shell_file = False
-        self._dependencies_path = dependencies_path
-        self.downloaded_dependencies_file = False
-        self.extra_standards = extra_standards
         self.logger = logger
+        self.downloaded_files = []
+        self.cs_handler = cs_handler
+        self.shell_path = self.download_if_url(shell_path)
+        self.dependencies_path = self.download_if_url(dependencies_path)
+        self.extra_standards = map(self.download_if_url, extra_standards)
 
-    @property
-    def shell_path(self):
-        if is_url(self._shell_path):
-            self.logger.info('Downloading the Shell from {}'.format(self._shell_path))
-            self._shell_path = download_file(self._shell_path)
-            self.downloaded_shell_file = True
-        return self._shell_path
+    def download_if_url(self, path):
+        if path and is_url(path):
+            self.logger.info('Downloading the file from url {}'.format(path))
+            path = download_file(path)
+            self.downloaded_files.append(path)
 
-    @property
-    def dependencies_path(self):
-        if self._dependencies_path and is_url(self._dependencies_path):
-            self.logger.info('Downloading the dependencies file from {}'.format(
-                self._dependencies_path))
-            self._dependencies_path = download_file(self._dependencies_path)
-            self.downloaded_dependencies_file = True
-        return self._dependencies_path
+        return path
 
     def install_shell(self):
         """Install the Shell."""
@@ -123,15 +114,11 @@ class ShellHandler(object):
         for file_name in self.cs_handler.get_package_names_from_offline_pypi():
             self.cs_handler.remove_file_from_offline_pypi(file_name)
 
-    def deleting_downloaded_shell(self):
-        """Delete downloaded Shell and dependencies if downloaded"""
-
-        if self.downloaded_shell_file:
-            self.logger.debug('Delete a downloaded Shell file')
-            os.remove(self.shell_path)
-        if self.downloaded_dependencies_file:
-            self.logger.debug('Delete a downloaded dependencies file')
-            os.remove(self.dependencies_path)
+    def deleting_downloaded_files(self):
+        """Delete downloaded files."""
+        for path in self.downloaded_files:
+            self.logger.info('Deleting the downloaded file {}'.format(path))
+            os.remove(path)
 
     def prepare_shell(self):
         """Prepare Shell."""
@@ -152,12 +139,19 @@ class ShellHandler(object):
         if self.dependencies_path:
             self.clear_offline_pypi()
 
-        self.deleting_downloaded_shell()
+        self.deleting_downloaded_files()
 
         self.logger.info('The Shell is deleted')
 
     def __enter__(self):
-        self.prepare_shell()
+        try:
+            self.prepare_shell()
+        except Exception:
+            if self.__exit__(*sys.exc_info()):
+                pass
+            else:
+                raise
+
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
