@@ -1,6 +1,6 @@
 from mock import patch, MagicMock, call
 
-from tests.base_tests import BaseTestCase
+from tests.base_tests import BaseTestCase, CS_USER
 
 
 @patch('shell_tests.run_tests.is_host_alive')
@@ -13,18 +13,20 @@ class TestNetworkingDevice(BaseTestCase):
     @patch('shell_tests.helpers.open', MagicMock())
     @patch('shell_tests.helpers.os.mkdir', MagicMock())
     @patch('shell_tests.cs_handler.PackagingRestApiClient', MagicMock())
-    @patch('shell_tests.resource_handler.get_resource_family_and_model', MagicMock(return_value=(
-            MagicMock(), MagicMock())))
     @patch('shell_tests.run_tests_for_resource.TeamcityTestRunner', MagicMock())
     @patch('shell_tests.run_tests_for_resource.unittest.TextTestRunner', MagicMock())
     @patch('shell_tests.shell_handler.os.remove', MagicMock())
     @patch('shell_tests.shell_handler.zipfile.ZipFile')
     @patch('shell_tests.run_tests_for_resource.RunTestsForResource.get_driver_commands')
     @patch('shell_tests.smb_handler.SMBConnection')
+    @patch('shell_tests.resource_handler.get_resource_family_and_model')
     def test_networking_devices(
-            self, smb_conn_mock, get_driver_comm_mock, zipfile_shell_handler_mock,
-            is_host_alive_mock):
+            self, get_family_and_model_mock, smb_conn_mock, get_driver_comm_mock,
+            zipfile_shell_handler_mock, is_host_alive_mock):
+
         # init
+        res_family, res_model = MagicMock(), MagicMock()
+        get_family_and_model_mock.return_value = res_family, res_model
         is_host_alive_mock.return_value = True
         get_driver_comm_mock.return_value = [
             'run_custom_command', 'run_custom_config_command', 'save', 'orchestration_save',
@@ -56,4 +58,13 @@ class TestNetworkingDevice(BaseTestCase):
         self.assertSequenceEqual(is_host_alive_mock.call_args_list, map(call, ips_to_test))
 
         # check that correct commands was sent to CS via API
+        self.cs_api_mock.CreateImmediateReservation.assert_called_once_with(
+            'automation_tests', CS_USER, 120)
+        self.cs_api_mock.CreateResource.assert_called_once_with(
+            res_family, res_model, self.conf.resources[0].resource_name, '127.0.0.1')
+        self.cs_api_mock.AddResourcesToReservation.assert_called_once_with(
+            self._cs_reservation_ids[0], [self.conf.resources[0].resource_name])
+
+        self.cs_api_mock.method_calls
+
         self.cs_api_mock
