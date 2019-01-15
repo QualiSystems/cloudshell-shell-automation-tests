@@ -101,7 +101,7 @@ class TestsRunner(object):
             cs_handler,
             self.conf.dut_shell_path,
             self.conf.dut_dependencies_path if self.conf.dependencies_path else None,
-            self.conf.extra_standards,
+            [],
             self.logger,
         )
         self.conf.dut_shell_path = dut_shell_handler.shell_path
