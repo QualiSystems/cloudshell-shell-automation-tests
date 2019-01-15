@@ -17,14 +17,19 @@ CS_TOPOLOGIES = [
 DO_USER = 'user'
 CS_RESERVATION_ID = str(uuid.uuid4())
 CS_IP = '192.168.100.2'
+CS_USER = 'cs_user'
 CS_OS_USER = 'cs_os_user'
 CS_OS_PASSWORD = 'cs_os_password'
 
 
 class BaseTestCase(unittest.TestCase):
 
+    def __init__(self, *args, **kwargs):
+        super(BaseTestCase, self).__init__(*args, **kwargs)
+        self._cs_reservation_ids = []
+
     @staticmethod
-    def get_do_api_mock():
+    def _get_do_api_mock():
         """Create mock object for the API that uses in DO handler."""
         do_api_mock = create_autospec(CloudShellAPISession)
         do_api_mock.GetTopologiesByCategory.return_value.Topologies = CS_TOPOLOGIES
@@ -50,13 +55,16 @@ class BaseTestCase(unittest.TestCase):
 
         return do_api_mock
 
-    @staticmethod
-    def get_cs_api_mock():
+    def _get_cs_reservation_id(self, *args, **kwargs):
+        id_ = str(uuid.uuid4())
+        self._cs_reservation_ids.append(id_)
+        return MagicMock(Reservation=MagicMock(Id=id_))
+
+    def _get_cs_api_mock(self):
         """Create mock object for the API that uses in CS handler."""
         cs_api_mock = create_autospec(CloudShellAPISession)
-        cs_api_mock.CreateImmediateReservation.side_effect = lambda *args, **kwargs: MagicMock(
-            Reservation=MagicMock(Id=uuid.uuid4()))
-        cs_api_mock.username = 'cs_user'
+        cs_api_mock.CreateImmediateReservation.side_effect = self._get_cs_reservation_id
+        cs_api_mock.username = CS_USER
 
         return cs_api_mock
 
@@ -76,5 +84,5 @@ class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
         self.logger = MagicMock()
-        self.do_api_mock = self.get_do_api_mock()
-        self.cs_api_mock = self.get_cs_api_mock()
+        self.do_api_mock = self._get_do_api_mock()
+        self.cs_api_mock = self._get_cs_api_mock()
