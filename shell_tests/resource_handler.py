@@ -55,7 +55,7 @@ class ResourceHandler(object):
             self.resource_name,
             self.resource_family,
             self.resource_model,
-            self.device_ip or '169.254.0.1',  # if we don't have a real device
+            self.device_ip or '127.0.0.1',  # if we don't have a real device
         )
         self.cs_handler.add_resource_to_reservation(self.reservation_id, self.resource_name)
 
