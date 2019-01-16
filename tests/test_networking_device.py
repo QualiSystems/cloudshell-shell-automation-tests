@@ -23,7 +23,7 @@ class TestNetworkingDevice(BaseTestCase):
     def test_networking_devices(
             self, get_family_and_model_mock, smb_conn_mock, get_driver_comm_mock,
             zipfile_shell_handler_mock, is_host_alive_mock):
-
+        # check preparing resource without executing tests
         # init
         res_family, res_model = MagicMock(), MagicMock()
         get_family_and_model_mock.return_value = res_family, res_model
@@ -65,6 +65,22 @@ class TestNetworkingDevice(BaseTestCase):
         self.cs_api_mock.AddResourcesToReservation.assert_called_once_with(
             self._cs_reservation_ids[0], [self.conf.resources[0].resource_name])
 
-        self.cs_api_mock.method_calls
+        self.cs_api_mock.SetAttributesValues.assert_called_once()
+        res_attr_update_req = self.cs_api_mock.SetAttributesValues.call_args[0][0][0]
+        self.assertEqual(res_attr_update_req.ResourceFullName, self.conf.resources[0].resource_name)
+        attrs_dict = {attr_val.Name: attr_val.Value
+                      for attr_val in res_attr_update_req.AttributeNamesValues}
+        self.assertEqual(
+            attrs_dict,
+            {'{}.{}'.format(res_model, key): val
+             for key, val in self.conf.resources[0].attributes.items()}
+        )
 
-        self.cs_api_mock
+        self.cs_api_mock.DeleteReservation.assert_called_once_with(self._cs_reservation_ids[0])
+        self.cs_api_mock.DeleteResource.assert_called_once_with(self.conf.resources[0].resource_name)
+
+        executed_method_names = [call_[0] for call_ in self.cs_api_mock.method_calls]
+        expected_method_names = [
+            'CreateImmediateReservation', 'CreateResource', 'AddResourcesToReservation',
+            'SetAttributesValues', 'DeleteReservation', 'DeleteResource']
+        self.assertEqual(executed_method_names, expected_method_names)
