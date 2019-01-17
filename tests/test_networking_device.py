@@ -16,6 +16,7 @@ class TestNetworkingDevice(BaseTestCase):
     @patch('shell_tests.run_tests_for_resource.TeamcityTestRunner', MagicMock())
     @patch('shell_tests.run_tests_for_resource.unittest.TextTestRunner', MagicMock())
     @patch('shell_tests.shell_handler.os.remove', MagicMock())
+    @patch('shell_tests.cs_handler.shutil.rmtree', MagicMock())
     @patch('shell_tests.shell_handler.zipfile.ZipFile')
     @patch('shell_tests.run_tests_for_resource.RunTestsForResource.get_driver_commands')
     @patch('shell_tests.smb_handler.SMBConnection')

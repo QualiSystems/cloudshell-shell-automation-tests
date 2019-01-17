@@ -9,7 +9,7 @@ from shell_tests.configs import ShellConfig
 from shell_tests.run_tests import AutomatedTestsRunner
 
 
-CONFIGS_PATH = os.path.abspath('./test_configs')
+CONFIGS_PATH = os.path.abspath('./tests/test_configs')
 CS_TOPOLOGIES = [
     'Environment/CloudShell 8.3 GA',
     'Environment/CloudShell - Latest 8.3',
