@@ -18,7 +18,7 @@ class TestNetworkingDevice(BaseTestCase):
     @patch('shell_tests.shell_handler.os.remove', MagicMock())
     @patch('shell_tests.cs_handler.shutil.rmtree', MagicMock())
     @patch('shell_tests.shell_handler.zipfile.ZipFile')
-    @patch('shell_tests.run_tests_for_resource.RunTestsForResource.get_driver_commands')
+    @patch('shell_tests.run_tests_for_resource.get_driver_commands')
     @patch('shell_tests.smb_handler.SMBConnection')
     @patch('shell_tests.resource_handler.get_resource_family_and_model')
     def test_networking_devices(
