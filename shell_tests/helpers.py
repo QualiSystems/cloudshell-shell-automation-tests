@@ -25,7 +25,7 @@ def get_resource_family_and_model(shell_path, logger):
     :rtype: tuple[str, str]"""
 
     with zipfile.ZipFile(shell_path) as zip_file:
-        data = yaml.load(zip_file.read('shell-definition.yaml'))
+        data = yaml.safe_load(zip_file.read('shell-definition.yaml'))
 
     model = data['node_types'].keys()[0].rsplit('.', 1)[-1]
     family = data['node_types'].values()[0]['derived_from'].rsplit('.', 1)[-1]

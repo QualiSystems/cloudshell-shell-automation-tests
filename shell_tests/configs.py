@@ -154,10 +154,10 @@ class ShellConfig(object):
         env_conf = {}
         if env_conf_path is not None:
             with open(env_conf_path) as f:
-                env_conf = yaml.load(f.read())
+                env_conf = yaml.safe_load(f.read())
 
         with open(shell_conf_path) as f:
-            shell_conf = yaml.load(f.read())
+            shell_conf = yaml.safe_load(f.read())
 
         config = merge_dicts(shell_conf, env_conf)
 
