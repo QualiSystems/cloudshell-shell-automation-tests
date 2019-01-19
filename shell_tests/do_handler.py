@@ -35,7 +35,7 @@ class DoHandler(object):
         :param str cs_specific_version:
         """
 
-        cs_names = self.cs_handler.get_topologies_by_category('CloudShell')
+        cs_names = sorted(self.cs_handler.get_topologies_by_category('CloudShell'))
         self.logger.debug('Available CloudShell instances: {}'.format(cs_names))
 
         for cs_name in cs_names:
