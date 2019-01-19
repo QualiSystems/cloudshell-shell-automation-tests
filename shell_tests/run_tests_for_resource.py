@@ -1,10 +1,6 @@
-import io
-import re
 import threading
 import unittest
-import zipfile
 from StringIO import StringIO
-from xml.etree import ElementTree
 
 from teamcity import is_running_under_teamcity
 from teamcity.unittestpy import TeamcityTestRunner
@@ -17,6 +13,7 @@ from shell_tests.automation_tests.test_run_custom_command import TestRunCustomCo
     TestRunCustomCommand
 from shell_tests.automation_tests.test_save_config import TestSaveConfigWithoutDevice, \
     TestSaveConfig
+from shell_tests.helpers import get_driver_commands
 from shell_tests.resource_handler import ResourceHandler
 
 
@@ -99,6 +96,7 @@ class RunTestsForResource(threading.Thread):
 
         self._stop = False
         self._test_suite = None
+        self._test_runner = None
 
     def stop(self):
         if self._test_suite:
@@ -117,12 +115,39 @@ class RunTestsForResource(threading.Thread):
                 result,
             )
 
-    def run_test_cases(self):
-        test_result = StringIO()
-        test_loader = unittest.TestLoader()
-        suite = PatchedTestSuite()
-        self._test_suite = suite
+    @property
+    def test_suite(self):
+        if self._test_suite is None:
+            test_loader = unittest.TestLoader()
+            self._test_suite = PatchedTestSuite()
 
+            for test_case in self.resource_test_cases:
+                for test_name in test_loader.getTestCaseNames(test_case):
+                    test_inst = test_case(
+                            test_name,
+                            self.resource_handler,
+                            self.shell_conf,
+                            self.resource_conf,
+                            self.logger,
+                        )
+
+                    self._test_suite.addTest(test_inst)
+
+        return self._test_suite
+
+    @property
+    def test_runner(self):
+        if self._test_runner is None:
+            if is_running_under_teamcity():
+                self.logger.debug('Using TeamCity Test Runner')
+                self._test_runner = TeamcityTestRunner
+            else:
+                self.logger.debug('Using Text Test Runner')
+                self._test_runner = unittest.TextTestRunner
+
+        return self._test_runner
+
+    def run_test_cases(self):
         with self.resource_handler:
             if self.resource_conf.attributes:
                 self.resource_handler.set_attributes(self.resource_conf.attributes)
@@ -130,25 +155,10 @@ class RunTestsForResource(threading.Thread):
             if self._stop:
                 raise KeyboardInterrupt
 
-            for test_case in self.resource_test_cases:
-                for test_name in test_loader.getTestCaseNames(test_case):
-                    suite.addTest(
-                        test_case(
-                            test_name,
-                            self.resource_handler,
-                            self.shell_conf,
-                            self.resource_conf,
-                            self.logger)
-                    )
-
-            if is_running_under_teamcity():
-                self.logger.debug('Using TeamCity Test Runner')
-                runner = TeamcityTestRunner
-            else:
-                self.logger.debug('Using Text Test Runner')
-                runner = unittest.TextTestRunner
-
-            is_success = runner(test_result, verbosity=2).run(suite).wasSuccessful()
+            test_result = StringIO()
+            is_success = self.test_runner(
+                test_result, verbosity=2
+            ).run(self.test_suite).wasSuccessful()
 
             return is_success, test_result.getvalue()
 
@@ -167,26 +177,11 @@ class RunTestsForResource(threading.Thread):
         elif self.resource_handler.device_type == self.resource_handler.SIMULATOR:
             self.logger.warning('We have only simulator so testing only an Autoload')
 
-        with zipfile.ZipFile(self.resource_handler.shell_path) as zip_file:
-
-            driver_name = re.search(r'\'(\S+\.zip)\'', str(zip_file.namelist())).group(1)
-            driver_file = io.BytesIO(zip_file.read(driver_name))
-
-            with zipfile.ZipFile(driver_file) as driver_zip:
-                driver_metadata = driver_zip.read('drivermetadata.xml')
-
         test_cases = [TEST_CASES_MAP[self.resource_handler.device_type]['autoload']]
 
-        for command in self.get_driver_commands(driver_metadata):
+        for command in get_driver_commands(self.resource_handler.shell_path):
             test_case = TEST_CASES_MAP[self.resource_handler.device_type].get(command.lower())
             if test_case and test_case not in test_cases:
                 test_cases.append(test_case)
 
         return test_cases
-
-    @staticmethod
-    def get_driver_commands(driver_metadata):
-        doc = ElementTree.fromstring(driver_metadata)
-        commands = doc.findall('Layout/Category/Command')
-        commands.extend(doc.findall('Layout/Command'))
-        return [command.get('Name') for command in commands]
