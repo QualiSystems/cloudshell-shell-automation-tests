@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import yaml
 
 from shell_tests.helpers import merge_dicts
@@ -190,9 +192,9 @@ class MainConfig(object):
 
         :type do_conf: DoConfig
         :type cs_conf: CloudShellConfig
-        :type shells_conf: list[ShellConfig]
-        :type resources_conf: list[ResourceConfig]
-        :type sandboxes_conf: list[SandboxConfig]
+        :type shells_conf: OrderedDict[str, ShellConfig]
+        :type resources_conf: OrderedDict[str, ResourceConfig]
+        :type sandboxes_conf: OrderedDict[str, SandboxConfig]
         :type ftp_conf: FTPConfig
         """
         self.do_conf = do_conf
@@ -217,9 +219,18 @@ class MainConfig(object):
         do_conf = DoConfig.from_dict(config.get('Do'))
         cs_conf = CloudShellConfig.from_dict(config.get('CloudShell'))
 
-        shells_conf = map(ShellConfig.from_dict, config['Shells'])
-        resources_conf = map(ResourceConfig.from_dict, config['Resources'])
-        sandboxes_conf = map(SandboxConfig.from_dict, config['Sandboxes'])
+        shells_conf = OrderedDict(
+            (shell_conf['Name'], ShellConfig.from_dict(shell_conf))
+            for shell_conf in config['Shells']
+        )
+        resources_conf = OrderedDict(
+            (resource_conf['Name'], ResourceConfig.from_dict(resource_conf))
+            for resource_conf in config['Resources']
+        )
+        sandboxes_conf = OrderedDict(
+            (sandbox_conf['Name'], SandboxConfig.from_dict(sandbox_conf))
+            for sandbox_conf in config['Sandboxes']
+        )
         ftp_conf = FTPConfig.from_dict(config.get('FTP'))
 
         return cls(
