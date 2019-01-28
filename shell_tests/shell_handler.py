@@ -2,13 +2,13 @@ import contextlib
 import glob
 import os
 import shutil
-import sys
 import tarfile
 import tempfile
 import zipfile
 from io import BytesIO
 
-from shell_tests.helpers import download_file, is_url, get_resource_family_and_model
+from shell_tests.helpers import download_file, is_url, get_resource_family_and_model, \
+    call_exit_func_on_exc
 
 
 class ShellHandler(object):
@@ -167,15 +167,9 @@ class ShellHandler(object):
 
         self.logger.info('The Shell is deleted')
 
+    @call_exit_func_on_exc
     def __enter__(self):
-        try:
-            self.prepare_shell()
-        except Exception:
-            if self.__exit__(*sys.exc_info()):
-                pass
-            else:
-                raise
-
+        self.prepare_shell()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

@@ -3,6 +3,7 @@ import os
 import platform
 import re
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -10,6 +11,7 @@ import urllib2
 import urlparse
 import zipfile
 from contextlib import closing
+from functools import wraps
 from xml.etree import ElementTree
 
 import yaml
@@ -144,3 +146,16 @@ class enter_stacks(object):
 
     def __exit__(self, *args):
         self.main_stack.__exit__(*args)
+
+
+def call_exit_func_on_exc(enter_fn):
+    @wraps(enter_fn)
+    def wrapper(self):
+        try:
+            return enter_fn(self)
+        except Exception:
+            if self.__exit__(*sys.exc_info()):
+                pass
+            else:
+                raise
+    return wrapper
