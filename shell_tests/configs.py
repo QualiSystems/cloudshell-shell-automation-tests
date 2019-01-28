@@ -1,12 +1,21 @@
-import re
-
 import yaml
+
+from shell_tests.helpers import merge_dicts
 
 
 class CloudShellConfig(object):
     DEFAULT_DOMAIN = 'Global'
 
     def __init__(self, host, user, password, os_user=None, os_password=None, domain=None):
+        """CloudShell Config.
+
+        :type host: str
+        :type user: str
+        :type password: str
+        :type os_user: str
+        :type os_password: str
+        :type domain: str
+        """
         self.host = host
         self.user = user
         self.password = password
@@ -55,27 +64,30 @@ class DoConfig(CloudShellConfig):
 
 
 class ResourceConfig(object):
-    def __init__(self, resource_name, device_ip, attributes, test_conf):
-        """Resource config
+    def __init__(self, name, shell_name, device_ip, attributes, tests_conf):
+        """Resource config.
 
-        :param str resource_name:
-        :param str device_ip:
-        :param dict attributes:
-        :param TestsConfig test_conf:
+        :type name: str
+        :type shell_name: str
+        :type device_ip: str
+        :type attributes: dict
+        :type tests_conf: TestsConfig
         """
 
-        self.resource_name = resource_name
+        self.name = name
+        self.shell_name = shell_name
         self.device_ip = device_ip
         self.attributes = attributes
-        self.test_conf = test_conf
+        self.tests_conf = tests_conf
 
     @classmethod
     def from_dict(cls, config):
-        tests_conf = TestsConfig.from_dict(config.get('Tests'))
-
         if config:
+            tests_conf = TestsConfig.from_dict(config.get('Tests'))
+
             return cls(
                 config['Name'],
+                config['Shell Name'],
                 config.get('Device IP'),
                 config.get('Attributes'),
                 tests_conf,
@@ -93,112 +105,128 @@ class FTPConfig(object):
         if config:
             return cls(
                 config['Host'],
-                config['User'],  # fixme not necessary
-                config['Password'],
+                config.get('User'),
+                config.get('Password'),
             )
 
 
 class TestsConfig(object):
-    def __init__(self, expected_failures):
-        """Tests config
+    def __init__(self, expected_failures, run_tests=True):
+        """Tests config.
 
-        :param dict expected_failures:
+        :type expected_failures: dict[str, str]
+        :type run_tests: bool
         """
-
         self.expected_failures = expected_failures
+        self.run_tests = run_tests
 
     @classmethod
     def from_dict(cls, config):
         if config:
             return cls(
                 config['Expected failures'],
+                config.get('Run Tests', True),
             )
+
+    def to_dict(self):
+        return {
+            'Expected failures': self.expected_failures,
+            'Run Tests': self.run_tests,
+        }
 
 
 class ShellConfig(object):
-    def __init__(
-            self, do_conf, cs_conf, shell_path, dependencies_path, resources_conf,
-            ftp_conf, tests_conf, dut_shell_path, dut_dependencies_path, extra_standards_path,
-    ):
-        """Main config
+    def __init__(self, name, path, dependencies_path, extra_standards_paths, tests_conf):
+        """Shell config.
 
-        :param DoConfig do_conf:
-        :param CloudShellConfig cs_conf:
-        :param str shell_path:
-        :param str dependencies_path:
-        :param list[ResourceConfig] resources_conf:
-        :param FTPConfig ftp_conf:
-        :param TestsConfig tests_conf:
-        :param str dut_shell_path:
-        :param str dut_dependencies_path:
-        :type extra_standards_path: str
+        :type name: str
+        :type path: str
+        :type dependencies_path: str
+        :type extra_standards_paths: list[str]
+        :type tests_conf: TestsConfig
         """
-
-        self.do = do_conf
-        self.cs = cs_conf
-        self.shell_path = shell_path
+        self.name = name
+        self.path = path
         self.dependencies_path = dependencies_path
-        self.resources = resources_conf
-        self.ftp = ftp_conf
+        self.extra_standards_paths = extra_standards_paths
         self.tests_conf = tests_conf
-        self.dut_shell_path = dut_shell_path
-        self.dut_dependencies_path = dut_dependencies_path
-        self.extra_standards = extra_standards_path
-
-    @property
-    def shell_name(self):
-        return re.split(r'[\\/]', self.shell_path)[-1]
 
     @classmethod
-    def parse_config_from_yaml(cls, shell_conf_path, env_conf_path=None):
+    def from_dict(cls, config):
+        if config:
+            tests_conf = TestsConfig.from_dict(config.get('Tests'))
+
+            return cls(
+                config['Name'],
+                config['Path'],
+                config.get('Dependencies Path'),
+                config.get('Extra CS Standards', []),
+                tests_conf,
+            )
+
+
+class SandboxConfig(object):
+    def __init__(self, name, resource_names):
+        """Sandbox config.
+
+        :type name: str
+        :type resource_names: list[str]
+        """
+        self.name = name
+        self.resource_names = resource_names
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Name'],
+                config['Resources'],
+            )
+
+
+class MainConfig(object):
+    def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, sandboxes_conf, ftp_conf):
+        """Main config.
+
+        :type do_conf: DoConfig
+        :type cs_conf: CloudShellConfig
+        :type shells_conf: list[ShellConfig]
+        :type resources_conf: list[ResourceConfig]
+        :type sandboxes_conf: list[SandboxConfig]
+        :type ftp_conf: FTPConfig
+        """
+        self.do_conf = do_conf
+        self.cs_conf = cs_conf
+        self.shells_conf = shells_conf
+        self.resources_conf = resources_conf
+        self.sandboxes_conf = sandboxes_conf
+        self.ftp_conf = ftp_conf
+
+    @classmethod
+    def parse_from_yaml(cls, test_conf_path, env_conf_path=None):
         env_conf = {}
         if env_conf_path is not None:
-            with open(env_conf_path) as f:
-                env_conf = yaml.safe_load(f.read())
+            with open(env_conf_path) as fo:
+                env_conf = yaml.safe_load(fo.read())
 
-        with open(shell_conf_path) as f:
-            shell_conf = yaml.safe_load(f.read())
+        with open(test_conf_path) as fo:
+            test_conf = yaml.safe_load(fo.read())
 
-        config = merge_dicts(shell_conf, env_conf)
+        config = merge_dicts(test_conf, env_conf)
 
         do_conf = DoConfig.from_dict(config.get('Do'))
         cs_conf = CloudShellConfig.from_dict(config.get('CloudShell'))
-        resources = map(ResourceConfig.from_dict, config.get('Resources', []))
+
+        shells_conf = map(ShellConfig.from_dict, config['Shells'])
+        resources_conf = map(ResourceConfig.from_dict, config['Resources'])
+        sandboxes_conf = map(SandboxConfig.from_dict, config['Sandboxes'])
         ftp_conf = FTPConfig.from_dict(config.get('FTP'))
-        tests_conf = TestsConfig.from_dict(config.get('Tests'))
 
         return cls(
             do_conf,
             cs_conf,
-            config['Shell']['Path'],  # fixme not necessary
-            config['Shell'].get('Dependencies Path'),
-            resources,
+            shells_conf,
+            resources_conf,
+            sandboxes_conf,
             ftp_conf,
-            tests_conf,
-            config['DUT Shell Path'],
-            config.get('DUT Dependencies Path'),
-            config['Shell'].get('Extra CS Standards', []),
         )
-
-
-def merge_dicts(first, second):
-    """Create a new dict from two dicts, first replaced second
-
-    :param dict first:
-    :param dict second:
-    :rtype: dict
-    """
-
-    new_dict = second.copy()
-
-    for key, val in first.iteritems():
-        if isinstance(val, dict):
-            new_dict[key] = merge_dicts(val, new_dict.get(key, {}))
-        elif isinstance(val, list):
-            lst = second.get(key, [])[:]
-            lst.extend(val)
-            new_dict[key] = lst
-        else:
-            new_dict[key] = val
-
-    return new_dict

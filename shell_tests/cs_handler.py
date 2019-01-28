@@ -7,10 +7,12 @@ from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttribut
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
 
+from shell_tests.smb_handler import SMB
+
 
 class CloudShellHandler(object):
     REST_API_PORT = 9000
-    DEFAULT_DOMAIN = 'Global'
+    CLOUDSHELL_SERVER_NAME = 'User-PC'
     CS_SHARE = 'C$'
     PYPI_PATH = r'Program Files (x86)\QualiSystems\CloudShell\Server\Config\Pypi Server Repository'
     CS_LOGS_DIR = 'cs_logs'
@@ -19,25 +21,45 @@ class CloudShellHandler(object):
                                 r'\Logs\QsPythonDriverHost')
     TOSCA_STANDARDS_DIR = r'Program Files (x86)\QualiSystems\CloudShell\Server\ToscaStandard'
 
-    def __init__(self, host, user, password, logger, domain=DEFAULT_DOMAIN, smb=None):
-        """Handler for CloudShell
+    def __init__(self, host, user, password, os_user, os_password, domain, logger):
+        """Handler for a CloudShell.
 
         :param str host: CloudShell ip
         :param str user: CloudShell admin user
         :param str password: password for user
-        :param logging.Logger logger:
+        :param str os_user: OS user
+        :param str os_password: OS password
         :param str domain: CloudShell domain
-        :param smb_handler.SMB smb: smb client
+        :param logging.Logger logger:
         """
-
         self.host = host
         self.user = user
         self.password = password
+        self.os_user = os_user
+        self.os_password = os_password
         self.domain = domain
         self.logger = logger
-        self.smb = smb
+
+        self._smb = None
         self._api = None
         self._rest_api = None
+
+    @classmethod
+    def from_conf(cls, conf, logger):
+        """Create CloudShell Handler from the config.
+
+        :type conf: shell_tests.configs.CloudShellConfig
+        :type logger: logging.Logger
+        """
+        return cls(
+            conf.host,
+            conf.user,
+            conf.password,
+            conf.os_user,
+            conf.os_password,
+            conf.domain,
+            logger,
+        )
 
     @property
     def rest_api(self):
@@ -55,6 +77,19 @@ class CloudShellHandler(object):
             self._api = CloudShellAPISession(self.host, self.user, self.password, self.domain)
             self.logger.debug('Connected to Automation API')
         return self._api
+
+    @property
+    def smb_handler(self):
+        if self._smb is None and self.os_user:
+            self._smb = SMB(
+                self.os_user,
+                self.os_password,
+                self.host,
+                self.CLOUDSHELL_SERVER_NAME,
+                self.logger,
+            )
+
+        return self._smb
 
     def install_shell(self, shell_path):
         """Install Shell driver in the CloudShell

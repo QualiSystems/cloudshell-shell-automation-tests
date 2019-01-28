@@ -1,11 +1,12 @@
-import threading
-import time
+from collections import OrderedDict
 
-from shell_tests.configs import ShellConfig, CloudShellConfig
+from contextlib2 import ExitStack
+
+from shell_tests.configs import CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
 from shell_tests.errors import ResourceIsNotAliveError, CSIsNotAliveError
-from shell_tests.helpers import is_host_alive
+from shell_tests.helpers import is_host_alive, enter_stacks
 from shell_tests.report_result import Reporting
 from shell_tests.run_tests_for_resource import RunTestsForResource
 from shell_tests.shell_handler import ShellHandler
@@ -15,11 +16,12 @@ from shell_tests.smb_handler import SMB
 class AutomatedTestsRunner(object):
     CLOUDSHELL_SERVER_NAME = 'User-PC'
 
+    # fixme separate running tests in CS from creating CS instance
     def __init__(self, conf, logger):
-        """Decide for tests need to run and run it
+        """Run tests based on the config.
 
-        :param ShellConfig conf:
-        :param logging.Logger logger:
+        :type conf: shell_tests.configs.MainConfig
+        :param logger: logging.Logger
         """
 
         self.conf = conf
@@ -30,13 +32,13 @@ class AutomatedTestsRunner(object):
 
     @property
     def do_handler(self):
-        if self._do_handler is None and self.conf.do:
+        if self._do_handler is None and self.conf.do_conf:
             cs_handler = CloudShellHandler(
-                self.conf.do.host,
-                self.conf.do.user,
-                self.conf.do.password,
+                self.conf.do_conf.host,
+                self.conf.do_conf.user,
+                self.conf.do_conf.password,
                 self.logger,
-                self.conf.do.domain,
+                self.conf.do_conf.domain,
             )
             self._do_handler = DoHandler(cs_handler, self.logger)
 
@@ -44,11 +46,11 @@ class AutomatedTestsRunner(object):
 
     @property
     def smb_handler(self):
-        if self._smb_handler is None and self.conf.cs.os_user:
+        if self._smb_handler is None and self.conf.cs_conf.os_user:
             self._smb_handler = SMB(
-                self.conf.cs.os_user,
-                self.conf.cs.os_password,
-                self.conf.cs.host,
+                self.conf.cs_conf.os_user,
+                self.conf.cs_conf.os_password,
+                self.conf.cs_conf.host,
                 self.CLOUDSHELL_SERVER_NAME,
                 self.logger,
             )
@@ -59,7 +61,7 @@ class AutomatedTestsRunner(object):
         """Create CloudShell instance on Do."""
         cs_config = CloudShellConfig(
             *self.do_handler.get_new_cloudshell(
-                self.conf.do.cs_version, self.conf.do.cs_specific_version)
+                self.conf.do_conf.cs_version, self.conf.do_conf.cs_specific_version)
         )
         self.conf.cs = cs_config
 
@@ -71,11 +73,11 @@ class AutomatedTestsRunner(object):
 
     def get_cs_handler(self):
         cs_handler = CloudShellHandler(
-            self.conf.cs.host,
-            self.conf.cs.user,
-            self.conf.cs.password,
+            self.conf.cs_conf.host,
+            self.conf.cs_conf.user,
+            self.conf.cs_conf.password,
             self.logger,
-            self.conf.cs.domain,
+            self.conf.cs_conf.domain,
             self.smb_handler,
         )
 
@@ -137,11 +139,6 @@ class AutomatedTestsRunner(object):
         cs_handler.download_logs()
         return report
 
-    @staticmethod
-    def wait_for_end_threads(threads):
-        while any(map(threading.Thread.is_alive, threads)):
-            time.sleep(1)
-
     def run(self):
         """Creat CloudShell, prepare, and run tests for all resources.
 
@@ -185,3 +182,57 @@ class AutomatedTestsRunner(object):
         for name, host in resources_to_check.iteritems():
             if not is_host_alive(host):
                 raise ResourceIsNotAliveError('{} ({}) is not alive, check it'.format(name, host))
+
+
+class RunTestsInCloudShell(object):
+    def __init__(self, main_conf, logger):
+        """Run tests in CloudShell based on config.
+
+        :type main_conf: shell_tests.configs.MainConfig
+        :type logger: logging.Logger
+        """
+        self.main_conf = main_conf
+        self.logger = logger
+        self.cs_handler = CloudShellHandler.from_conf(main_conf.cs_conf, logger)
+
+        # check CS is alive
+        try:
+            self.cs_handler.api.Logon()
+        except IOError:
+            self._smb_handler = None
+            self.logger.warning('CloudShell {} is not alive'.format(self.cs_handler.host))
+            raise CSIsNotAliveError
+
+    def run(self):
+        """Install Shells, prepare Sandboxes and run tests
+
+        :rtype: Reporting
+        """
+        report = Reporting(self.main_conf.shells_conf[0].name)  # fixme refactor reporting
+
+        shell_handlers = [
+            ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger)
+            for shell_conf in self.main_conf.shells_conf
+        ]
+
+        with enter_stacks(shell_handlers):
+
+            threads = [
+                RunTestsForResource(
+                    cs_handler, self.conf, resource_conf, shell_handler, self.logger, report)
+                for resource_conf in self.conf.resources
+            ]
+
+            for thread in threads:
+                thread.start()
+
+            try:
+                self.wait_for_end_threads(threads)
+            except KeyboardInterrupt:
+                for thread in threads:
+                    thread.stop()
+                self.wait_for_end_threads(threads)
+                raise
+
+        cs_handler.download_logs()
+        return report

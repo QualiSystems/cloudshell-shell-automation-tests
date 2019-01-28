@@ -8,26 +8,50 @@ import tempfile
 import zipfile
 from io import BytesIO
 
-from cs_handler import CloudShellHandler
-from shell_tests.helpers import download_file, is_url
+from shell_tests.helpers import download_file, is_url, get_resource_family_and_model
 
 
 class ShellHandler(object):
-    def __init__(self, cs_handler, shell_path, dependencies_path, extra_standards, logger):
+    def __init__(self, cs_handler, name, shell_path, dependencies_path, extra_standards, tests_conf,
+                 logger):
         """Handler for the Shell driver.
 
-        :param CloudShellHandler cs_handler:
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type name: str
         :param str shell_path:
         :param str dependencies_path:
         :type extra_standards: list
+        :type tests_conf: shell_tests.configs.TestsConfig
         :param logging.Logger logger:
         """
         self.logger = logger
         self.downloaded_files = []
         self.cs_handler = cs_handler
+        self.name = name
+        self.tests_conf = tests_conf
+
         self.shell_path = self.download_if_url(shell_path)
         self.dependencies_path = self.download_if_url(dependencies_path)
         self.extra_standards = map(self.download_if_url, extra_standards)
+        self.family, self.model = get_resource_family_and_model(self.shell_path, logger)
+
+    @classmethod
+    def from_conf(cls, conf, cs_handler, logger):
+        """Create Shell Handler from the config.
+
+        :type conf: shell_tests.configs.ShellConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type logger: logging.Logger
+        """
+        return cls(
+            cs_handler,
+            conf.name,
+            conf.path,
+            conf.dependencies_path,
+            conf.extra_standards_paths,
+            conf.tests_conf,
+            logger,
+        )
 
     def download_if_url(self, path):
         if path and is_url(path):

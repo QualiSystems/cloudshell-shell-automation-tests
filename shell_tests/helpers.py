@@ -4,6 +4,8 @@ import platform
 import re
 import subprocess
 import tempfile
+import threading
+import time
 import urllib2
 import urlparse
 import zipfile
@@ -11,7 +13,7 @@ from contextlib import closing
 from xml.etree import ElementTree
 
 import yaml
-
+from contextlib2 import ExitStack
 
 DOWNLOAD_FOLDER = 'shell_tests'
 
@@ -98,3 +100,47 @@ def get_driver_commands(shell_path):
     commands.extend(doc.findall('Layout/Command'))
 
     return [command.get('Name') for command in commands]
+
+
+def merge_dicts(first, second):
+    """Create a new dict from two dicts, first replaced second.
+
+    :param dict first:
+    :param dict second:
+    :rtype: dict
+    """
+    new_dict = second.copy()
+
+    for key, val in first.iteritems():
+        if isinstance(val, dict):
+            new_dict[key] = merge_dicts(val, new_dict.get(key, {}))
+        elif isinstance(val, list):
+            lst = second.get(key, [])[:]
+            lst.extend(val)
+            new_dict[key] = lst
+        else:
+            new_dict[key] = val
+
+    return new_dict
+
+
+def wait_for_end_threads(threads):
+    """Endless loop that wait for ending the threads.
+
+    :type threads: list[threading.Thread]
+    """
+    while any(map(threading.Thread.is_alive, threads)):
+        time.sleep(1)
+
+
+class enter_stacks(object):
+    def __init__(self, stacks):
+        self.stacks = stacks
+        self.main_stack = ExitStack()
+
+    def __enter__(self):
+        self.main_stack.__enter__()
+        map(self.main_stack.enter_context, self.stacks)
+
+    def __exit__(self, *args):
+        self.main_stack.__exit__(*args)

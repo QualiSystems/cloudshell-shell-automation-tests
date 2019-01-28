@@ -23,7 +23,7 @@ class BaseTestCase(unittest.TestCase):
         test_name = '{}.{}'.format(self.__class__.__name__, method_name)
 
         expected_failures = merge_dicts(
-            getattr(resource_conf.test_conf, 'expected_failures', {}),
+            getattr(resource_conf.tests_conf, 'expected_failures', {}),
             getattr(shell_conf.tests_conf, 'expected_failures', {}),
         )
 
@@ -46,4 +46,4 @@ class BaseTestCase(unittest.TestCase):
 
     def id(self):
         id_ = super(BaseTestCase, self).id()
-        return '{}-{}'.format(id_, self.resource_conf.resource_name)
+        return '{}-{}'.format(id_, self.resource_conf.name)

@@ -77,7 +77,7 @@ class RunTestsForResource(threading.Thread):
         :param shell_tests.report_result.Reporting report:
         """
         super(RunTestsForResource, self).__init__(
-            name='Thread-{}'.format(resource_conf.resource_name))
+            name='Thread-{}'.format(resource_conf.name))
 
         self.cs_handler = cs_handler
         self.shell_conf = shell_conf
@@ -89,7 +89,7 @@ class RunTestsForResource(threading.Thread):
         self.resource_handler = ResourceHandler(
             cs_handler,
             resource_conf.device_ip,
-            resource_conf.resource_name,
+            resource_conf.name,
             shell_conf.shell_path,
             logger,
         )
@@ -108,7 +108,7 @@ class RunTestsForResource(threading.Thread):
 
         with self.REPORT_LOCK:
             self.report.add_resource_report(
-                self.resource_conf.resource_name,
+                self.resource_conf.name,
                 self.resource_conf.device_ip,
                 self.resource_handler.device_type,
                 is_success,
