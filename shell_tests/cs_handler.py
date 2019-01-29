@@ -335,7 +335,7 @@ class CloudShellHandler(object):
 
         self.logger.info('Getting topologies for a category {}'.format(category_name))
         output = self.api.GetTopologiesByCategory(category_name).Topologies
-        self.logger.debug('Got topologies {}'.format(output))
+        self.logger.debug('Got topologies {}'.format(sorted(output)))
         return output
 
     def get_reservation_details(self, reservation_id):
