@@ -118,7 +118,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
                     'saved_artifact': {
                         'artifact_type': 'local',
                         'identifier': '/device-running-130618-155327'},
-                    'resource_name': self.resource_handler.resource_name,
+                    'resource_name': self.resource_handler.name,
                     'restore_rules': {'requires_same_resource': True},
                     'created_date': '2018-06-13T15:53:34.075000'}
             }
