@@ -25,10 +25,12 @@ class ResourceHandler(object):
         self.name = name
         self.device_ip = device_ip
         self.tests_config = merge_dicts(tests_conf.to_dict(), shell_handler.tests_conf.to_dict())
+        self.tests_config = tests_conf + shell_handler.tests_conf
         self.cs_handler = cs_handler
         self.sandbox_handler = sandbox_handler
         self.shell_handler = shell_handler
         self.logger = logger
+        self.model, self.family = shell_handler.model, shell_handler.family
 
         self.attributes = {}
         self.set_attributes(attributes)
@@ -72,8 +74,8 @@ class ResourceHandler(object):
 
         self.name = self.cs_handler.create_resource(
             self.name,
-            self.shell_handler.family,
-            self.shell_handler.model,
+            self.family,
+            self.model,
             self.device_ip or '127.0.0.1',  # if we don't have a real device
         )
 
@@ -100,7 +102,7 @@ class ResourceHandler(object):
 
         :type attributes: dict[str, str]
         """
-        self.cs_handler.set_resource_attributes(self.name, self.shell_handler.model, attributes)
+        self.cs_handler.set_resource_attributes(self.name, self.model, attributes)
         self.attributes.update(attributes)
 
     def autoload(self):
@@ -111,7 +113,7 @@ class ResourceHandler(object):
             if str(e.code) != '129' and e.message != 'no driver associated':
                 raise
 
-            self.cs_handler.update_driver_for_the_resource(self.name, self.shell_handler.model)
+            self.cs_handler.update_driver_for_the_resource(self.name, self.model)
             result = self.cs_handler.resource_autoload(self.name)
 
         return result

@@ -25,10 +25,10 @@ class SandboxHandler(object):
         self.reservation_id = None
         self.resources_stack = None
 
-        self.resources = OrderedDict(
-            (resource_name, self._create_resource_handler(resource_configs[resource_name]))
+        self.resource_handlers = [
+            self._create_resource_handler(resource_configs[resource_name])
             for resource_name in resource_names
-        )
+        ]
 
     def _create_resource_handler(self, resource_conf):
         return ResourceHandler.from_conf(
@@ -88,9 +88,9 @@ class SandboxHandler(object):
         self.create_reservation()
 
         # enter into resources context
-        self.resources_stack = enter_stacks(self.resources.values()).__enter__()
-        for resource_name in self.resources.keys():
-            self.add_resource_to_reservation(resource_name)
+        self.resources_stack = enter_stacks(self.resource_handlers).__enter__()
+        for resource_handler in self.resource_handlers:
+            self.add_resource_to_reservation(resource_handler.name)
 
         return self
 

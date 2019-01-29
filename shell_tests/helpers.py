@@ -95,6 +95,11 @@ def get_driver_metadata(shell_path):
 
 
 def get_driver_commands(shell_path):
+    """Get commands from the drivermetadata.xml.
+
+    :type shell_path: str
+    :rtype: list[str]
+    """
     driver_metadata = get_driver_metadata(shell_path)
 
     doc = ElementTree.fromstring(driver_metadata)

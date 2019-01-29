@@ -136,6 +136,15 @@ class TestsConfig(object):
             'Run Tests': self.run_tests,
         }
 
+    def __add__(self, other):
+        cls = type(self)
+        if not issubclass(other, cls):
+            raise ValueError('Cannot add {} and {}'.format(cls, type(other)))
+
+        merged_dicts = merge_dicts(self.to_dict(), other.to_dict())
+
+        return cls.from_dict(merged_dicts)
+
 
 class ShellConfig(object):
     def __init__(self, name, path, dependencies_path, extra_standards_paths, tests_conf):

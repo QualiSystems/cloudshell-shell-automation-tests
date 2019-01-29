@@ -79,7 +79,7 @@ class CloudShellHandler(object):
         return self._api
 
     @property
-    def smb_handler(self):
+    def smb(self):
         if self._smb is None and self.os_user:
             self._smb = SMB(
                 self.os_user,
