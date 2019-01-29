@@ -3,7 +3,7 @@ class SandboxReport(object):
         self.name = sandbox_name
         self.sandbox_is_success = is_success
         self.test_result = test_result
-        self.resources_reports = []
+        self.resources_reports = []  # type: list[ResourceReport]
 
     @property
     def is_success(self):
@@ -16,7 +16,7 @@ class SandboxReport(object):
             sandbox_tests_result = ('Sandbox name: {0.name}\nTests for sandbox was {1}\n'
                                     '{0.test_result}\n\n'.format(self, success_str))
 
-        resources_tests_result = '\n\n'.join(self.resources_reports)
+        resources_tests_result = '\n\n'.join(map(str, self.resources_reports))
 
         success_str = 'successful' if self.is_success else 'unsuccessful'
         result = 'Sandbox name: {}\nTests for sandbox and resources was {}\n\n{}{}'.format(
@@ -45,14 +45,15 @@ class ResourceReport(object):
 
 class Reporting(object):
     def __init__(self):
-        self.sandboxes_reports = []
+        self.sandboxes_reports = []  # type: list[SandboxReport]
 
     @property
     def is_success(self):
         return all(sandbox.is_success for sandbox in self.sandboxes_reports)
 
     def __str__(self):
-        sandboxes_tests_result = ('\n\n{}\n\n'.format('-' * 15)).join(self.sandboxes_reports)
+        join_str = '\n\n{}\n\n'.format('-' * 15)
+        sandboxes_tests_result = join_str.join(map(str, self.sandboxes_reports))
 
         success_str = 'successful' if self.is_success else 'unsuccessful'
         result = 'Tests was {}\n\n{}'.format(success_str, sandboxes_tests_result)

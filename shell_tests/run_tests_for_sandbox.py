@@ -143,7 +143,7 @@ class RunTestsForSandbox(threading.Thread):
 
         if resource_handler.device_type == resource_handler.WITHOUT_DEVICE:
             self.logger.warning(
-                '"{}" is not a fake device so test only installing env '
+                '"{}" is a fake device so test only installing env '
                 'and trying to execute commands and getting an expected '
                 'error for connection'.format(resource_handler.name))
         elif resource_handler.device_type == resource_handler.SIMULATOR:

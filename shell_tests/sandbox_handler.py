@@ -5,7 +5,8 @@ from shell_tests.resource_handler import ResourceHandler
 
 
 class SandboxHandler(object):
-    def __init__(self, name, resource_names, resource_configs, cs_handler, shell_handlers, logger):
+    def __init__(self, name, resource_names, resource_configs, cs_handler, shell_handlers,
+                 ftp_handler, logger):
         """Sandbox Handler that creates reservation adds resources.
 
         :type name: str
@@ -14,12 +15,14 @@ class SandboxHandler(object):
         :type resource_configs: OrderedDict[str, shell_tests.configs.ResourceConfig]
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :type shell_handlers: OrderedDict[str, shell_tests.shell_handler.ShellHandler]
+        :type ftp_handler: shell_tests.ftp_handler.FTPHandler
         :type logger: logging.Logger
         """
         self.name = name
         self.resource_configs = resource_configs
         self.cs_handler = cs_handler
         self.shell_handlers = shell_handlers
+        self.ftp_handler = ftp_handler
         self.logger = logger
 
         self.reservation_id = None
@@ -40,13 +43,14 @@ class SandboxHandler(object):
         )
 
     @classmethod
-    def from_config(cls, conf, resource_configs, cs_handler, shell_handlers, logger):
+    def from_conf(cls, conf, resource_configs, cs_handler, shell_handlers, ftp_handler, logger):
         """Create SandboxHandler from the config and handlers.
 
         :type conf: shell_tests.configs.SandboxConfig
         :type resource_configs: OrderedDict[str, shell_tests.configs.ResourceConfig]
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :type shell_handlers: OrderedDict[str, shell_tests.shell_handler.ShellHandler]
+        :type ftp_handler: shell_tests.ftp_handler.FTPHandler
         :type logger: logging.Logger
         """
         return cls(
@@ -55,6 +59,7 @@ class SandboxHandler(object):
             resource_configs,
             cs_handler,
             shell_handlers,
+            ftp_handler,
             logger,
         )
 
@@ -88,7 +93,9 @@ class SandboxHandler(object):
         self.create_reservation()
 
         # enter into resources context
-        self.resources_stack = enter_stacks(self.resource_handlers).__enter__()
+        self.resources_stack = enter_stacks(self.resource_handlers)
+        self.resources_stack.__enter__()
+
         for resource_handler in self.resource_handlers:
             self.add_resource_to_reservation(resource_handler.name)
 

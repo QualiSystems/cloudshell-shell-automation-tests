@@ -12,13 +12,26 @@ class FTPHandler(object):
         :param str password:
         :param logging.Logger logger:
         """
-
         self.host = host
         self.user = user
         self.password = password
         self.logger = logger
 
         self._session = None
+
+    @classmethod
+    def from_conf(cls, conf, logger):
+        """Create FTP Handler from the config.
+
+        :type conf: shell_tests.configs.FTPConfig
+        :type logger: logging.Logger
+        """
+        return cls(
+            conf.host,
+            conf.user,
+            conf.password,
+            logger,
+        )
 
     @property
     def session(self):

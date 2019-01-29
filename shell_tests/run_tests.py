@@ -4,6 +4,7 @@ from shell_tests.configs import CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
 from shell_tests.errors import ResourceIsNotAliveError, CSIsNotAliveError
+from shell_tests.ftp_handler import FTPHandler
 from shell_tests.helpers import is_host_alive, enter_stacks, wait_for_end_threads
 from shell_tests.report_result import Reporting
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
@@ -103,8 +104,8 @@ class RunTestsInCloudShell(object):
         """
         self.main_conf = main_conf
         self.logger = logger
-        self.cs_handler = CloudShellHandler.from_conf(main_conf.cs_conf, logger)
 
+        self.cs_handler = CloudShellHandler.from_conf(main_conf.cs_conf, logger)
         # check CS is alive
         try:
             self.cs_handler.api
@@ -114,7 +115,7 @@ class RunTestsInCloudShell(object):
             raise CSIsNotAliveError
 
         self.reporting = Reporting()
-
+        self.ftp_handler = FTPHandler.from_conf(self.main_conf.ftp_conf, logger)
         self.shell_handlers = OrderedDict(
             (shell_conf.name, ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
             for shell_conf in self.main_conf.shells_conf.values()
@@ -143,11 +144,12 @@ class RunTestsInCloudShell(object):
             raise
 
     def _create_sandbox_handler(self, sandbox_conf):
-        return SandboxHandler.from_config(
+        return SandboxHandler.from_conf(
             sandbox_conf,
             self.main_conf.resources_conf,
             self.cs_handler,
             self.shell_handlers,
+            self.ftp_handler,
             self.logger,
         )
 
