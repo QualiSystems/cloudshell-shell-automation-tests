@@ -33,7 +33,7 @@ class ResourceHandler(object):
         self.model, self.family = shell_handler.model, shell_handler.family
 
         self.attributes = {}
-        self.set_attributes(attributes)
+        self._initial_attributes = attributes
 
     @classmethod
     def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
@@ -78,6 +78,7 @@ class ResourceHandler(object):
             self.model,
             self.device_ip or '127.0.0.1',  # if we don't have a real device
         )
+        self.set_attributes(self._initial_attributes)
 
         self.logger.info('The resource {} prepared'.format(self.name))
 

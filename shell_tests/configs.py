@@ -124,11 +124,11 @@ class TestsConfig(object):
 
     @classmethod
     def from_dict(cls, config):
-        if config:
-            return cls(
-                config['Expected failures'],
-                config.get('Run Tests', True),
-            )
+        config = config or {}
+        return cls(
+            config.get('Expected failures', {}),
+            config.get('Run Tests', True),
+        )
 
     def to_dict(self):
         return {
@@ -138,7 +138,7 @@ class TestsConfig(object):
 
     def __add__(self, other):
         cls = type(self)
-        if not issubclass(other, cls):
+        if not isinstance(other, cls):
             raise ValueError('Cannot add {} and {}'.format(cls, type(other)))
 
         merged_dicts = merge_dicts(self.to_dict(), other.to_dict())

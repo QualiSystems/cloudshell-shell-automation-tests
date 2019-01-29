@@ -104,12 +104,12 @@ class RunTestsForSandbox(threading.Thread):
             if self._stop:
                 raise KeyboardInterrupt
 
-        sandbox_report = self.run_sandbox_tests()
+            sandbox_report = self.run_sandbox_tests()
 
-        for resource_handler in self.sandbox_handler.resource_handlers:
-            if resource_handler.tests_config.run_tests:
-                resource_report = self.run_resource_tests(resource_handler)
-                sandbox_report.resources_reports.append(resource_report)
+            for resource_handler in self.sandbox_handler.resource_handlers:
+                if resource_handler.tests_config.run_tests:
+                    resource_report = self.run_resource_tests(resource_handler)
+                    sandbox_report.resources_reports.append(resource_report)
 
         with self.REPORT_LOCK:
             self.reporting.sandboxes_reports.append(sandbox_report)

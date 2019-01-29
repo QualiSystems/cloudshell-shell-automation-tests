@@ -107,7 +107,7 @@ class RunTestsInCloudShell(object):
 
         # check CS is alive
         try:
-            self.cs_handler.api.Logon()
+            self.cs_handler.api
         except IOError:
             self._smb_handler = None
             self.logger.warning('CloudShell {} is not alive'.format(self.cs_handler.host))
@@ -116,8 +116,8 @@ class RunTestsInCloudShell(object):
         self.reporting = Reporting()
 
         self.shell_handlers = OrderedDict(
-            (shell_conf['Name'], ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
-            for shell_conf in self.main_conf.shells_conf
+            (shell_conf.name, ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
+            for shell_conf in self.main_conf.shells_conf.values()
         )
 
     def run_tests_for_sandboxes(self):
@@ -128,7 +128,7 @@ class RunTestsInCloudShell(object):
                 self.logger,
                 self.reporting,
             )
-            for sandbox_conf in self.main_conf.sandboxes_conf
+            for sandbox_conf in self.main_conf.sandboxes_conf.values()
         ]
 
         for thread in threads:
