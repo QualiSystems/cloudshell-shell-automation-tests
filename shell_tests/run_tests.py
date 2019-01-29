@@ -58,9 +58,11 @@ class AutomatedTestsRunner(object):
             except CSIsNotAliveError as error:
                 pass  # try to recreate CS
             else:
+                error = None
                 return run_tests_inst
             finally:
-                self.do_handler.end_reservation()
+                if error or self.conf.do_conf.delete_cs:
+                    self.do_handler.end_reservation()
 
         if not attempts and error:
             raise error
