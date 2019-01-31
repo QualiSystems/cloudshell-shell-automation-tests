@@ -1,5 +1,5 @@
 from shell_tests.automation_tests.base import BaseTestCase
-from shell_tests.dut_handler import DutHandler
+from shell_tests.errors import BaseAutomationException
 
 
 def find_port_name(resource_info, excluded=None):
@@ -25,46 +25,51 @@ def find_port_name(resource_info, excluded=None):
 
 
 class TestConnectivity(BaseTestCase):
+    def get_other_device_for_connectivity(self):
+        for resource_handler in self.sandbox_handler.resource_handlers:
+            if self.resource_handler != resource_handler:
+                other_resource = resource_handler
+                other_resource.autoload()
+                return other_resource
+
+        raise BaseAutomationException('You have to add an additional resource to the sandbox {} '
+                                      'for connectivity tests'.format(self.sandbox_handler.name))
+
     def test_connectivity(self):
         cs_handler = self.resource_handler.cs_handler
+        other_handler = self.get_other_device_for_connectivity()
 
-        with DutHandler(
-                cs_handler,
-                self.shell_conf.dut_shell_path,
-                self.resource_handler.reservation_id,
-                self.logger) as dut_handler:
+        res_info = self.resource_handler.get_details()
+        dut_info = cs_handler.get_resource_details(other_handler.name)
 
-            res_info = self.resource_handler.get_details()
-            dut_info = cs_handler.get_resource_details(dut_handler.name)
+        res_port1 = find_port_name(res_info)
+        res_port2 = find_port_name(res_info, {res_port1})
+        dut_port1 = find_port_name(dut_info)
+        dut_port2 = find_port_name(dut_info, {dut_port1})
 
-            res_port1 = find_port_name(res_info)
-            res_port2 = find_port_name(res_info, {res_port1})
-            dut_port1 = find_port_name(dut_info)
-            dut_port2 = find_port_name(dut_info, {dut_port1})
+        # adding physical connections
+        cs_handler.add_physical_connection(
+            self.resource_handler.reservation_id,
+            res_port1,
+            dut_port1,
+        )
+        cs_handler.add_physical_connection(
+            self.sandbox_handler.reservation_id,
+            res_port2,
+            dut_port2,
+        )
 
-            # adding physical connections
-            cs_handler.add_physical_connection(
-                self.resource_handler.reservation_id,
-                res_port1,
-                dut_port1,
-            )
-            cs_handler.add_physical_connection(
-                self.resource_handler.reservation_id,
-                res_port2,
-                dut_port2,
-            )
+        # add VLAN
+        cs_handler.connect_ports_with_connector(
+            self.sandbox_handler.reservation_id,
+            dut_port1,
+            dut_port2,
+            'connector',
+        )
 
-            # add VLAN
-            cs_handler.connect_ports_with_connector(
-                self.resource_handler.reservation_id,
-                dut_port1,
-                dut_port2,
-                'dut-connector',
-            )
-
-            # remove VLAN
-            cs_handler.remove_connector(
-                self.resource_handler.reservation_id,
-                dut_port1,
-                dut_port2,
-            )
+        # remove VLAN
+        cs_handler.remove_connector(
+            self.sandbox_handler.reservation_id,
+            dut_port1,
+            dut_port2,
+        )

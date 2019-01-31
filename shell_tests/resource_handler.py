@@ -1,8 +1,5 @@
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from cs_handler import CloudShellHandler
-from shell_tests.helpers import get_resource_family_and_model
-
 
 class ResourceHandler(object):
     RESERVATION_NAME = 'automation_tests'
@@ -10,29 +7,51 @@ class ResourceHandler(object):
     SIMULATOR = 'Simulator'
     WITHOUT_DEVICE = 'Without device'
 
-    def __init__(
-            self, cs_handler, device_ip, resource_name, shell_path, logger,
-            reservation_name=RESERVATION_NAME):
-        """Handler for install shell and test it
+    def __init__(self, name, device_ip, attributes, tests_conf, cs_handler, sandbox_handler,
+                 shell_handler, logger):
+        """Handler for install shell and test it.
 
-        :param CloudShellHandler cs_handler: CloudShell Handler
-        :param str device_ip: device IP
-        :param str shell_path:
-        :param logging.Logger logger:
-        :param str reservation_name: Reservation name
+        :type name: str
+        :type device_ip: str
+        :type attributes: dict[str, str]
+        :type tests_conf: shell_tests.configs.TestsConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        :type shell_handler: shell_tests.shell_handler.ShellHandler
+        :type logger: logging.Logger
         """
-
-        self.cs_handler = cs_handler
+        self.name = name
         self.device_ip = device_ip
-        self.resource_name = resource_name
-        self.shell_path = shell_path
+        self.tests_config = tests_conf
+        self.cs_handler = cs_handler
+        self.sandbox_handler = sandbox_handler
+        self.shell_handler = shell_handler
         self.logger = logger
-        self.reservation_name = reservation_name
+        self.model, self.family = shell_handler.model, shell_handler.family
 
-        self.resource_family, self.resource_model = get_resource_family_and_model(
-            self.shell_path, self.logger)
         self.attributes = {}
-        self.reservation_id = None
+        self._initial_attributes = attributes or {}
+
+    @classmethod
+    def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
+        """Create Resource Handler from the config and handlers.
+
+        :type conf: shell_tests.configs.ResourceConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        :type shell_handler: shell_tests.shell_handler.ShellHandler
+        :type logger: logging.Logger
+        """
+        return cls(
+            conf.name,
+            conf.device_ip,
+            conf.attributes,
+            conf.tests_conf,
+            cs_handler,
+            sandbox_handler,
+            shell_handler,
+            logger,
+        )
 
     @property
     def device_type(self):
@@ -46,29 +65,27 @@ class ResourceHandler(object):
     def prepare_resource(self):
         """Prepare the Resource.
 
-        Create a reservation, create a resource and add the resource to the reservation
+        Create create the resource and add the resource to the reservation
         """
-        self.logger.info('Start preparing the resource {}'.format(self.resource_name))
+        self.logger.info('Start preparing the resource {}'.format(self.name))
 
-        self.reservation_id = self.cs_handler.create_reservation(self.reservation_name)
-        self.resource_name = self.cs_handler.create_resource(
-            self.resource_name,
-            self.resource_family,
-            self.resource_model,
+        self.name = self.cs_handler.create_resource(
+            self.name,
+            self.family,
+            self.model,
             self.device_ip or '127.0.0.1',  # if we don't have a real device
         )
-        self.cs_handler.add_resource_to_reservation(self.reservation_id, self.resource_name)
+        self.set_attributes(self._initial_attributes)
 
-        self.logger.info('The resource {} prepared'.format(self.resource_name))
+        self.logger.info('The resource {} prepared'.format(self.name))
 
     def delete_resource(self):
         """Delete reservation and resource."""
-        self.logger.info('Start deleting the resource {}'.format(self.resource_name))
+        self.logger.info('Start deleting the resource {}'.format(self.name))
 
-        self.cs_handler.delete_reservation(self.reservation_id)
-        self.cs_handler.delete_resource(self.resource_name)
+        self.cs_handler.delete_resource(self.name)
 
-        self.logger.info('The resource {} deleted'.format(self.resource_name))
+        self.logger.info('The resource {} deleted'.format(self.name))
 
     def __enter__(self):
         self.prepare_resource()
@@ -79,66 +96,64 @@ class ResourceHandler(object):
         return False
 
     def set_attributes(self, attributes):
-        """Set attributes for the resource and update internal dict"""
+        """Set attributes for the resource and update internal dict.
 
-        self.cs_handler.set_resource_attributes(self.resource_name, self.resource_model, attributes)
-        self.attributes.update(attributes)
+        :type attributes: dict[str, str]
+        """
+        if attributes:
+            self.cs_handler.set_resource_attributes(self.name, self.model, attributes)
+            self.attributes.update(attributes)
 
     def autoload(self):
         """Run Autoload for the resource."""
         try:
-            result = self.cs_handler.resource_autoload(self.resource_name)
+            result = self.cs_handler.resource_autoload(self.name)
         except CloudShellAPIError as e:
             if str(e.code) != '129' and e.message != 'no driver associated':
                 raise
 
-            self.cs_handler.update_driver_for_the_resource(self.resource_name, self.resource_model)
-            result = self.cs_handler.resource_autoload(self.resource_name)
+            self.cs_handler.update_driver_for_the_resource(self.name, self.model)
+            result = self.cs_handler.resource_autoload(self.name)
 
         return result
 
     def get_details(self):
         """Get resource details"""
 
-        return self.cs_handler.get_resource_details(self.resource_name)
+        return self.cs_handler.get_resource_details(self.name)
 
     def execute_command(self, command_name, command_kwargs):
-        """Execute a command for the resource
+        """Execute the command for the resource.
 
-        :param str command_name: a command to run
-        :param dict command_kwargs: command params
+        :type command_name: str
+        :type command_kwargs: dict
         """
-
-        return self.cs_handler.execute_command_on_resource(
-            self.reservation_id, self.resource_name, command_name, command_kwargs)
+        return self.sandbox_handler.execute_resource_command(
+            self.name, command_name, command_kwargs)
 
     def health_check(self):
-        """Run health check command on the resource"""
-
-        self.logger.info('Starting a "health_check" command for the {}'.format(self.resource_name))
+        """Run health check command on the resource."""
+        self.logger.info('Starting a "health_check" command for the {}'.format(self.name))
         output = self.execute_command('health_check', {})
         self.logger.debug('Health check output: {}'.format(output))
         return output
 
     def run_custom_command(self, command):
-        """Execute run custom command on the resource"""
-
+        """Execute run custom command on the resource."""
         self.logger.info('Start a "run_custom_command" command {}'.format(command))
         output = self.execute_command('run_custom_command', {'custom_command': command})
         self.logger.debug('Run custom command output: {}'.format(output))
         return output
 
     def run_custom_config_command(self, command):
-        """Execute run custom config command on the resource"""
-
+        """Execute run custom config command on the resource."""
         self.logger.info('Start a "run_custom_config_command" command {}'.format(command))
         output = self.execute_command('run_custom_config_command', {'custom_command': command})
         self.logger.debug('Run custom config command output: {}'.format(output))
         return output
 
     def save(self, ftp_path, configuration_type):
-        """Execute save command on the resource"""
-
+        """Execute save command on the resource."""
         self.logger.info('Start a "save" command')
         self.logger.debug(
             'FTP path: {}, configuration type: {}'.format(ftp_path, configuration_type))
@@ -151,12 +166,11 @@ class ResourceHandler(object):
         return output
 
     def orchestration_save(self, mode, custom_params=''):
-        """Execute orchestration save command
+        """Execute orchestration save command.
 
         :param str mode: shallow or deep
         :param str custom_params:
         """
-
         self.logger.info('Start a "orchestration save" command')
         self.logger.debug('Mode: {}, custom params: {}'.format(mode, custom_params))
 
@@ -169,13 +183,12 @@ class ResourceHandler(object):
         return output
 
     def restore(self, path, configuration_type, restore_method):
-        """Execute restore command
+        """Execute restore command.
 
         :param str path: path to the file
         :param str configuration_type: startup or running
         :param str restore_method: append or override
         """
-
         self.logger.info('Start a "restore" command')
         self.logger.debug(
             'Path: {}, configuration_type: {}, restore_method: {}'.format(
@@ -192,12 +205,11 @@ class ResourceHandler(object):
         return output
 
     def orchestration_restore(self, saved_artifact_info, custom_params=''):
-        """Execute orchestration restore command
+        """Execute orchestration restore command.
 
         :param str saved_artifact_info:
         :param str custom_params:
         """
-
         self.logger.info('Start a "orchestration restore" command')
         self.logger.debug(
             'Saved artifact info: {}, custom params: {}'.format(saved_artifact_info, custom_params))

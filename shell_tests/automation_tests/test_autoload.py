@@ -34,8 +34,7 @@ class TestAutoload(BaseTestCase):
 class TestAutoloadWithoutDevice(BaseTestCase):
 
     def test_structure(self):
-        self.assertRaisesRegexp(
-            CloudShellAPIError,
-            r'SessionManagerException',
-            self.resource_handler.autoload,
-        )
+        error_pattern = r'(SessionManagerException|\'ConnectionError\')'
+
+        with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
+            self.resource_handler.autoload()

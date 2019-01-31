@@ -37,17 +37,19 @@ class TestCreatingCloudShellInDo(BaseTestCase):
             with self.assertRaises(CSIsNotAliveError):
                 self.test_runner.run()
 
-    def test_cloudshell_is_alive(self, is_host_alive_mock):
+    @patch('shell_tests.run_tests.RunTestsInCloudShell')
+    def test_cloudshell_is_alive(self, run_tests_mock, is_host_alive_mock):
         # don't run tests
+        run_tests_inst = MagicMock()
+        run_tests_mock.return_value = run_tests_inst
+
         with self.patch_api((self.do_api_mock, MagicMock())):
-            with patch.object(self.test_runner, 'run_tests', MagicMock()):
-                self.test_runner.run()
+            self.test_runner.run()
 
-                self.test_runner.run_tests.assert_called_once()
-
+        run_tests_inst.run.assert_called_once()
         self.assertSequenceEqual(
             is_host_alive_mock.call_args_list,
-            map(call, [self.conf.ftp.host, self.conf.do.host])
+            map(call, [self.conf.ftp_conf.host, self.conf.do_conf.host])
         )
 
     def test_resource_is_not_alive(self, is_host_alive_mock):
@@ -59,7 +61,7 @@ class TestCreatingCloudShellInDo(BaseTestCase):
 
     def test_get_not_available_cs_version(self, is_host_alive_mock):
         is_host_alive_mock.return_value = True
-        self.conf.do.cs_version = 'CloudShell 8.4'
+        self.conf.do_conf.cs_version = 'CloudShell 8.4'
 
         with self.patch_api():
             with self.assertRaisesRegexp(BaseAutomationException, r'version .+ isn\'t correct'):

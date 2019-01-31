@@ -5,7 +5,7 @@ import uuid
 from cloudshell.api.cloudshell_api import CloudShellAPISession
 from mock import patch, MagicMock, create_autospec
 
-from shell_tests.configs import ShellConfig
+from shell_tests.configs import MainConfig
 from shell_tests.run_tests import AutomatedTestsRunner
 
 
@@ -70,7 +70,7 @@ class BaseTestCase(unittest.TestCase):
 
     def _get_auto_tests_runner(self, shell_conf_name):
         shell_conf_path = os.path.join(CONFIGS_PATH, shell_conf_name)
-        self.conf = ShellConfig.parse_config_from_yaml(shell_conf_path)
+        self.conf = MainConfig.parse_from_yaml(shell_conf_path)
 
         return AutomatedTestsRunner(self.conf, self.logger)
 

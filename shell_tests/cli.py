@@ -2,7 +2,7 @@ import logging
 
 import click
 
-from shell_tests.configs import ShellConfig
+from shell_tests.configs import MainConfig
 from shell_tests.run_tests import AutomatedTestsRunner
 
 
@@ -33,16 +33,16 @@ def get_logger():
 
 
 @cli.command()
-@click.argument('shell_conf')
+@click.argument('test_conf')
 @click.argument('env_conf', required=False)
-def run_tests(shell_conf, env_conf=None):
+def run_tests(test_conf, env_conf=None):
     logger = get_logger()
-    conf = ShellConfig.parse_config_from_yaml(shell_conf, env_conf)
+    conf = MainConfig.parse_from_yaml(test_conf, env_conf)
 
     report = AutomatedTestsRunner(conf, logger).run()
 
-    print '\n\nTest results:\n{}'.format(report.get_result())
-    return report.is_success, report.get_result()
+    print '\n\nTest results:\n{}'.format(report)
+    return report.is_success, report
 
 
 if __name__ == '__main__':

@@ -1,33 +1,23 @@
 import unittest
 
-from shell_tests.configs import merge_dicts
-
 
 class BaseTestCase(unittest.TestCase):
-    def __init__(self, method_name, resource_handler, shell_conf, resource_conf, logger):
-        """Base Test Case
+    def __init__(self, method_name, resource_handler, sandbox_handler, logger):
+        """Base Test Case.
 
-        :param str method_name:
-        :param shell_tests.resource_handler.ResourceHandler resource_handler:
-        :param shell_tests.configs.ShellConfig shell_conf:
-        :param shell_tests.configs.ResourceConfig resource_conf:
-        :param logging.Logger logger:
+        :type method_name: str
+        :type resource_handler: shell_tests.resource_handler.ResourceHandler
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        :type logger: logging.Logger
         """
-
         super(BaseTestCase, self).__init__(method_name)
         self.resource_handler = resource_handler
-        self.shell_conf = shell_conf
-        self.resource_conf = resource_conf
+        self.sandbox_handler = sandbox_handler
         self.logger = logger
 
-        test_name = '{}.{}'.format(self.__class__.__name__, method_name)
+        test_name = '{}.{}'.format(type(self).__name__, method_name)
 
-        expected_failures = merge_dicts(
-            getattr(resource_conf.test_conf, 'expected_failures', {}),
-            getattr(shell_conf.tests_conf, 'expected_failures', {}),
-        )
-
-        reason = expected_failures.get(test_name)
+        reason = resource_handler.tests_config.expected_failures.get(test_name)
         if reason:
             func = getattr(self, method_name)
             wrapped_func = self.expect_failure(func, reason)
@@ -46,4 +36,4 @@ class BaseTestCase(unittest.TestCase):
 
     def id(self):
         id_ = super(BaseTestCase, self).id()
-        return '{}-{}'.format(id_, self.resource_conf.resource_name)
+        return '{}-{}'.format(id_, self.resource_handler.name)
