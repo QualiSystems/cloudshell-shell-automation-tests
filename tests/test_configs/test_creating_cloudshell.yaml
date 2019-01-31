@@ -6,12 +6,20 @@ Do:
 
   CS Version: CloudShell 8.3 GA
 
-Shell:
-  Path: None
-
-DUT Shell Path: None
-
 FTP:
-  Host: None
-  User: None
-  Password: None
+  Host: 192.168.101.2
+  User: ftp_user
+  Password: ftp_password
+
+Shells:
+  - Name: DUT Shell
+    Path: None
+
+Resources:
+  - Name: DUT
+    Shell Name: DUT Shell
+
+Sandboxes:
+  - Name: first
+    Resources:
+      - DUT

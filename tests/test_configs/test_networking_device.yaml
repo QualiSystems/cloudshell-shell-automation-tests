@@ -10,40 +10,22 @@ FTP:
   User: ftp_user
   Password: ftp_password
 
-DUT Shell Path: ftp://ftp_user:ftp_password@192.168.101.2/DutShell.zip
-DUT Dependencies Path: ftp://ftp_user:ftp_password@192.168.101.2/DutShell2G_dependencies.zip
 
-Shell:
-  Path: https://github.com/QualiSystems/Cisco-IOS-Router-Shell-2G/releases/download/2.0.1/CiscoIOSRouterShell2G.zip
-  Dependencies Path: https://github.com/QualiSystems/Cisco-IOS-Router-Shell-2G/releases/download/2.0.1/cloudshell-networking-cisco-ios-2-gen-dependencies-package-1.0.9.zip
+Shells:
+  - Name: Cisco IOS Router
+    Path: https://github.com/QualiSystems/Cisco-IOS-Router-Shell-2G/releases/download/2.0.1/CiscoIOSRouterShell2G.zip
+    Dependencies Path: https://github.com/QualiSystems/Cisco-IOS-Router-Shell-2G/releases/download/2.0.1/cloudshell-networking-cisco-ios-2-gen-dependencies-package-1.0.9.zip
+
 
 Resources:
-#  - Name: Cisco-IOS-device
-#    Device IP: 192.168.103.1
-#
-#    Attributes:
-#      User: cisco_user
-#      Password: cisco_password
-#      Enable Password: cisco_enable_password
-#      SNMP Read Community: public
-#      SNMP Version: v2c
-#      Enable SNMP: True
-#      Disable SNMP: True
-#
-#    Tests:
-#      Expected failures:
-#        TestRestoreConfig.test_restore_running_config_override: Override mode is not supported
-#        TestRestoreConfig.test_orchestration_restore: Override mode is not supported
-#
-#  - Name: Cisco-emulator
-#    Device IP: 192.168.103.2
-#
-#    Attributes:
-#      SNMP Read Community: public
-#      SNMP Version: v2c
-#      Enable SNMP: False
-
   - Name: Cisco-without-device
+    Shell Name: Cisco IOS Router
 
     Attributes:
       SNMP Read Community: public
+
+
+Sandboxes:
+  - Name: first
+    Resources:
+      - Cisco-without-device
