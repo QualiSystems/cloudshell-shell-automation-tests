@@ -79,7 +79,7 @@ class AutomatedTestsRunner(object):
 
     def check_all_resources_is_alive(self):
         resources_to_check = {
-            resource.resource_name: resource.device_ip
+            resource.name: resource.device_ip
             for resource in self.conf.resources_conf.values()
             if resource.device_ip
         }

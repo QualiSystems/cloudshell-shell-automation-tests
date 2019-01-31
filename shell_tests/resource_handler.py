@@ -1,7 +1,5 @@
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.helpers import merge_dicts
-
 
 class ResourceHandler(object):
     RESERVATION_NAME = 'automation_tests'
@@ -24,8 +22,7 @@ class ResourceHandler(object):
         """
         self.name = name
         self.device_ip = device_ip
-        self.tests_config = merge_dicts(tests_conf.to_dict(), shell_handler.tests_conf.to_dict())
-        self.tests_config = tests_conf + shell_handler.tests_conf
+        self.tests_config = tests_conf
         self.cs_handler = cs_handler
         self.sandbox_handler = sandbox_handler
         self.shell_handler = shell_handler
@@ -33,7 +30,7 @@ class ResourceHandler(object):
         self.model, self.family = shell_handler.model, shell_handler.family
 
         self.attributes = {}
-        self._initial_attributes = attributes
+        self._initial_attributes = attributes or {}
 
     @classmethod
     def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
@@ -103,8 +100,9 @@ class ResourceHandler(object):
 
         :type attributes: dict[str, str]
         """
-        self.cs_handler.set_resource_attributes(self.name, self.model, attributes)
-        self.attributes.update(attributes)
+        if attributes:
+            self.cs_handler.set_resource_attributes(self.name, self.model, attributes)
+            self.attributes.update(attributes)
 
     def autoload(self):
         """Run Autoload for the resource."""

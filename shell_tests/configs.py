@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 import yaml
 
+from shell_tests.errors import BaseAutomationException
 from shell_tests.helpers import merge_dicts
 
 
@@ -130,21 +131,6 @@ class TestsConfig(object):
             config.get('Run Tests', True),
         )
 
-    def to_dict(self):
-        return {
-            'Expected failures': self.expected_failures,
-            'Run Tests': self.run_tests,
-        }
-
-    def __add__(self, other):
-        cls = type(self)
-        if not isinstance(other, cls):
-            raise ValueError('Cannot add {} and {}'.format(cls, type(other)))
-
-        merged_dicts = merge_dicts(self.to_dict(), other.to_dict())
-
-        return cls.from_dict(merged_dicts)
-
 
 class ShellConfig(object):
     def __init__(self, name, path, dependencies_path, extra_standards_paths, tests_conf):
@@ -224,6 +210,7 @@ class MainConfig(object):
             test_conf = yaml.safe_load(fo.read())
 
         config = merge_dicts(test_conf, env_conf)
+        cls._update_resource_tests_conf(config)
 
         do_conf = DoConfig.from_dict(config.get('Do'))
         cs_conf = CloudShellConfig.from_dict(config.get('CloudShell'))
@@ -250,3 +237,17 @@ class MainConfig(object):
             sandboxes_conf,
             ftp_conf,
         )
+
+    @staticmethod
+    def _update_resource_tests_conf(conf):
+        for resource_dict in conf['Resources']:
+            for shell_dict in conf['Shells']:
+                if shell_dict['Name'] == resource_dict['Shell Name']:
+                    break
+            else:
+                raise BaseAutomationException('Resource {} doesn\'t have a Shell'.format(
+                    resource_dict['Name']))
+
+            resource_dict['Tests'] = merge_dicts(
+                resource_dict.get('Tests', {}),
+                shell_dict.get('Tests', {}))

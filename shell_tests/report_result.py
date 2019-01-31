@@ -52,7 +52,7 @@ class Reporting(object):
         return all(sandbox.is_success for sandbox in self.sandboxes_reports)
 
     def __str__(self):
-        join_str = '\n\n{}\n\n'.format('-' * 15)
+        join_str = '\n\n{}\n\n'.format('-' * 100)
         sandboxes_tests_result = join_str.join(map(str, self.sandboxes_reports))
 
         success_str = 'successful' if self.is_success else 'unsuccessful'
