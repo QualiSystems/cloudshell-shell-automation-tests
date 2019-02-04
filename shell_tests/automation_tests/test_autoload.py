@@ -3,7 +3,7 @@ from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from shell_tests.automation_tests.base import BaseTestCase
 
 
-class TestAutoload(BaseTestCase):
+class TestAutoloadNetworkDevices(BaseTestCase):
 
     def _get_structure(self, resource_info):
         """Get nested resource structure
@@ -29,6 +29,16 @@ class TestAutoload(BaseTestCase):
         structure = self._get_structure(info)
 
         self.assertIn('CS_Port', str(structure))
+
+
+class TestAutoloadTrafficGeneratorDevices(TestAutoloadNetworkDevices):
+    def test_structure(self):
+        self.resource_handler.autoload()
+
+        info = self.resource_handler.get_details()
+        structure = self._get_structure(info)
+
+        self.assertIn('CS_TrafficGeneratorPort', str(structure))
 
 
 class TestAutoloadWithoutDevice(BaseTestCase):

@@ -5,7 +5,8 @@ from StringIO import StringIO
 from teamcity import is_running_under_teamcity
 from teamcity.unittestpy import TeamcityTestRunner
 
-from shell_tests.automation_tests.test_autoload import TestAutoload, TestAutoloadWithoutDevice
+from shell_tests.automation_tests.test_autoload import TestAutoloadNetworkDevices, \
+    TestAutoloadWithoutDevice, TestAutoloadTrafficGeneratorDevices
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import TestRestoreConfigWithoutDevice, \
     TestRestoreConfig
@@ -20,7 +21,7 @@ from shell_tests.resource_handler import ResourceHandler
 
 TEST_CASES_FIREWALL = {
     ResourceHandler.SIMULATOR: {
-        'autoload': TestAutoload,
+        'autoload': TestAutoloadNetworkDevices,
     },
     ResourceHandler.WITHOUT_DEVICE: {
         'autoload': TestAutoloadWithoutDevice,
@@ -32,7 +33,7 @@ TEST_CASES_FIREWALL = {
         'orchestration_restore': TestRestoreConfigWithoutDevice,
     },
     ResourceHandler.REAL_DEVICE: {
-        'autoload': TestAutoload,
+        'autoload': TestAutoloadNetworkDevices,
         'run_custom_command': TestRunCustomCommand,
         'run_custom_config_command': TestRunCustomCommand,
         'save': TestSaveConfig,
@@ -44,11 +45,23 @@ TEST_CASES_FIREWALL = {
 TEST_CASES_ROUTER = TEST_CASES_FIREWALL
 TEST_CASES_ROUTER[ResourceHandler.REAL_DEVICE]['applyconnectivitychanges'] = TestConnectivity
 TEST_CASES_SWITCH = TEST_CASES_ROUTER
+TEST_CASES_TRAFFIC_GENERATOR_CHASSIS = {
+    ResourceHandler.REAL_DEVICE: {
+        'autoload': TestAutoloadTrafficGeneratorDevices,
+    },
+    ResourceHandler.WITHOUT_DEVICE: {
+        'autoload': TestAutoloadWithoutDevice,
+    },
+    ResourceHandler.SIMULATOR: {
+        'autoload': TestAutoloadTrafficGeneratorDevices,
+    }
+}
 
 TEST_CASES_MAP = {
     'CS_Firewall': TEST_CASES_FIREWALL,
     'CS_Router': TEST_CASES_ROUTER,
     'CS_Switch': TEST_CASES_SWITCH,
+    'CS_TrafficGeneratorChassis': TEST_CASES_TRAFFIC_GENERATOR_CHASSIS,
 }
 
 
@@ -152,7 +165,7 @@ class RunTestsForSandbox(threading.Thread):
 
         test_cases_map = TEST_CASES_MAP[resource_handler.family][resource_handler.device_type]
 
-        test_cases = [test_cases_map['autoload']]
+        test_cases = [test_cases_map.get('autoload')]
 
         for command in get_driver_commands(resource_handler.shell_handler.shell_path):
             test_case = test_cases_map.get(command.lower())
