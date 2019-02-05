@@ -221,3 +221,54 @@ class ResourceHandler(object):
 
         self.logger.debug('Orchestration restore command output: {}'.format(output))
         return output
+
+
+class ServiceHandler(object):
+    def __init__(self, name, attributes, tests_conf, cs_handler, sandbox_handler, shell_handler,
+                 logger):
+        """Handler for the Service.
+
+        :type name: str
+        :type attributes: dict[str, str]
+        :type tests_conf: shell_tests.configs.TestsConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        :type shell_handler: shell_tests.shell_handler.ShellHandler
+        :type logger: logging.Logger
+        """
+        self.name = name
+        self.tests_conf = tests_conf
+        self.cs_handler = cs_handler
+        self.sandbox_handler = sandbox_handler
+        self.shell_handler = shell_handler
+        self.logger = logger
+        self.model, self.family = shell_handler.model, shell_handler.family
+
+        self.attributes = {}
+        self._initial_attributes = attributes or {}
+
+    @classmethod
+    def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
+        """Create Resource Handler from the config and handlers.
+
+        :type conf: shell_tests.configs.ServiceConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        :type shell_handler: shell_tests.shell_handler.ShellHandler
+        :type logger: logging.Logger
+        """
+        return cls(
+            conf.name,
+            conf.attributes,
+            conf.tests_conf,
+            cs_handler,
+            sandbox_handler,
+            shell_handler,
+            logger,
+        )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return False

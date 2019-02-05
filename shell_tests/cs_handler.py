@@ -263,6 +263,24 @@ class CloudShellHandler(object):
         self.api.AddResourcesToReservation(reservation_id, [resource_name])
         self.logger.debug('Added a resource to the reservation')
 
+    def add_service_to_reservation(self, reservation_id, service_name, attributes):
+        """Add the service to the reservation.
+
+        :type reservation_id: str
+        :type service_name: str
+        :type attributes: dict
+        """
+        self.logger.info('Adding a service {} to a reservation {}'.format(
+            service_name, reservation_id))
+
+        attributes = [
+            AttributeNameValue('{}.{}'.format(service_name, key), value)
+            for key, value in attributes.items()
+        ]
+        self.api.AddServiceToReservation(reservation_id, service_name, service_name, attributes)
+
+        self.logger.debug('Added the service to the reservation')
+
     def delete_resource(self, resource_name):
         """Delete the resource
 

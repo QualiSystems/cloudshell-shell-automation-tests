@@ -144,9 +144,16 @@ class RunTestsInCloudShell(object):
             raise
 
     def _create_sandbox_handler(self, sandbox_conf):
+        """Create the Sandbox Handler.
+
+        :type sandbox_conf: shell_tests.configs.SandboxConfig
+        """
+        resource_configs = map(self.main_conf.resources_conf.get, sandbox_conf.resource_names)
+        service_configs = map(self.main_conf.services_conf.get, sandbox_conf.service_names)
         return SandboxHandler.from_conf(
             sandbox_conf,
-            self.main_conf.resources_conf,
+            resource_configs,
+            service_configs,
             self.cs_handler,
             self.shell_handlers,
             self.ftp_handler,

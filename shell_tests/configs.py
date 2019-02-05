@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from itertools import chain
 
 import yaml
 
@@ -97,6 +98,33 @@ class ResourceConfig(object):
             )
 
 
+class ServiceConfig(object):
+    def __init__(self, name, shell_name, attributes, tests_conf):
+        """Service config.
+
+        :type name: str
+        :type shell_name: str
+        :type attributes: dict
+        :type tests_conf: TestsConfig
+        """
+        self.name = name
+        self.shell_name = shell_name
+        self.attributes = attributes
+        self.tests_conf = tests_conf
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            tests_conf = TestsConfig.from_dict(config.get('Tests'))
+
+            return cls(
+                config['Name'],
+                config['Shell Name'],
+                config.get('Attributes'),
+                tests_conf,
+            )
+
+
 class FTPConfig(object):
     def __init__(self, host, user, password):
         self.host = host
@@ -163,14 +191,16 @@ class ShellConfig(object):
 
 
 class SandboxConfig(object):
-    def __init__(self, name, resource_names):
+    def __init__(self, name, resource_names, service_names):
         """Sandbox config.
 
         :type name: str
         :type resource_names: list[str]
+        :type service_names: list[str]
         """
         self.name = name
         self.resource_names = resource_names
+        self.service_names = service_names
 
     @classmethod
     def from_dict(cls, config):
@@ -178,17 +208,20 @@ class SandboxConfig(object):
             return cls(
                 config['Name'],
                 config['Resources'],
+                config.get('Services', []),
             )
 
 
 class MainConfig(object):
-    def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, sandboxes_conf, ftp_conf):
+    def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, services_conf, sandboxes_conf,
+                 ftp_conf):
         """Main config.
 
         :type do_conf: DoConfig
         :type cs_conf: CloudShellConfig
         :type shells_conf: OrderedDict[str, ShellConfig]
         :type resources_conf: OrderedDict[str, ResourceConfig]
+        :type services_conf: OrderedDict[str, ServiceConfig]
         :type sandboxes_conf: OrderedDict[str, SandboxConfig]
         :type ftp_conf: FTPConfig
         """
@@ -196,6 +229,7 @@ class MainConfig(object):
         self.cs_conf = cs_conf
         self.shells_conf = shells_conf
         self.resources_conf = resources_conf
+        self.services_conf = services_conf
         self.sandboxes_conf = sandboxes_conf
         self.ftp_conf = ftp_conf
 
@@ -223,6 +257,10 @@ class MainConfig(object):
             (resource_conf['Name'], ResourceConfig.from_dict(resource_conf))
             for resource_conf in config['Resources']
         )
+        services_conf = OrderedDict(
+            (service_conf['Name'], ServiceConfig.from_dict(service_conf))
+            for service_conf in config.get('Services', [])
+        )
         sandboxes_conf = OrderedDict(
             (sandbox_conf['Name'], SandboxConfig.from_dict(sandbox_conf))
             for sandbox_conf in config['Sandboxes']
@@ -234,13 +272,14 @@ class MainConfig(object):
             cs_conf,
             shells_conf,
             resources_conf,
+            services_conf,
             sandboxes_conf,
             ftp_conf,
         )
 
     @staticmethod
     def _update_resource_tests_conf(conf):
-        for resource_dict in conf['Resources']:
+        for resource_dict in chain(conf.get('Resources', []), conf.get('Services', [])):
             for shell_dict in conf['Shells']:
                 if shell_dict['Name'] == resource_dict['Shell Name']:
                     break
