@@ -120,7 +120,7 @@ class RunTestsForSandbox(threading.Thread):
             sandbox_report = self.run_sandbox_tests()
 
             for resource_handler in self.sandbox_handler.resource_handlers:
-                if resource_handler.tests_config.run_tests:
+                if resource_handler.tests_conf.run_tests:
                     resource_report = self.run_resource_tests(resource_handler)
                     sandbox_report.resources_reports.append(resource_report)
 

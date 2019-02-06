@@ -263,10 +263,11 @@ class CloudShellHandler(object):
         self.api.AddResourcesToReservation(reservation_id, [resource_name])
         self.logger.debug('Added a resource to the reservation')
 
-    def add_service_to_reservation(self, reservation_id, service_name, attributes):
+    def add_service_to_reservation(self, reservation_id, service_model, service_name, attributes):
         """Add the service to the reservation.
 
         :type reservation_id: str
+        :type service_model: str
         :type service_name: str
         :type attributes: dict
         """
@@ -277,7 +278,8 @@ class CloudShellHandler(object):
             AttributeNameValue('{}.{}'.format(service_name, key), value)
             for key, value in attributes.items()
         ]
-        self.api.AddServiceToReservation(reservation_id, service_name, service_name, attributes)
+        self.api.AddServiceToReservation(
+            reservation_id, service_model, service_name, attributes)
 
         self.logger.debug('Added the service to the reservation')
 
@@ -310,9 +312,30 @@ class CloudShellHandler(object):
         self.logger.info('Ending a reservation for {}'.format(reservation_id))
         self.api.EndReservation(reservation_id)
 
+    def _execute_command(self, reservation_id, target_name, target_type, command_name,
+                         command_kwargs):
+        """Execute a command on the target.
+
+        :type reservation_id: str
+        :type target_name: str
+        :type target_type: str
+        :param target_type: Resource or Service
+        :type command_name: str
+        :type command_kwargs: dict[str, str]
+        :rtype: str
+        """
+        self.logger.debug(
+            'Executing command {} with kwargs {} for the target {} in the reservation {}'.format(
+                command_name, command_kwargs, target_name, reservation_id))
+        command_kwargs = [InputNameValue(key, value) for key, value in command_kwargs.items()]
+        resp = self.api.ExecuteCommand(
+            reservation_id, target_name, target_type, command_name, command_kwargs, True)
+        self.logger.debug('Executed command, output {}'.format(resp.Output))
+        return resp.Output
+
     def execute_command_on_resource(
             self, reservation_id, resource_name, command_name, command_kwargs):
-        """Execute a command on the resource
+        """Execute a command on the resource.
 
         :param str reservation_id: reservation id
         :param str resource_name: resource name
@@ -320,15 +343,13 @@ class CloudShellHandler(object):
         :param dict command_kwargs: command params
         :rtype: str
         """
+        return self._execute_command(
+            reservation_id, resource_name, 'Resource', command_name, command_kwargs)
 
-        self.logger.debug(
-            'Executing command {} with kwargs {} for resource {} in reservation {}'.format(
-                command_name, command_kwargs, resource_name, reservation_id))
-        command_kwargs = [InputNameValue(key, value) for key, value in command_kwargs.items()]
-        resp = self.api.ExecuteCommand(
-            reservation_id, resource_name, 'Resource', command_name, command_kwargs, True)
-        self.logger.debug('Executed command, output {}'.format(resp.Output))
-        return resp.Output
+    def execute_command_on_service(
+            self, reservation_id, service_name, command_name, command_kwargs):
+        return self._execute_command(
+            reservation_id, service_name, 'Service', command_name, command_kwargs)
 
     def get_resource_details(self, resource_name):
         """Get resource details

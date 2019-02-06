@@ -84,13 +84,15 @@ class SandboxHandler(object):
         """
         self.cs_handler.add_resource_to_reservation(self.reservation_id, resource_name)
 
-    def add_service_to_reservation(self, service_model, attributes):
+    def add_service_to_reservation(self, service_model, service_name, attributes):
         """Add the service to the reservation.
 
         :type service_model: str
+        :type service_name: str
         :type attributes: dict
         """
-        self.cs_handler.add_service_to_reservation(self.reservation_id, service_model, attributes)
+        self.cs_handler.add_service_to_reservation(
+            self.reservation_id, service_model, service_name, attributes)
 
     def delete_reservation(self):
         """Delete the reservation."""
@@ -106,6 +108,16 @@ class SandboxHandler(object):
         return self.cs_handler.execute_command_on_resource(
             self.reservation_id, resource_name, command_name, command_kwargs)
 
+    def execute_service_command(self, service_name, command_name, command_kwargs):
+        """Execute the command for the service.
+
+        :type service_name: str
+        :type command_name: str
+        :type command_kwargs: dict[str, str]
+        """
+        return self.cs_handler.execute_command_on_service(
+            self.reservation_id, service_name, command_name, command_kwargs)
+
     @call_exit_func_on_exc
     def __enter__(self):
         self.create_reservation()
@@ -120,7 +132,8 @@ class SandboxHandler(object):
             self.add_resource_to_reservation(resource_handler.name)
 
         for service_handler in self.service_handlers:
-            self.add_service_to_reservation(service_handler.model, service_handler.attributes)
+            self.add_service_to_reservation(
+                service_handler.model, service_handler.name, service_handler.attributes)
 
         return self
 

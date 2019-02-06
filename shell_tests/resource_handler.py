@@ -25,7 +25,7 @@ class ResourceHandler(object):
         """
         self.name = name
         self.device_ip = device_ip
-        self.tests_config = tests_conf
+        self.tests_conf = tests_conf
         self.cs_handler = cs_handler
         self.sandbox_handler = sandbox_handler
         self.shell_handler = shell_handler
@@ -277,3 +277,24 @@ class ServiceHandler(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         return False
+
+    def execute_command(self, command_name, command_kwargs):
+        """Execute the command for the service.
+
+        :type command_name: str
+        :type command_kwargs: dict[str, str]
+        """
+        return self.sandbox_handler.execute_service_command(self.name, command_name, command_kwargs)
+
+    def load_config(self, config_path, use_ports_from_res=False):
+        """Execute command load_config for the service.
+
+        :type config_path: str
+        :type use_ports_from_res: bool
+        """
+        return self.execute_command(
+            'load_config', {
+                'config_file_location': config_path,
+                'use_ports_from_reservation': use_ports_from_res,
+            },
+        )
