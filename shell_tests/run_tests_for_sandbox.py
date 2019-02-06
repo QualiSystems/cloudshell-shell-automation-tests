@@ -124,6 +124,11 @@ class RunTestsForSandbox(threading.Thread):
                     resource_report = self.run_resource_tests(resource_handler)
                     sandbox_report.resources_reports.append(resource_report)
 
+            for service_handler in self.sandbox_handler.service_handlers:
+                if service_handler.tests_conf.run_tests:
+                    service_report = self.run_service_tests(service_handler)
+                    sandbox_report.services_reports.append(service_report)
+
         with self.REPORT_LOCK:
             self.reporting.sandboxes_reports.append(sandbox_report)
 
@@ -193,6 +198,49 @@ class RunTestsForSandbox(threading.Thread):
             resource_handler.device_ip,
             resource_handler.device_type,
             resource_handler.family,
+            is_success,
+            test_result.getvalue(),
+        )
+
+        self.current_test_suite = None
+        return report
+
+    def run_service_tests(self, service_handler):
+        """Run tests based on the service type and config.
+
+        :type service_handler: shell_tests.resource_handler.ServiceHandler
+        :rtype: ServiceReport
+        """
+        self.current_test_suite = PatchedTestSuite()
+
+        test_cases_map = TEST_CASES_MAP[service_handler.family][service_handler.device_type]
+
+        test_cases = []
+        for command in get_driver_commands(service_handler.shell_handler.shell_path):
+            test_case = test_cases_map.get(command.lower())
+            if test_case and test_case not in test_cases:
+                test_cases.append(test_case)
+
+        for test_case in test_cases:
+            for test_name in unittest.TestLoader().getTestCaseNames(test_case):
+                test_inst = test_case(
+                    test_name,
+                    service_handler,
+                    self.sandbox_handler,
+                    self.logger,
+                )
+
+                self.current_test_suite.addTest(test_inst)
+
+        test_result = StringIO()
+        is_success = self.test_runner(
+            test_result, verbosity=2,
+        ).run(self.current_test_suite).wasSuccessful()
+
+        report = ServiceReport(
+            service_handler.name,
+            service_handler.device_type,
+            service_handler.family,
             is_success,
             test_result.getvalue(),
         )
