@@ -81,7 +81,7 @@ class ResourceConfig(object):
         self.name = name
         self.shell_name = shell_name
         self.device_ip = device_ip
-        self.attributes = attributes
+        self.attributes = attributes or {}
         self.tests_conf = tests_conf
 
     @classmethod
@@ -109,7 +109,7 @@ class ServiceConfig(object):
         """
         self.name = name
         self.shell_name = shell_name
-        self.attributes = attributes
+        self.attributes = attributes or {}
         self.tests_conf = tests_conf
 
     @classmethod
@@ -142,13 +142,16 @@ class FTPConfig(object):
 
 
 class TestsConfig(object):
-    def __init__(self, expected_failures, run_tests=True):
+    def __init__(self, expected_failures, params, run_tests=True):
         """Tests config.
 
         :type expected_failures: dict[str, str]
+        :type params: dict[str, dict[str, str]]
+        :param params: {command_name: {param_name: param_value}}
         :type run_tests: bool
         """
         self.expected_failures = expected_failures
+        self.params = params
         self.run_tests = run_tests
 
     @classmethod
@@ -156,6 +159,7 @@ class TestsConfig(object):
         config = config or {}
         return cls(
             config.get('Expected failures', {}),
+            config.get('Params', {}),
             config.get('Run Tests', True),
         )
 
