@@ -23,9 +23,9 @@ class TestAutoloadNetworkDevices(BaseTestCase):
             return resource_info.ResourceFamilyName
 
     def test_structure(self):
-        self.resource_handler.autoload()
+        self.target_handler.autoload()
 
-        info = self.resource_handler.get_details()
+        info = self.target_handler.get_details()
         structure = self._get_structure(info)
 
         self.assertIn('CS_Port', str(structure))
@@ -33,9 +33,9 @@ class TestAutoloadNetworkDevices(BaseTestCase):
 
 class TestAutoloadTrafficGeneratorDevices(TestAutoloadNetworkDevices):
     def test_structure(self):
-        self.resource_handler.autoload()
+        self.target_handler.autoload()
 
-        info = self.resource_handler.get_details()
+        info = self.target_handler.get_details()
         structure = self._get_structure(info)
 
         self.assertIn('CS_TrafficGeneratorPort', str(structure))
@@ -47,4 +47,4 @@ class TestAutoloadWithoutDevice(BaseTestCase):
         error_pattern = r'(SessionManagerException|\'ConnectionError\')'
 
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
-            self.resource_handler.autoload()
+            self.target_handler.autoload()
