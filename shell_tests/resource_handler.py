@@ -1,11 +1,14 @@
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
 
-class ResourceHandler(object):
-    RESERVATION_NAME = 'automation_tests'
+class DeviceType(object):
     REAL_DEVICE = 'Real device'
     SIMULATOR = 'Simulator'
     WITHOUT_DEVICE = 'Without device'
+
+
+class ResourceHandler(object):
+    RESERVATION_NAME = 'automation_tests'
 
     def __init__(self, name, device_ip, attributes, tests_conf, cs_handler, sandbox_handler,
                  shell_handler, logger):
@@ -56,11 +59,11 @@ class ResourceHandler(object):
     @property
     def device_type(self):
         if not self.device_ip:
-            return self.WITHOUT_DEVICE
+            return DeviceType.WITHOUT_DEVICE
         elif self.attributes.get('User'):
-            return self.REAL_DEVICE
+            return DeviceType.REAL_DEVICE
         else:
-            return self.SIMULATOR
+            return DeviceType.SIMULATOR
 
     def prepare_resource(self):
         """Prepare the Resource.
@@ -224,6 +227,7 @@ class ResourceHandler(object):
 
 
 class ServiceHandler(object):
+
     def __init__(self, name, attributes, tests_conf, cs_handler, sandbox_handler, shell_handler,
                  logger):
         """Handler for the Service.
@@ -243,6 +247,7 @@ class ServiceHandler(object):
         self.shell_handler = shell_handler
         self.logger = logger
         self.model, self.family = shell_handler.model, shell_handler.family
+        self.attributes = attributes
 
         self.attributes = {}
         self._initial_attributes = attributes or {}

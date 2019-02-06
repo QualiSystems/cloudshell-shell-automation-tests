@@ -15,15 +15,15 @@ from shell_tests.automation_tests.test_run_custom_command import TestRunCustomCo
 from shell_tests.automation_tests.test_save_config import TestSaveConfigWithoutDevice, \
     TestSaveConfig
 from shell_tests.helpers import get_driver_commands
-from shell_tests.report_result import ResourceReport, SandboxReport
-from shell_tests.resource_handler import ResourceHandler
+from shell_tests.report_result import ResourceReport, SandboxReport, ServiceReport
+from shell_tests.resource_handler import DeviceType
 
 
 TEST_CASES_FIREWALL = {
-    ResourceHandler.SIMULATOR: {
+    DeviceType.SIMULATOR: {
         'autoload': TestAutoloadNetworkDevices,
     },
-    ResourceHandler.WITHOUT_DEVICE: {
+    DeviceType.WITHOUT_DEVICE: {
         'autoload': TestAutoloadWithoutDevice,
         'run_custom_command': TestRunCustomCommandWithoutDevice,
         'run_custom_config_command': TestRunCustomCommandWithoutDevice,
@@ -32,7 +32,7 @@ TEST_CASES_FIREWALL = {
         'restore': TestRestoreConfigWithoutDevice,
         'orchestration_restore': TestRestoreConfigWithoutDevice,
     },
-    ResourceHandler.REAL_DEVICE: {
+    DeviceType.REAL_DEVICE: {
         'autoload': TestAutoloadNetworkDevices,
         'run_custom_command': TestRunCustomCommand,
         'run_custom_config_command': TestRunCustomCommand,
@@ -43,16 +43,16 @@ TEST_CASES_FIREWALL = {
     },
 }
 TEST_CASES_ROUTER = TEST_CASES_FIREWALL
-TEST_CASES_ROUTER[ResourceHandler.REAL_DEVICE]['applyconnectivitychanges'] = TestConnectivity
+TEST_CASES_ROUTER[DeviceType.REAL_DEVICE]['applyconnectivitychanges'] = TestConnectivity
 TEST_CASES_SWITCH = TEST_CASES_ROUTER
 TEST_CASES_TRAFFIC_GENERATOR_CHASSIS = {
-    ResourceHandler.REAL_DEVICE: {
+    DeviceType.REAL_DEVICE: {
         'autoload': TestAutoloadTrafficGeneratorDevices,
     },
-    ResourceHandler.WITHOUT_DEVICE: {
+    DeviceType.WITHOUT_DEVICE: {
         'autoload': TestAutoloadWithoutDevice,
     },
-    ResourceHandler.SIMULATOR: {
+    DeviceType.SIMULATOR: {
         'autoload': TestAutoloadTrafficGeneratorDevices,
     }
 }
@@ -154,12 +154,12 @@ class RunTestsForSandbox(threading.Thread):
         """
         self.current_test_suite = PatchedTestSuite()
 
-        if resource_handler.device_type == resource_handler.WITHOUT_DEVICE:
+        if resource_handler.device_type == DeviceType.WITHOUT_DEVICE:
             self.logger.warning(
                 '"{}" is a fake device so test only installing env '
                 'and trying to execute commands and getting an expected '
                 'error for connection'.format(resource_handler.name))
-        elif resource_handler.device_type == resource_handler.SIMULATOR:
+        elif resource_handler.device_type == DeviceType.SIMULATOR:
             self.logger.warning(
                 '"{}" is a simulator so testing only an Autoload'.format(resource_handler.name))
 
