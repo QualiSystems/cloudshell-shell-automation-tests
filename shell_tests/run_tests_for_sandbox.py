@@ -162,28 +162,31 @@ class RunTestsForSandbox(threading.Thread):
         """
         return SandboxReport(self.sandbox_handler.name, True, '')
 
-    def run_resource_tests(self, resource_handler):
-        """Run tests based on the resource type and config.
+    def _run_target_tests(self, target_handler):
+        """Run tests based on the target type and config.
 
-        :type resource_handler: shell_tests.resource_handler.ResourceHandler
-        :rtype: ResourceReport
-        """
+        :type target_handler: shell_tests.resource_handler.ResourceHandler|shell_tests.resource_handler.ServiceHandler
+        :rtype (bool, str)
+        :return: is success and tests result"""
         self.current_test_suite = PatchedTestSuite()
 
-        if resource_handler.device_type == DeviceType.WITHOUT_DEVICE:
+        if target_handler.device_type == DeviceType.WITHOUT_DEVICE:
             self.logger.warning(
                 '"{}" is a fake device so test only installing env '
                 'and trying to execute commands and getting an expected '
-                'error for connection'.format(resource_handler.name))
-        elif resource_handler.device_type == DeviceType.SIMULATOR:
+                'error for connection'.format(target_handler.name))
+        elif target_handler.device_type == DeviceType.SIMULATOR:
             self.logger.warning(
-                '"{}" is a simulator so testing only an Autoload'.format(resource_handler.name))
+                '"{}" is a simulator so testing only an Autoload'.format(target_handler.name))
 
-        test_cases_map = TEST_CASES_MAP[resource_handler.family][resource_handler.device_type]
+        test_cases_map = TEST_CASES_MAP[target_handler.family][target_handler.device_type]
 
-        test_cases = [test_cases_map.get('autoload')]
+        if target_handler.family in {'CS_Router', 'CS_Firewall', 'CS_Switch'}:
+            test_cases = [test_cases_map.get('autoload')]
+        else:
+            test_cases = []
 
-        for command in get_driver_commands(resource_handler.shell_handler.shell_path):
+        for command in get_driver_commands(target_handler.shell_handler.shell_path):
             test_case = test_cases_map.get(command.lower())
             if test_case and test_case not in test_cases:
                 test_cases.append(test_case)
@@ -192,7 +195,7 @@ class RunTestsForSandbox(threading.Thread):
             for test_name in unittest.TestLoader().getTestCaseNames(test_case):
                 test_inst = test_case(
                     test_name,
-                    resource_handler,
+                    target_handler,
                     self.sandbox_handler,
                     self.logger,
                 )
@@ -204,17 +207,25 @@ class RunTestsForSandbox(threading.Thread):
             test_result, verbosity=2,
         ).run(self.current_test_suite).wasSuccessful()
 
-        report = ResourceReport(
+        self.current_test_suite = None
+        return is_success, test_result.getvalue()
+
+    def run_resource_tests(self, resource_handler):
+        """Run tests based on the resource type and config.
+
+        :type resource_handler: shell_tests.resource_handler.ResourceHandler
+        :rtype: ResourceReport
+        """
+        is_success, test_result = self._run_target_tests(resource_handler)
+
+        return ResourceReport(
             resource_handler.name,
             resource_handler.device_ip,
             resource_handler.device_type,
             resource_handler.family,
             is_success,
-            test_result.getvalue(),
+            test_result,
         )
-
-        self.current_test_suite = None
-        return report
 
     def run_service_tests(self, service_handler):
         """Run tests based on the service type and config.
@@ -222,39 +233,12 @@ class RunTestsForSandbox(threading.Thread):
         :type service_handler: shell_tests.resource_handler.ServiceHandler
         :rtype: ServiceReport
         """
-        self.current_test_suite = PatchedTestSuite()
+        is_success, test_result = self._run_target_tests(service_handler)
 
-        test_cases_map = TEST_CASES_MAP[service_handler.family][service_handler.device_type]
-
-        test_cases = []
-        for command in get_driver_commands(service_handler.shell_handler.shell_path):
-            test_case = test_cases_map.get(command.lower())
-            if test_case and test_case not in test_cases:
-                test_cases.append(test_case)
-
-        for test_case in test_cases:
-            for test_name in unittest.TestLoader().getTestCaseNames(test_case):
-                test_inst = test_case(
-                    test_name,
-                    service_handler,
-                    self.sandbox_handler,
-                    self.logger,
-                )
-
-                self.current_test_suite.addTest(test_inst)
-
-        test_result = StringIO()
-        is_success = self.test_runner(
-            test_result, verbosity=2,
-        ).run(self.current_test_suite).wasSuccessful()
-
-        report = ServiceReport(
+        return ServiceReport(
             service_handler.name,
             service_handler.device_type,
             service_handler.family,
             is_success,
-            test_result.getvalue(),
+            test_result,
         )
-
-        self.current_test_suite = None
-        return report
