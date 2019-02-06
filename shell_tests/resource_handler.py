@@ -249,8 +249,7 @@ class ServiceHandler(object):
         self.model, self.family = shell_handler.model, shell_handler.family
         self.attributes = attributes
 
-        self.attributes = {}
-        self._initial_attributes = attributes or {}
+        self._related_resource_handler = None
 
     @classmethod
     def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
@@ -271,6 +270,23 @@ class ServiceHandler(object):
             shell_handler,
             logger,
         )
+
+    @property
+    def device_type(self):
+        if self.related_resource_handler:
+            return self.related_resource_handler.device_type
+
+        return DeviceType.REAL_DEVICE
+
+    @property
+    def related_resource_handler(self):
+        if self._related_resource_handler is False:
+            return
+
+        if self._related_resource_handler is None:
+            self._related_resource_handler = self.sandbox_handler.resource_handlers[0]
+
+        return self._related_resource_handler
 
     def __enter__(self):
         return self
