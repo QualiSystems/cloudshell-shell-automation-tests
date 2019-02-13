@@ -6,11 +6,12 @@ from shell_tests.resource_handler import ResourceHandler, ServiceHandler
 
 
 class SandboxHandler(object):
-    def __init__(self, name, resource_configs, service_configs, cs_handler, shell_handlers,
+    def __init__(self, name, blueprint_name, resource_configs, service_configs, cs_handler, shell_handlers,
                  ftp_handler, logger):
         """Sandbox Handler that creates reservation adds resources.
 
         :type name: str
+        :type blueprint_name: str
         :type resource_configs: list[shell_tests.configs.ResourceConfig]
         :type service_configs: list[shell_tests.configs.ServiceConfig]
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
@@ -19,6 +20,7 @@ class SandboxHandler(object):
         :type logger: logging.Logger
         """
         self.name = name
+        self.blueprint_name = blueprint_name
         self.resource_configs = resource_configs
         self.service_configs = service_configs
         self.cs_handler = cs_handler
@@ -65,6 +67,7 @@ class SandboxHandler(object):
         """
         return cls(
             conf.name,
+            conf.blueprint_name,
             resource_configs,
             service_configs,
             cs_handler,
@@ -75,7 +78,12 @@ class SandboxHandler(object):
 
     def create_reservation(self):
         """Create the reservation."""
-        self.reservation_id = self.cs_handler.create_reservation(self.name)
+        if self.blueprint_name:
+            rid = self.cs_handler.create_topology_reservation(self.name, self.blueprint_name)
+        else:
+            rid = self.cs_handler.create_reservation(self.name)
+
+        self.reservation_id = rid
 
     def add_resource_to_reservation(self, resource_name):
         """Add a resource to the reservation.
@@ -93,6 +101,10 @@ class SandboxHandler(object):
         """
         self.cs_handler.add_service_to_reservation(
             self.reservation_id, service_model, service_name, attributes)
+
+    def end_reservation(self):
+        """End the reservation."""
+        return self.cs_handler.end_reservation(self.reservation_id)
 
     def delete_reservation(self):
         """Delete the reservation."""
@@ -139,6 +151,7 @@ class SandboxHandler(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.reservation_id:
+            self.end_reservation()
             self.delete_reservation()
 
         if self.resource_service_stack:

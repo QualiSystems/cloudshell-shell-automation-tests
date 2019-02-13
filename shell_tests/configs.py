@@ -195,16 +195,18 @@ class ShellConfig(object):
 
 
 class SandboxConfig(object):
-    def __init__(self, name, resource_names, service_names):
+    def __init__(self, name, resource_names, service_names, blueprint_name):
         """Sandbox config.
 
         :type name: str
         :type resource_names: list[str]
         :type service_names: list[str]
+        :type blueprint_name: str
         """
         self.name = name
         self.resource_names = resource_names
         self.service_names = service_names
+        self.blueprint_name = blueprint_name
 
     @classmethod
     def from_dict(cls, config):
@@ -213,12 +215,32 @@ class SandboxConfig(object):
                 config['Name'],
                 config['Resources'],
                 config.get('Services', []),
+                config.get('Blueprint Name'),
+            )
+
+
+class BlueprintConfig(object):
+    def __init__(self, name, path):
+        """Blueprint config.
+
+        :type name: str
+        :type path: str
+        """
+        self.name = name
+        self.path = path
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Name'],
+                config['Path'],
             )
 
 
 class MainConfig(object):
     def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, services_conf, sandboxes_conf,
-                 ftp_conf):
+                 ftp_conf, blueprints_conf):
         """Main config.
 
         :type do_conf: DoConfig
@@ -228,6 +250,7 @@ class MainConfig(object):
         :type services_conf: OrderedDict[str, ServiceConfig]
         :type sandboxes_conf: OrderedDict[str, SandboxConfig]
         :type ftp_conf: FTPConfig
+        :type blueprints_conf: OrderedDict[str, BlueprintConfig]
         """
         self.do_conf = do_conf
         self.cs_conf = cs_conf
@@ -236,6 +259,7 @@ class MainConfig(object):
         self.services_conf = services_conf
         self.sandboxes_conf = sandboxes_conf
         self.ftp_conf = ftp_conf
+        self.blueprints_conf = blueprints_conf
 
     @classmethod
     def parse_from_yaml(cls, test_conf_path, env_conf_path=None):
@@ -270,6 +294,10 @@ class MainConfig(object):
             for sandbox_conf in config['Sandboxes']
         )
         ftp_conf = FTPConfig.from_dict(config.get('FTP'))
+        blueprints_conf = OrderedDict(
+            (blueprint_conf['Name'], BlueprintConfig.from_dict(blueprint_conf))
+            for blueprint_conf in config.get('Blueprints', [])
+        )
 
         return cls(
             do_conf,
@@ -279,6 +307,7 @@ class MainConfig(object):
             services_conf,
             sandboxes_conf,
             ftp_conf,
+            blueprints_conf,
         )
 
     @staticmethod

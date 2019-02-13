@@ -1,5 +1,7 @@
 from collections import OrderedDict
+from itertools import chain
 
+from shell_tests.blueprint_handler import BlueprintHandler
 from shell_tests.configs import CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
@@ -120,6 +122,10 @@ class RunTestsInCloudShell(object):
             (shell_conf.name, ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
             for shell_conf in self.main_conf.shells_conf.values()
         )
+        self.blueprint_handlers = OrderedDict(
+            (conf.name, BlueprintHandler.from_conf(conf, self.cs_handler, self.logger))
+            for conf in self.main_conf.blueprints_conf.values()
+        )
 
     def run_tests_for_sandboxes(self):
         """Run tests for sandboxes."""
@@ -165,7 +171,8 @@ class RunTestsInCloudShell(object):
 
         :rtype: Reporting
         """
-        with enter_stacks(self.shell_handlers.values()):
+        stacks = chain(self.shell_handlers.values(), self.blueprint_handlers.values())
+        with enter_stacks(stacks):
             self.run_tests_for_sandboxes()
 
         self.cs_handler.download_logs()

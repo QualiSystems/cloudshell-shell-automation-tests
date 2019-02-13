@@ -1,12 +1,14 @@
 import os
 import re
 import shutil
+import time
 
 from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
     AttributeNameValue, InputNameValue, SetConnectorRequest, UpdateTopologyGlobalInputsRequest
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
 
+from shell_tests.errors import BaseAutomationException
 from shell_tests.smb_handler import SMB
 
 
@@ -113,6 +115,15 @@ class CloudShellHandler(object):
 
             self.rest_api.update_shell(shell_path, shell_name)
             self.logger.debug('Updated {} Shell'.format(shell_name))
+
+    def import_package(self, package_path):
+        """Import the package to the CloudShell.
+
+        :type package_path: str
+        """
+        self.logger.info('Importing a package {} to the CloudShell'.format(package_path))
+        self.rest_api.import_package(package_path)
+        self.logger.debug('Imported the package')
 
     def add_cs_standard(self, standard_path):
         """Put standard into tosca standards' dir.
@@ -303,14 +314,24 @@ class CloudShellHandler(object):
         self.api.DeleteReservation(reservation_id)
         self.logger.debug('Deleted the reservation')
 
-    def end_reservation(self, reservation_id):
-        """End the reservation
+    def end_reservation(self, reservation_id, wait=True):
+        """End the reservation.
 
-        :param str reservation_id:
+        :type reservation_id: str
+        :type wait: bool
         """
-
         self.logger.info('Ending a reservation for {}'.format(reservation_id))
         self.api.EndReservation(reservation_id)
+
+        if wait:
+            for _ in range(30):
+                status = self.get_reservation_status(reservation_id).Status
+                if status == 'Completed':
+                    break
+                time.sleep(30)
+            else:
+                raise BaseAutomationException('Can\'t end reservation')
+            self.logger.info('Reservation ended')
 
     def _execute_command(self, reservation_id, target_name, target_type, command_name,
                          command_kwargs):
