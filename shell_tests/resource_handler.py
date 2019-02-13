@@ -303,7 +303,7 @@ class ServiceHandler(object):
         return self.sandbox_handler.execute_service_command(self.name, command_name, command_kwargs)
 
     def load_config(self, config_path, use_ports_from_res=False):
-        """Execute command load_config for the service.
+        """Execute a command load_config for the service.
 
         :type config_path: str
         :type use_ports_from_res: bool
@@ -314,3 +314,15 @@ class ServiceHandler(object):
                 'use_ports_from_reservation': use_ports_from_res,
             },
         )
+
+    def start_traffic(self):
+        """Execute a command start traffic for the service."""
+        return self.execute_command('start_traffic', {})
+
+    def stop_traffic(self):
+        """Execute a command stop traffic for the service."""
+        return self.execute_command('stop_traffic', {})
+
+    def get_statistics(self):
+        """Execute a command get statistics for the service."""
+        return self.execute_command('get_statistics', {})
