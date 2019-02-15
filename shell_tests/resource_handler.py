@@ -283,6 +283,10 @@ class ServiceHandler(object):
 
     @property
     def related_resource_handler(self):
+        """Return related resource for the service.
+
+        :rtype: ResourceHandler
+        """
         if self._related_resource_handler is False:
             return
 

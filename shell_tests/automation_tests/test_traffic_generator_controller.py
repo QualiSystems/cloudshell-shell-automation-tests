@@ -4,7 +4,16 @@ from shell_tests.automation_tests.base import BaseTestCase
 from shell_tests.errors import BaseAutomationException
 
 
-class TestLoadConfig(BaseTestCase):
+class BaseControllerTestCase(BaseTestCase):
+    RUN_AUTOLOAD_FOR_RELATED_RESOURCE = True
+
+    def setUp(self):
+        if self.RUN_AUTOLOAD_FOR_RELATED_RESOURCE and \
+                not self.target_handler.related_resource_handler.is_autoload_finished:
+            self.target_handler.related_resource_handler.autoload()
+
+
+class TestLoadConfig(BaseControllerTestCase):
     def test_load_config(self):
         try:
             params = self.target_handler.tests_conf.params['load_config']
@@ -21,22 +30,24 @@ class TestLoadConfig(BaseTestCase):
         self.target_handler.load_config(**kwargs)
 
 
-class TestStartTraffic(BaseTestCase):
+class TestStartTraffic(BaseControllerTestCase):
     def test_start_traffic(self):
         self.target_handler.start_traffic()
 
 
-class TestStopTraffic(BaseTestCase):
+class TestStopTraffic(BaseControllerTestCase):
     def test_stop_traffic(self):
         self.target_handler.stop_traffic()
 
 
-class TestGetStatistics(BaseTestCase):
+class TestGetStatistics(BaseControllerTestCase):
     def test_get_statistics(self):
         self.target_handler.get_statistics()
 
 
 class TestLoadConfigWithoutDevice(TestLoadConfig):
+    RUN_AUTOLOAD_FOR_RELATED_RESOURCE = False
+
     def test_load_config(self):
         error_pattern = r'(SessionManagerException|\'ConnectionError\')'
 
@@ -45,6 +56,8 @@ class TestLoadConfigWithoutDevice(TestLoadConfig):
 
 
 class TestStartTrafficWithoutDevice(TestStartTraffic):
+    RUN_AUTOLOAD_FOR_RELATED_RESOURCE = False
+
     def test_start_traffic(self):
         error_pattern = r'(SessionManagerException|\'ConnectionError\')'
 
@@ -53,6 +66,8 @@ class TestStartTrafficWithoutDevice(TestStartTraffic):
 
 
 class TestStopTrafficWithoutDevice(TestStopTraffic):
+    RUN_AUTOLOAD_FOR_RELATED_RESOURCE = False
+
     def test_stop_traffic(self):
         error_pattern = r'(SessionManagerException|\'ConnectionError\')'
 
@@ -61,6 +76,8 @@ class TestStopTrafficWithoutDevice(TestStopTraffic):
 
 
 class TestGetStatisticsWithoutDevice(TestGetStatistics):
+    RUN_AUTOLOAD_FOR_RELATED_RESOURCE = False
+
     def test_get_statistics(self):
         error_pattern = r'(SessionManagerException|\'ConnectionError\')'
 
