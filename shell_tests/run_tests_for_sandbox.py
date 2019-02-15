@@ -174,7 +174,8 @@ class RunTestsForSandbox(threading.Thread):
 
         :type target_handler: shell_tests.resource_handler.ResourceHandler|shell_tests.resource_handler.ServiceHandler
         :rtype (bool, str)
-        :return: is success and tests result"""
+        :return: is success and tests result
+        """
         self.current_test_suite = PatchedTestSuite()
 
         if target_handler.device_type == DeviceType.WITHOUT_DEVICE:

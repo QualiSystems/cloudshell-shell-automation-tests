@@ -4,6 +4,7 @@ from tests.base_tests import BaseTestCase, CS_USER
 
 
 @patch('shell_tests.run_tests.is_host_alive')
+@patch('shell_tests.cs_handler.time', MagicMock())
 class TestNetworkingDevice(BaseTestCase):
     def setUp(self):
         super(TestNetworkingDevice, self).setUp()
@@ -78,11 +79,21 @@ class TestNetworkingDevice(BaseTestCase):
              for key, val in self.conf.resources_conf.values()[0].attributes.items()}
         )
 
+        self.cs_api_mock.EndReservation.assert_called_once_with(self._cs_reservation_ids[0])
+        self.cs_api_mock.GetReservationStatus.assert_called_with(self._cs_reservation_ids[0])
         self.cs_api_mock.DeleteReservation.assert_called_once_with(self._cs_reservation_ids[0])
         self.cs_api_mock.DeleteResource.assert_called_once_with(self.conf.resources_conf.keys()[0])
 
         executed_method_names = [call_[0] for call_ in self.cs_api_mock.method_calls]
         expected_method_names = [
-            'CreateImmediateReservation', 'CreateResource', 'SetAttributesValues',
-            'AddResourcesToReservation', 'DeleteReservation', 'DeleteResource']
+            'CreateImmediateReservation',
+            'CreateResource',
+            'SetAttributesValues',
+            'AddResourcesToReservation',
+            'EndReservation',
+            'GetReservationStatus',
+            'GetReservationStatus',
+            'DeleteReservation',
+            'DeleteResource',
+        ]
         self.assertSequenceEqual(executed_method_names, expected_method_names)

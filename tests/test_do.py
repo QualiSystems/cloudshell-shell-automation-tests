@@ -6,6 +6,7 @@ from tests.base_tests import BaseTestCase
 
 @patch('shell_tests.run_tests.is_host_alive')
 @patch('shell_tests.do_handler.time', MagicMock())
+@patch('shell_tests.cs_handler.time', MagicMock())
 class TestCreatingCloudShellInDo(BaseTestCase):
 
     def setUp(self):
@@ -79,7 +80,9 @@ class TestCreatingCloudShellInDo(BaseTestCase):
             with self.assertRaisesRegexp(BaseAutomationException, r'CloudShell isn\'t started'):
                 self.test_runner.run()
 
+    @patch('shell_tests.run_tests.RunTestsInCloudShell', MagicMock())
     def test_do_fail_to_end_reservation(self, is_host_alive_mock):
+        # don't run tests
         is_host_alive_mock.return_value = True  # todo move it to setup; p = patch(); p.start; p.stop()
         reservation_status = [
             MagicMock(ReservationSlimStatus=MagicMock(ProvisioningStatus='Ready'))]
@@ -88,6 +91,6 @@ class TestCreatingCloudShellInDo(BaseTestCase):
             [MagicMock(ReservationSlimStatus=MagicMock(Status='Teardown'))] * 30)
         self.do_api_mock.GetReservationStatus.side_effect = reservation_status
 
-        with self.patch_api():
+        with self.patch_api((self.do_api_mock, MagicMock())):
             with self.assertRaisesRegexp(BaseAutomationException, r'Can\'t end reservation'):
                 self.test_runner.run()

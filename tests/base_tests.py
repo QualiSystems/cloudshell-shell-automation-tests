@@ -9,7 +9,7 @@ from shell_tests.configs import MainConfig
 from shell_tests.run_tests import AutomatedTestsRunner
 
 
-CONFIGS_PATH = os.path.abspath('./tests/test_configs')
+CONFIGS_PATH = os.path.join(os.path.dirname(__file__), 'test_configs')
 CS_TOPOLOGIES = [
     'Environment/CloudShell 8.3 GA',
     'Environment/CloudShell - Latest 8.3',
@@ -40,7 +40,7 @@ class BaseTestCase(unittest.TestCase):
             # creating cs
             MagicMock(ReservationSlimStatus=MagicMock(ProvisioningStatus='Setup')),
             MagicMock(ReservationSlimStatus=MagicMock(ProvisioningStatus='Ready')),
-            # deleting cs
+            # ending cs
             MagicMock(ReservationSlimStatus=MagicMock(Status='Teardown')),
             MagicMock(ReservationSlimStatus=MagicMock(Status='Completed')),
         ]
@@ -64,6 +64,11 @@ class BaseTestCase(unittest.TestCase):
         """Create mock object for the API that uses in CS handler."""
         cs_api_mock = create_autospec(CloudShellAPISession)
         cs_api_mock.CreateImmediateReservation.side_effect = self._get_cs_reservation_id
+        cs_api_mock.GetReservationStatus.side_effect = [
+            # ending cs
+            MagicMock(ReservationSlimStatus=MagicMock(Status='Teardown')),
+            MagicMock(ReservationSlimStatus=MagicMock(Status='Completed')),
+        ]
         cs_api_mock.username = CS_USER
 
         return cs_api_mock
