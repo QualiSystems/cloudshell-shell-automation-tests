@@ -37,10 +37,18 @@ class TestConnectivity(BaseTestCase):
 
     def test_connectivity(self):
         cs_handler = self.target_handler.cs_handler
-        other_handler = self.get_other_device_for_connectivity()
+
+        other_target_handler = self.get_other_device_for_connectivity()
+
+        for handler in (self.target_handler, other_target_handler):
+            if not handler.is_autoload_finished:
+                raise BaseAutomationException(
+                    'Autoload doesn\'t finish for the {} resource,'
+                    ' so skip testing connectivity'.format(handler.name)
+                )
 
         res_info = self.target_handler.get_details()
-        dut_info = cs_handler.get_resource_details(other_handler.name)
+        dut_info = cs_handler.get_resource_details(other_target_handler.name)
 
         res_port1 = find_port_name(res_info)
         res_port2 = find_port_name(res_info, {res_port1})

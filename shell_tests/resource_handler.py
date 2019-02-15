@@ -35,6 +35,8 @@ class ResourceHandler(object):
         self.attributes = {}
         self._initial_attributes = attributes or {}
 
+        self.is_autoload_finished = False
+
     @classmethod
     def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
         """Create Resource Handler from the config and handlers.
@@ -118,6 +120,7 @@ class ResourceHandler(object):
             self.cs_handler.update_driver_for_the_resource(self.name, self.model)
             result = self.cs_handler.resource_autoload(self.name)
 
+        self.is_autoload_finished = True
         return result
 
     def get_details(self):
