@@ -309,27 +309,35 @@ class ServiceHandler(object):
         """
         return self.sandbox_handler.execute_service_command(self.name, command_name, command_kwargs)
 
-    def load_config(self, config_path, use_ports_from_res=False):
+    def load_config(self, config_path, extra_kwargs=None):
         """Execute a command load_config for the service.
 
         :type config_path: str
-        :type use_ports_from_res: bool
+        :type extra_kwargs: dict
         """
-        return self.execute_command(
-            'load_config', {
-                'config_file_location': config_path,
-                'use_ports_from_reservation': use_ports_from_res,
-            },
+        extra_kwargs = extra_kwargs or {}
+        extra_kwargs.update(
+            {'config_file_location': config_path}
         )
+        return self.execute_command('load_config', extra_kwargs)
 
-    def start_traffic(self):
-        """Execute a command start traffic for the service."""
-        return self.execute_command('start_traffic', {})
+    def start_traffic(self, extra_kwargs=None):
+        """Execute a command start traffic for the service.
 
-    def stop_traffic(self):
-        """Execute a command stop traffic for the service."""
-        return self.execute_command('stop_traffic', {})
+        :type extra_kwargs: dict
+        """
+        return self.execute_command('start_traffic', extra_kwargs or {})
 
-    def get_statistics(self):
-        """Execute a command get statistics for the service."""
-        return self.execute_command('get_statistics', {})
+    def stop_traffic(self, extra_kwargs=None):
+        """Execute a command stop traffic for the service.
+
+        :type extra_kwargs: dict
+        """
+        return self.execute_command('stop_traffic', extra_kwargs or {})
+
+    def get_statistics(self, extra_kwargs=None):
+        """Execute a command get statistics for the service.
+
+        :type extra_kwargs: dict
+        """
+        return self.execute_command('get_statistics', extra_kwargs or {})

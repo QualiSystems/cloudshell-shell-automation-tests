@@ -81,6 +81,7 @@ TEST_CASES_MAP = {
     'CS_TrafficGeneratorChassis': TEST_CASES_TRAFFIC_GENERATOR_CHASSIS,
     'CS_TrafficGeneratorController': TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER,
 }
+AUTOLOAD_TEST_FOR_FAMILIES = {'CS_Router', 'CS_Firewall', 'CS_Switch', 'CS_TrafficGeneratorChassis'}
 
 
 class PatchedTestSuite(unittest.TestSuite):
@@ -189,7 +190,7 @@ class RunTestsForSandbox(threading.Thread):
 
         test_cases_map = TEST_CASES_MAP[target_handler.family][target_handler.device_type]
 
-        if target_handler.family in {'CS_Router', 'CS_Firewall', 'CS_Switch'}:
+        if target_handler.family in AUTOLOAD_TEST_FOR_FAMILIES:
             test_cases = [test_cases_map.get('autoload')]
         else:
             test_cases = []
