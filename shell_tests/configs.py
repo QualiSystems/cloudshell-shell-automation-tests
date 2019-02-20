@@ -68,20 +68,21 @@ class DoConfig(CloudShellConfig):
 
 
 class ResourceConfig(object):
-    def __init__(self, name, shell_name, device_ip, attributes, tests_conf):
+    def __init__(self, name, shell_name, device_ip, attributes, children_attributes, tests_conf):
         """Resource config.
 
         :type name: str
         :type shell_name: str
         :type device_ip: str
-        :type attributes: dict
+        :type attributes: dict[str, str]
+        :type children_attributes: dict[dict[str, str]]
         :type tests_conf: TestsConfig
         """
-
         self.name = name
         self.shell_name = shell_name
         self.device_ip = device_ip
         self.attributes = attributes or {}
+        self.children_attributes = children_attributes or {}
         self.tests_conf = tests_conf
 
     @classmethod
@@ -94,6 +95,7 @@ class ResourceConfig(object):
                 config['Shell Name'],
                 config.get('Device IP'),
                 config.get('Attributes'),
+                config.get('Children Attributes'),
                 tests_conf,
             )
 

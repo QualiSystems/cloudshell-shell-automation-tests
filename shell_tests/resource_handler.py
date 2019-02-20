@@ -10,13 +10,14 @@ class DeviceType(object):
 class ResourceHandler(object):
     RESERVATION_NAME = 'automation_tests'
 
-    def __init__(self, name, device_ip, attributes, tests_conf, cs_handler, sandbox_handler,
-                 shell_handler, logger):
+    def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, cs_handler,
+                 sandbox_handler, shell_handler, logger):
         """Handler for install shell and test it.
 
         :type name: str
         :type device_ip: str
         :type attributes: dict[str, str]
+        :type children_attributes: dict[dict[str, str]]
         :type tests_conf: shell_tests.configs.TestsConfig
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
@@ -34,6 +35,7 @@ class ResourceHandler(object):
 
         self.attributes = {}
         self._initial_attributes = attributes or {}
+        self.children_attributes = children_attributes
 
         self.is_autoload_finished = False
 
@@ -51,6 +53,7 @@ class ResourceHandler(object):
             conf.name,
             conf.device_ip,
             conf.attributes,
+            conf.children_attributes,
             conf.tests_conf,
             cs_handler,
             sandbox_handler,
@@ -109,6 +112,31 @@ class ResourceHandler(object):
             self.cs_handler.set_resource_attributes(self.name, self.model, attributes)
             self.attributes.update(attributes)
 
+    def set_children_attributes(self, children_attributes):
+        """Set children attributes.
+
+        :type children_attributes: dict[dict[str, str]]
+        """
+        for child_name, attributes in children_attributes.items():
+            child_name = '{}/{}'.format(self.name, child_name)
+            child_info = self.cs_handler.get_resource_details(child_name)
+
+            for attribute_name, attribute_value in attributes.items():
+                self.set_child_attribute(child_info, attribute_name, attribute_value)
+
+    def set_child_attribute(self, child_info, attribute_name, attribute_value):
+        namespace = child_info.ResourceModelName
+        for attribute_info in child_info.ResourceAttributes:
+            namespace, name = attribute_info.Name.rsplit('.', 1)
+            if name == attribute_name:
+                break
+
+        self.cs_handler.set_resource_attributes(
+            child_info.Name,
+            namespace,
+            {attribute_name: attribute_value},
+        )
+
     def autoload(self):
         """Run Autoload for the resource."""
         try:
@@ -121,6 +149,10 @@ class ResourceHandler(object):
             result = self.cs_handler.resource_autoload(self.name)
 
         self.is_autoload_finished = True
+
+        if self.children_attributes:
+            self.set_children_attributes(self.children_attributes)
+
         return result
 
     def get_details(self):
