@@ -167,19 +167,22 @@ class TestsConfig(object):
 
 
 class ShellConfig(object):
-    def __init__(self, name, path, dependencies_path, extra_standards_paths, tests_conf):
+    def __init__(self, name, path, dependencies_path, extra_standards_paths, files_to_store,
+                 tests_conf):
         """Shell config.
 
         :type name: str
         :type path: str
         :type dependencies_path: str
         :type extra_standards_paths: list[str]
+        :type files_to_store: dict[str, str]
         :type tests_conf: TestsConfig
         """
         self.name = name
         self.path = path
         self.dependencies_path = dependencies_path
         self.extra_standards_paths = extra_standards_paths
+        self.files_to_store = files_to_store
         self.tests_conf = tests_conf
 
     @classmethod
@@ -192,6 +195,7 @@ class ShellConfig(object):
                 config['Path'],
                 config.get('Dependencies Path'),
                 config.get('Extra CS Standards', []),
+                config.get('Store Files', {}),
                 tests_conf,
             )
 

@@ -128,13 +128,30 @@ class CloudShellHandler(object):
     def add_cs_standard(self, standard_path):
         """Put standard into tosca standards' dir.
 
-        :type standard_path: str"""
+        :type standard_path: str
+        """
         standard_name = os.path.basename(standard_path)
         remote_standard_path = os.path.join(self.TOSCA_STANDARDS_DIR, standard_name)
-        self.logger.warning('Adding tosca standard {} to the CloudShell'.format(standard_name))
 
-        with open(standard_path) as fo:
-            self.smb.put_file(self.CS_SHARE, remote_standard_path, fo)
+        self.logger.warning('Adding a tosca standard {} to the CloudShell'.format(standard_name))
+        self.store_file(remote_standard_path, src_path=standard_path)
+
+    def store_file(self, dst_path, src_path=None, src_obj=None, force=False):
+        """Store the src file to the dst on the CS.
+
+        :type dst_path: str
+        :type src_path: str
+        :type src_obj: file
+        :type force: bool
+        """
+        if not src_obj:
+            src_obj = open(src_path, 'rb')
+
+        try:
+            return self.smb.put_file(self.CS_SHARE, dst_path, src_obj, force)
+        finally:
+            if src_path:
+                src_obj.close()
 
     def get_tosca_standards(self):
         """Get tosca standards from CloudShell.
@@ -436,7 +453,7 @@ class CloudShellHandler(object):
 
         file_path = os.path.join(self.PYPI_PATH, file_name)
         self.logger.debug('Adding a file {} to offline PyPI'.format(file_path))
-        self.smb.put_file(self.CS_SHARE, file_path, file_obj)
+        self.store_file(file_path, src_obj=file_obj)
 
     def get_package_names_from_offline_pypi(self):
         """Get package names from offline PyPI"""
