@@ -373,3 +373,10 @@ class ServiceHandler(object):
         :type extra_kwargs: dict
         """
         return self.execute_command('get_statistics', extra_kwargs or {})
+
+    def get_test_file(self, test_name):
+        """Execute a command get test file for the service.
+
+        :type test_name: str
+        """
+        return self.execute_command('get_test_file', {'test_name': test_name})

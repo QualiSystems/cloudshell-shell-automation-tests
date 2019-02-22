@@ -16,7 +16,8 @@ from shell_tests.automation_tests.test_save_config import TestSaveConfigWithoutD
     TestSaveConfig
 from shell_tests.automation_tests.test_traffic_generator_controller import TestLoadConfig, \
     TestLoadConfigWithoutDevice, TestStartTraffic, TestStopTraffic, TestGetStatistics, \
-    TestStartTrafficWithoutDevice, TestStopTrafficWithoutDevice, TestGetStatisticsWithoutDevice
+    TestStartTrafficWithoutDevice, TestStopTrafficWithoutDevice, TestGetStatisticsWithoutDevice, \
+    TestGetTestFile, TestGetTestFileWithoutDevice
 from shell_tests.helpers import get_driver_commands
 from shell_tests.report_result import ResourceReport, SandboxReport, ServiceReport
 from shell_tests.resource_handler import DeviceType
@@ -65,12 +66,14 @@ TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER = {
         'start_traffic': TestStartTraffic,
         'stop_traffic': TestStopTraffic,
         'get_statistics': TestGetStatistics,
+        'get_test_file': TestGetTestFile,
     },
     DeviceType.WITHOUT_DEVICE: {
         'load_config': TestLoadConfigWithoutDevice,
         'start_traffic': TestStartTrafficWithoutDevice,
         'stop_traffic': TestStopTrafficWithoutDevice,
         'get_statistics': TestGetStatisticsWithoutDevice,
+        'get_test_file': TestGetTestFileWithoutDevice,
     }
 }
 

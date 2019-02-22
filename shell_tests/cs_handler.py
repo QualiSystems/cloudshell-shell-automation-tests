@@ -303,7 +303,7 @@ class CloudShellHandler(object):
             service_name, reservation_id))
 
         attributes = [
-            AttributeNameValue('{}.{}'.format(service_name, key), value)
+            AttributeNameValue('{}.{}'.format(service_model, key), value)
             for key, value in attributes.items()
         ]
         self.api.AddServiceToReservation(

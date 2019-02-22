@@ -1,3 +1,5 @@
+import re
+
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
 from shell_tests.automation_tests.base import BaseTestCase
@@ -40,7 +42,24 @@ class TestStopTraffic(BaseControllerTestCase):
 class TestGetStatistics(BaseControllerTestCase):
     def test_get_statistics(self):
         params = self.target_handler.tests_conf.params.get('get_statistics', {})
-        self.target_handler.get_statistics(params)
+        output = self.target_handler.get_statistics(params)
+        self.assertTrue(output)
+
+
+class TestGetTestFile(BaseControllerTestCase):
+    def test_get_test_file(self):
+        test_name = self.target_handler.tests_conf.params['get_test_file']['test_name']
+        test_path = self.target_handler.get_test_file(test_name)
+        dir_path, test_file_name = re.search(r'^(.*)[\\/](.*?)$', test_path).groups()
+        if not dir_path.lower().startswith('c:\\'):
+            raise BaseAutomationException('Test file have to locate under C:\\')
+
+        dir_path = re.sub(r'^[Cc]:\\', '', dir_path)
+        cs = self.sandbox_handler.cs_handler
+        files = cs.smb.ls(cs.CS_SHARE, dir_path)
+
+        file_names = map(lambda f: f.filename, files)
+        self.assertIn(test_file_name, file_names)
 
 
 class TestLoadConfigWithoutDevice(TestLoadConfig):
@@ -81,3 +100,13 @@ class TestGetStatisticsWithoutDevice(TestGetStatistics):
 
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
             super(TestGetStatisticsWithoutDevice, self).test_get_statistics()
+
+
+class TestGetTestFileWithoutDevice(TestGetTestFile):
+    RUN_AUTOLOAD_FOR_RELATED_RESOURCE = False
+
+    def test_get_test_file(self):
+        error_pattern = r'(SessionManagerException|\'ConnectionError\')'
+
+        with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
+            super(TestGetTestFileWithoutDevice, self).test_get_test_file()
