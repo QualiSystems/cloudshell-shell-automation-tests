@@ -88,7 +88,7 @@ class ResourceConfig(object):
         self.children_attributes = children_attributes or {}
         self.tests_conf = tests_conf
 
-        if not shell_name or not model:
+        if not shell_name and not model:
             raise BaseAutomationException(
                 'You have to specify either shell name or model for the Resource')
 
@@ -124,7 +124,7 @@ class ServiceConfig(object):
         self.attributes = attributes or {}
         self.tests_conf = tests_conf
 
-        if not shell_name or not model:
+        if not shell_name and not model:
             raise BaseAutomationException(
                 'You have to specify either shell name or model for the Resource')
 
