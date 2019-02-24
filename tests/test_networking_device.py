@@ -27,7 +27,7 @@ class TestNetworkingDevice(BaseTestCase):
             zipfile_shell_handler_mock, is_host_alive_mock):
         # check preparing resource without executing tests
         # init
-        res_model = MagicMock()
+        res_model = 'Cisco IOS Switch'
         get_model_mock.return_value = res_model
         is_host_alive_mock.return_value = True
         get_driver_comm_mock.return_value = [
