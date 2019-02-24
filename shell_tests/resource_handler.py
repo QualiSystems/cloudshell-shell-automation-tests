@@ -103,6 +103,7 @@ class ResourceHandler(object):
 
         self.logger.info('The resource {} deleted'.format(self.name))
 
+    @call_exit_func_on_exc
     def __enter__(self):
         self.prepare_resource()
         return self
