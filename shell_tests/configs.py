@@ -69,7 +69,7 @@ class DoConfig(CloudShellConfig):
 
 class ResourceConfig(object):
     def __init__(self, name, shell_name, model, device_ip, attributes, children_attributes,
-                 tests_conf):
+                 tests_conf, first_gen=False):
         """Resource config.
 
         :type name: str
@@ -79,6 +79,7 @@ class ResourceConfig(object):
         :type attributes: dict[str, str]
         :type children_attributes: dict[dict[str, str]]
         :type tests_conf: TestsConfig
+        :type first_gen: bool
         """
         self.name = name
         self.shell_name = shell_name
@@ -87,6 +88,7 @@ class ResourceConfig(object):
         self.attributes = attributes or {}
         self.children_attributes = children_attributes or {}
         self.tests_conf = tests_conf
+        self.first_gen = first_gen
 
         if not shell_name and not model:
             raise BaseAutomationException(
@@ -105,6 +107,7 @@ class ResourceConfig(object):
                 config.get('Attributes'),
                 config.get('Children Attributes'),
                 tests_conf,
+                config.get('First Gen', False),
             )
 
 
@@ -335,12 +338,8 @@ class MainConfig(object):
     def _update_resource_tests_conf(conf):
         for resource_dict in chain(conf.get('Resources', []), conf.get('Services', [])):
             for shell_dict in conf['Shells']:
-                if shell_dict['Name'] == resource_dict['Shell Name']:
+                if shell_dict['Name'] == resource_dict.get('Shell Name'):
+                    resource_dict['Tests'] = merge_dicts(
+                        resource_dict.get('Tests', {}),
+                        shell_dict.get('Tests', {}))
                     break
-            else:
-                raise BaseAutomationException('Resource {} doesn\'t have a Shell'.format(
-                    resource_dict['Name']))
-
-            resource_dict['Tests'] = merge_dicts(
-                resource_dict.get('Tests', {}),
-                shell_dict.get('Tests', {}))

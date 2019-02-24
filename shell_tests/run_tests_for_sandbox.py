@@ -6,7 +6,7 @@ from teamcity import is_running_under_teamcity
 from teamcity.unittestpy import TeamcityTestRunner
 
 from shell_tests.automation_tests.test_autoload import TestAutoloadNetworkDevices, \
-    TestAutoloadWithoutDevice, TestAutoloadTrafficGeneratorDevices
+    TestAutoloadWithoutDevice, TestAutoloadTrafficGeneratorDevices, TestAutoloadWithoutPorts
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import TestRestoreConfigWithoutDevice, \
     TestRestoreConfig
@@ -76,6 +76,14 @@ TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER = {
         'get_test_file': TestGetTestFileWithoutDevice,
     }
 }
+TEST_CASES_GENERIC_APP_FAMILY = {
+    DeviceType.REAL_DEVICE: {
+        'autoload': TestAutoloadWithoutPorts,
+    },
+    DeviceType.WITHOUT_DEVICE: {
+        'autoload': TestAutoloadWithoutDevice,
+    }
+}
 
 TEST_CASES_MAP = {
     'CS_Firewall': TEST_CASES_FIREWALL,
@@ -83,8 +91,15 @@ TEST_CASES_MAP = {
     'CS_Switch': TEST_CASES_SWITCH,
     'CS_TrafficGeneratorChassis': TEST_CASES_TRAFFIC_GENERATOR_CHASSIS,
     'CS_TrafficGeneratorController': TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER,
+    'CS_GenericAppFamily': TEST_CASES_GENERIC_APP_FAMILY,
 }
-AUTOLOAD_TEST_FOR_FAMILIES = {'CS_Router', 'CS_Firewall', 'CS_Switch', 'CS_TrafficGeneratorChassis'}
+AUTOLOAD_TEST_FOR_FAMILIES = {
+    'CS_Router',
+    'CS_Firewall',
+    'CS_Switch',
+    'CS_TrafficGeneratorChassis',
+    'CS_GenericAppFamily',
+}
 
 
 class PatchedTestSuite(unittest.TestSuite):

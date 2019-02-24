@@ -1,5 +1,7 @@
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
+from shell_tests.helpers import call_exit_func_on_exc
+
 
 class DeviceType(object):
     REAL_DEVICE = 'Real device'
@@ -10,8 +12,8 @@ class DeviceType(object):
 class ResourceHandler(object):
     RESERVATION_NAME = 'automation_tests'
 
-    def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, model,
-                 cs_handler, shell_handler, logger, sandbox_handler=None):
+    def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, first_gen,
+                 model, cs_handler, shell_handler, logger, sandbox_handler=None):
         """Handler for install shell and test it.
 
         :type name: str
@@ -19,6 +21,7 @@ class ResourceHandler(object):
         :type attributes: dict[str, str]
         :type children_attributes: dict[dict[str, str]]
         :type tests_conf: shell_tests.configs.TestsConfig
+        :type first_gen: bool
         :type model: str
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :type shell_handler: shell_tests.shell_handler.ShellHandler
@@ -33,6 +36,7 @@ class ResourceHandler(object):
         self.shell_handler = shell_handler
         self.logger = logger
         self.model = model
+        self.first_gen = first_gen
         self._family = None
 
         self.attributes = {}
@@ -57,6 +61,7 @@ class ResourceHandler(object):
             conf.attributes,
             conf.children_attributes,
             conf.tests_conf,
+            conf.first_gen,
             getattr(shell_handler, 'model', conf.model),
             cs_handler,
             shell_handler,
@@ -117,8 +122,9 @@ class ResourceHandler(object):
 
         :type attributes: dict[str, str]
         """
+        namespace = self.model if not self.first_gen else ''
         if attributes:
-            self.cs_handler.set_resource_attributes(self.name, self.model, attributes)
+            self.cs_handler.set_resource_attributes(self.name, namespace, attributes)
             self.attributes.update(attributes)
 
     def set_children_attributes(self, children_attributes):

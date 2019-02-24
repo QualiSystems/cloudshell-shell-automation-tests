@@ -242,18 +242,18 @@ class CloudShellHandler(object):
         return name
 
     def set_resource_attributes(self, resource_name, namespace, attributes):
-        """Set attributes for the resource
+        """Set attributes for the resource.
 
         :param str resource_name: resource name
         :param str namespace: name space
         :param dict attributes: resource attributes
         """
-
         self.logger.info('Setting attributes for {}\n{}'.format(resource_name, attributes))
 
+        namespace += '.' if namespace else ''
         self.api.SetAttributesValues([
             ResourceAttributesUpdateRequest(resource_name, [
-                AttributeNameValue('{}.{}'.format(namespace, key), value)
+                AttributeNameValue('{}{}'.format(namespace, key), value)
                 for key, value in attributes.items()
             ])
         ])

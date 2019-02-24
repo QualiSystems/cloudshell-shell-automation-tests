@@ -31,6 +31,12 @@ class TestAutoloadNetworkDevices(BaseTestCase):
         self.assertIn('CS_Port', str(structure))
 
 
+class TestAutoloadWithoutPorts(BaseTestCase):
+    def test_autoload(self):
+        # just test that it runs without errors
+        self.target_handler.autoload()
+
+
 class TestAutoloadTrafficGeneratorDevices(TestAutoloadNetworkDevices):
     def test_structure(self):
         self.target_handler.autoload()
