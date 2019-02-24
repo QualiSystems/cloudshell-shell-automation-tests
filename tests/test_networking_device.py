@@ -86,9 +86,9 @@ class TestNetworkingDevice(BaseTestCase):
 
         executed_method_names = [call_[0] for call_ in self.cs_api_mock.method_calls]
         expected_method_names = [
-            'CreateImmediateReservation',
             'CreateResource',
             'SetAttributesValues',
+            'CreateImmediateReservation',
             'AddResourcesToReservation',
             'GetResourceDetails',
             'EndReservation',

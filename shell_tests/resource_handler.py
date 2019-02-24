@@ -10,8 +10,8 @@ class DeviceType(object):
 class ResourceHandler(object):
     RESERVATION_NAME = 'automation_tests'
 
-    def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, cs_handler,
-                 sandbox_handler, shell_handler, logger):
+    def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, model,
+                 cs_handler, shell_handler, logger, sandbox_handler=None):
         """Handler for install shell and test it.
 
         :type name: str
@@ -19,10 +19,11 @@ class ResourceHandler(object):
         :type attributes: dict[str, str]
         :type children_attributes: dict[dict[str, str]]
         :type tests_conf: shell_tests.configs.TestsConfig
+        :type model: str
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
-        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         :type shell_handler: shell_tests.shell_handler.ShellHandler
         :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         """
         self.name = name
         self.device_ip = device_ip
@@ -31,7 +32,7 @@ class ResourceHandler(object):
         self.sandbox_handler = sandbox_handler
         self.shell_handler = shell_handler
         self.logger = logger
-        self.model = shell_handler.model
+        self.model = model
         self._family = None
 
         self.attributes = {}
@@ -41,14 +42,14 @@ class ResourceHandler(object):
         self.is_autoload_finished = False
 
     @classmethod
-    def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
+    def from_conf(cls, conf, cs_handler, shell_handler, logger, sandbox_handler=None):
         """Create Resource Handler from the config and handlers.
 
         :type conf: shell_tests.configs.ResourceConfig
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
-        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         :type shell_handler: shell_tests.shell_handler.ShellHandler
         :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         """
         return cls(
             conf.name,
@@ -56,10 +57,11 @@ class ResourceHandler(object):
             conf.attributes,
             conf.children_attributes,
             conf.tests_conf,
+            getattr(shell_handler, 'model', conf.model),
             cs_handler,
-            sandbox_handler,
             shell_handler,
             logger,
+            sandbox_handler,
         )
 
     @property
@@ -269,17 +271,18 @@ class ResourceHandler(object):
 
 class ServiceHandler(object):
 
-    def __init__(self, name, attributes, tests_conf, cs_handler, sandbox_handler, shell_handler,
-                 logger):
+    def __init__(self, name, attributes, tests_conf, model, cs_handler, shell_handler, logger,
+                 sandbox_handler=None):
         """Handler for the Service.
 
         :type name: str
         :type attributes: dict[str, str]
         :type tests_conf: shell_tests.configs.TestsConfig
+        :type model: str
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
-        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         :type shell_handler: shell_tests.shell_handler.ShellHandler
         :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         """
         self.name = name
         self.tests_conf = tests_conf
@@ -287,30 +290,31 @@ class ServiceHandler(object):
         self.sandbox_handler = sandbox_handler
         self.shell_handler = shell_handler
         self.logger = logger
-        self.model = shell_handler.model
+        self.model = model
         self.family = None
         self.attributes = attributes
 
         self._related_resource_handler = None
 
     @classmethod
-    def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
+    def from_conf(cls, conf, cs_handler, shell_handler, logger, sandbox_handler=None):
         """Create Resource Handler from the config and handlers.
 
         :type conf: shell_tests.configs.ServiceConfig
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
-        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         :type shell_handler: shell_tests.shell_handler.ShellHandler
         :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         """
         return cls(
             conf.name,
             conf.attributes,
             conf.tests_conf,
+            getattr(shell_handler, 'model', conf.model),
             cs_handler,
-            sandbox_handler,
             shell_handler,
             logger,
+            sandbox_handler,
         )
 
     @property
