@@ -20,7 +20,7 @@ from contextlib2 import ExitStack
 DOWNLOAD_FOLDER = 'shell_tests'
 
 
-def get_resource_family_and_model(shell_path, logger):
+def get_resource_model_from_shell_definition(shell_path, logger):
     """Get resource family and model from shell-definition.yaml
 
     :param str shell_path: path to Shell zip
@@ -32,11 +32,8 @@ def get_resource_family_and_model(shell_path, logger):
         data = yaml.safe_load(zip_file.read('shell-definition.yaml'))
 
     model = data['node_types'].keys()[0].rsplit('.', 1)[-1]
-    family = data['node_types'].values()[0]['derived_from'].rsplit('.', 1)[-1]
-    family = 'CS_{}'.format(family)  # todo get it from standard
-    logger.debug('Family: {}, model: {} for the Shell {}'.format(
-        family, model, shell_path))
-    return family, model
+    logger.debug('Model: {} for the Shell {}'.format(model, shell_path))
+    return model
 
 
 def download_file(url, folder_path=None):

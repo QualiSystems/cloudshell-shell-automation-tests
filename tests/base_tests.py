@@ -69,6 +69,7 @@ class BaseTestCase(unittest.TestCase):
             MagicMock(ReservationSlimStatus=MagicMock(Status='Teardown')),
             MagicMock(ReservationSlimStatus=MagicMock(Status='Completed')),
         ]
+        cs_api_mock.GetResourceDetails.return_value.ResourceFamilyName = 'CS_Router'
         cs_api_mock.username = CS_USER
 
         return cs_api_mock

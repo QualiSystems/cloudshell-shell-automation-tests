@@ -7,7 +7,7 @@ import tempfile
 import zipfile
 from io import BytesIO
 
-from shell_tests.helpers import download_file, is_url, get_resource_family_and_model, \
+from shell_tests.helpers import download_file, is_url, get_resource_model_from_shell_definition, \
     call_exit_func_on_exc
 
 
@@ -38,7 +38,7 @@ class ShellHandler(object):
             self.download_if_url(src): dst
             for src, dst in files_to_store.items()
         }
-        self.family, self.model = get_resource_family_and_model(self.shell_path, logger)
+        self.model = get_resource_model_from_shell_definition(self.shell_path, logger)
 
     @classmethod
     def from_conf(cls, conf, cs_handler, logger):

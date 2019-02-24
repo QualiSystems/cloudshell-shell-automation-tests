@@ -31,7 +31,8 @@ class ResourceHandler(object):
         self.sandbox_handler = sandbox_handler
         self.shell_handler = shell_handler
         self.logger = logger
-        self.model, self.family = shell_handler.model, shell_handler.family
+        self.model = shell_handler.model
+        self._family = None
 
         self.attributes = {}
         self._initial_attributes = attributes or {}
@@ -70,6 +71,12 @@ class ResourceHandler(object):
         else:
             return DeviceType.SIMULATOR
 
+    @property
+    def family(self):
+        if self._family is None:
+            self._family = self.get_details().ResourceFamilyName
+        return self._family
+
     def prepare_resource(self):
         """Prepare the Resource.
 
@@ -79,7 +86,6 @@ class ResourceHandler(object):
 
         self.name = self.cs_handler.create_resource(
             self.name,
-            self.family,
             self.model,
             self.device_ip or '127.0.0.1',  # if we don't have a real device
         )
@@ -281,7 +287,8 @@ class ServiceHandler(object):
         self.sandbox_handler = sandbox_handler
         self.shell_handler = shell_handler
         self.logger = logger
-        self.model, self.family = shell_handler.model, shell_handler.family
+        self.model = shell_handler.model
+        self.family = None
         self.attributes = attributes
 
         self._related_resource_handler = None

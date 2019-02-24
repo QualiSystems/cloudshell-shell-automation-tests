@@ -205,20 +205,18 @@ class CloudShellHandler(object):
         self.logger.debug('Created a topology reservation id={}'.format(id_))
         return id_
 
-    def create_resource(self, name, family, model, address):
-        """Create resource
+    def create_resource(self, name, model, address, family=''):
+        """Create resource.
 
         :param str name: resource name
-        :param str family: resource family, CS_Switch, CS_Firewall, ...
         :param str model: resource model
         :param str address: resource address
+        :param str family: resource family, CS_Switch, CS_Firewall, ... (Optional)
         :return: resource name
         :rtype: str
         """
-
         self.logger.info('Creating the resource {}'.format(name))
-        self.logger.debug('Name: {}, family: {}, model: {}, address: {}'.format(
-            name, family, model, address))
+        self.logger.debug('Name: {}, model: {}, address: {}'.format(name, model, address))
 
         while True:
             try:
