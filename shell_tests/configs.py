@@ -68,11 +68,13 @@ class DoConfig(CloudShellConfig):
 
 
 class ResourceConfig(object):
-    def __init__(self, name, shell_name, device_ip, attributes, children_attributes, tests_conf):
+    def __init__(self, name, shell_name, model, device_ip, attributes, children_attributes,
+                 tests_conf):
         """Resource config.
 
         :type name: str
         :type shell_name: str
+        :type model: str
         :type device_ip: str
         :type attributes: dict[str, str]
         :type children_attributes: dict[dict[str, str]]
@@ -80,10 +82,15 @@ class ResourceConfig(object):
         """
         self.name = name
         self.shell_name = shell_name
+        self.model = model
         self.device_ip = device_ip
         self.attributes = attributes or {}
         self.children_attributes = children_attributes or {}
         self.tests_conf = tests_conf
+
+        if not shell_name or not model:
+            raise BaseAutomationException(
+                'You have to specify either shell name or model for the Resource')
 
     @classmethod
     def from_dict(cls, config):
@@ -92,7 +99,8 @@ class ResourceConfig(object):
 
             return cls(
                 config['Name'],
-                config['Shell Name'],
+                config.get('Shell Name'),
+                config.get('Model'),
                 config.get('Device IP'),
                 config.get('Attributes'),
                 config.get('Children Attributes'),
@@ -101,18 +109,24 @@ class ResourceConfig(object):
 
 
 class ServiceConfig(object):
-    def __init__(self, name, shell_name, attributes, tests_conf):
+    def __init__(self, name, shell_name, model, attributes, tests_conf):
         """Service config.
 
         :type name: str
         :type shell_name: str
+        :type model: str
         :type attributes: dict
         :type tests_conf: TestsConfig
         """
         self.name = name
         self.shell_name = shell_name
+        self.model = model
         self.attributes = attributes or {}
         self.tests_conf = tests_conf
+
+        if not shell_name or not model:
+            raise BaseAutomationException(
+                'You have to specify either shell name or model for the Resource')
 
     @classmethod
     def from_dict(cls, config):
@@ -121,7 +135,8 @@ class ServiceConfig(object):
 
             return cls(
                 config['Name'],
-                config['Shell Name'],
+                config.get('Shell Name'),
+                config.get('Model'),
                 config.get('Attributes'),
                 tests_conf,
             )
