@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from itertools import chain
 
 import yaml
 
@@ -67,21 +68,31 @@ class DoConfig(CloudShellConfig):
 
 
 class ResourceConfig(object):
-    def __init__(self, name, shell_name, device_ip, attributes, tests_conf):
+    def __init__(self, name, shell_name, model, device_ip, attributes, children_attributes,
+                 tests_conf, first_gen=False):
         """Resource config.
 
         :type name: str
         :type shell_name: str
+        :type model: str
         :type device_ip: str
-        :type attributes: dict
+        :type attributes: dict[str, str]
+        :type children_attributes: dict[dict[str, str]]
         :type tests_conf: TestsConfig
+        :type first_gen: bool
         """
-
         self.name = name
         self.shell_name = shell_name
+        self.model = model
         self.device_ip = device_ip
-        self.attributes = attributes
+        self.attributes = attributes or {}
+        self.children_attributes = children_attributes or {}
         self.tests_conf = tests_conf
+        self.first_gen = first_gen
+
+        if not shell_name and not model:
+            raise BaseAutomationException(
+                'You have to specify either shell name or model for the Resource')
 
     @classmethod
     def from_dict(cls, config):
@@ -90,8 +101,45 @@ class ResourceConfig(object):
 
             return cls(
                 config['Name'],
-                config['Shell Name'],
+                config.get('Shell Name'),
+                config.get('Model'),
                 config.get('Device IP'),
+                config.get('Attributes'),
+                config.get('Children Attributes'),
+                tests_conf,
+                config.get('First Gen', False),
+            )
+
+
+class ServiceConfig(object):
+    def __init__(self, name, shell_name, model, attributes, tests_conf):
+        """Service config.
+
+        :type name: str
+        :type shell_name: str
+        :type model: str
+        :type attributes: dict
+        :type tests_conf: TestsConfig
+        """
+        self.name = name
+        self.shell_name = shell_name
+        self.model = model
+        self.attributes = attributes or {}
+        self.tests_conf = tests_conf
+
+        if not shell_name and not model:
+            raise BaseAutomationException(
+                'You have to specify either shell name or model for the Resource')
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            tests_conf = TestsConfig.from_dict(config.get('Tests'))
+
+            return cls(
+                config['Name'],
+                config.get('Shell Name'),
+                config.get('Model'),
                 config.get('Attributes'),
                 tests_conf,
             )
@@ -114,13 +162,16 @@ class FTPConfig(object):
 
 
 class TestsConfig(object):
-    def __init__(self, expected_failures, run_tests=True):
+    def __init__(self, expected_failures, params, run_tests=True):
         """Tests config.
 
         :type expected_failures: dict[str, str]
+        :type params: dict[str, dict[str, str]]
+        :param params: {command_name: {param_name: param_value}}
         :type run_tests: bool
         """
         self.expected_failures = expected_failures
+        self.params = params
         self.run_tests = run_tests
 
     @classmethod
@@ -128,24 +179,28 @@ class TestsConfig(object):
         config = config or {}
         return cls(
             config.get('Expected failures', {}),
+            config.get('Params', {}),
             config.get('Run Tests', True),
         )
 
 
 class ShellConfig(object):
-    def __init__(self, name, path, dependencies_path, extra_standards_paths, tests_conf):
+    def __init__(self, name, path, dependencies_path, extra_standards_paths, files_to_store,
+                 tests_conf):
         """Shell config.
 
         :type name: str
         :type path: str
         :type dependencies_path: str
         :type extra_standards_paths: list[str]
+        :type files_to_store: dict[str, str]
         :type tests_conf: TestsConfig
         """
         self.name = name
         self.path = path
         self.dependencies_path = dependencies_path
         self.extra_standards_paths = extra_standards_paths
+        self.files_to_store = files_to_store
         self.tests_conf = tests_conf
 
     @classmethod
@@ -158,19 +213,24 @@ class ShellConfig(object):
                 config['Path'],
                 config.get('Dependencies Path'),
                 config.get('Extra CS Standards', []),
+                config.get('Store Files', {}),
                 tests_conf,
             )
 
 
 class SandboxConfig(object):
-    def __init__(self, name, resource_names):
+    def __init__(self, name, resource_names, service_names, blueprint_name):
         """Sandbox config.
 
         :type name: str
         :type resource_names: list[str]
+        :type service_names: list[str]
+        :type blueprint_name: str
         """
         self.name = name
         self.resource_names = resource_names
+        self.service_names = service_names
+        self.blueprint_name = blueprint_name
 
     @classmethod
     def from_dict(cls, config):
@@ -178,26 +238,52 @@ class SandboxConfig(object):
             return cls(
                 config['Name'],
                 config['Resources'],
+                config.get('Services', []),
+                config.get('Blueprint Name'),
+            )
+
+
+class BlueprintConfig(object):
+    def __init__(self, name, path):
+        """Blueprint config.
+
+        :type name: str
+        :type path: str
+        """
+        self.name = name
+        self.path = path
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Name'],
+                config['Path'],
             )
 
 
 class MainConfig(object):
-    def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, sandboxes_conf, ftp_conf):
+    def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, services_conf, sandboxes_conf,
+                 ftp_conf, blueprints_conf):
         """Main config.
 
         :type do_conf: DoConfig
         :type cs_conf: CloudShellConfig
         :type shells_conf: OrderedDict[str, ShellConfig]
         :type resources_conf: OrderedDict[str, ResourceConfig]
+        :type services_conf: OrderedDict[str, ServiceConfig]
         :type sandboxes_conf: OrderedDict[str, SandboxConfig]
         :type ftp_conf: FTPConfig
+        :type blueprints_conf: OrderedDict[str, BlueprintConfig]
         """
         self.do_conf = do_conf
         self.cs_conf = cs_conf
         self.shells_conf = shells_conf
         self.resources_conf = resources_conf
+        self.services_conf = services_conf
         self.sandboxes_conf = sandboxes_conf
         self.ftp_conf = ftp_conf
+        self.blueprints_conf = blueprints_conf
 
     @classmethod
     def parse_from_yaml(cls, test_conf_path, env_conf_path=None):
@@ -223,31 +309,37 @@ class MainConfig(object):
             (resource_conf['Name'], ResourceConfig.from_dict(resource_conf))
             for resource_conf in config['Resources']
         )
+        services_conf = OrderedDict(
+            (service_conf['Name'], ServiceConfig.from_dict(service_conf))
+            for service_conf in config.get('Services', [])
+        )
         sandboxes_conf = OrderedDict(
             (sandbox_conf['Name'], SandboxConfig.from_dict(sandbox_conf))
             for sandbox_conf in config['Sandboxes']
         )
         ftp_conf = FTPConfig.from_dict(config.get('FTP'))
+        blueprints_conf = OrderedDict(
+            (blueprint_conf['Name'], BlueprintConfig.from_dict(blueprint_conf))
+            for blueprint_conf in config.get('Blueprints', [])
+        )
 
         return cls(
             do_conf,
             cs_conf,
             shells_conf,
             resources_conf,
+            services_conf,
             sandboxes_conf,
             ftp_conf,
+            blueprints_conf,
         )
 
     @staticmethod
     def _update_resource_tests_conf(conf):
-        for resource_dict in conf['Resources']:
+        for resource_dict in chain(conf.get('Resources', []), conf.get('Services', [])):
             for shell_dict in conf['Shells']:
-                if shell_dict['Name'] == resource_dict['Shell Name']:
+                if shell_dict['Name'] == resource_dict.get('Shell Name'):
+                    resource_dict['Tests'] = merge_dicts(
+                        resource_dict.get('Tests', {}),
+                        shell_dict.get('Tests', {}))
                     break
-            else:
-                raise BaseAutomationException('Resource {} doesn\'t have a Shell'.format(
-                    resource_dict['Name']))
-
-            resource_dict['Tests'] = merge_dicts(
-                resource_dict.get('Tests', {}),
-                shell_dict.get('Tests', {}))

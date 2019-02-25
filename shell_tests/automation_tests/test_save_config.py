@@ -13,14 +13,14 @@ class TestSaveConfig(BaseTestCase):
         return 'ftp://{0.user}:{0.password}@{0.host}'.format(self.sandbox_handler.ftp_handler)
 
     def test_save_running_config(self):
-        file_name = self.resource_handler.save(self.ftp_path, 'running')
+        file_name = self.target_handler.save(self.ftp_path, 'running')
         self.assertTrue(
             self.sandbox_handler.ftp_handler.get_file(file_name),
         )
         self.sandbox_handler.ftp_handler.delete_file(file_name)
 
     def test_save_startup_config(self):
-        file_name = self.resource_handler.save(self.ftp_path, 'startup')
+        file_name = self.target_handler.save(self.ftp_path, 'startup')
         self.assertTrue(
             self.sandbox_handler.ftp_handler.get_file(file_name),
         )
@@ -33,7 +33,7 @@ class TestSaveConfig(BaseTestCase):
             }
         }
 
-        saved_artifact_info = self.resource_handler.orchestration_save(
+        saved_artifact_info = self.target_handler.orchestration_save(
             'shallow', json.dumps(custom_params))
 
         self.assertTrue(saved_artifact_info)
@@ -51,7 +51,7 @@ class TestSaveConfig(BaseTestCase):
             }
         }
 
-        saved_artifact_info = self.resource_handler.orchestration_save(
+        saved_artifact_info = self.target_handler.orchestration_save(
             'deep', json.dumps(custom_params))
 
         self.assertTrue(saved_artifact_info)
@@ -68,7 +68,7 @@ class TestSaveConfigWithoutDevice(TestSaveConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.save,
+            self.target_handler.save,
             self.ftp_path,
             'running',
         )
@@ -77,7 +77,7 @@ class TestSaveConfigWithoutDevice(TestSaveConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.save,
+            self.target_handler.save,
             self.ftp_path,
             'startup',
         )
@@ -86,7 +86,7 @@ class TestSaveConfigWithoutDevice(TestSaveConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.orchestration_save,
+            self.target_handler.orchestration_save,
             'shallow',
         )
 
@@ -94,6 +94,6 @@ class TestSaveConfigWithoutDevice(TestSaveConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.orchestration_save,
+            self.target_handler.orchestration_save,
             'deep',
         )

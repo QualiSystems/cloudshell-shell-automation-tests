@@ -27,7 +27,7 @@ def find_port_name(resource_info, excluded=None):
 class TestConnectivity(BaseTestCase):
     def get_other_device_for_connectivity(self):
         for resource_handler in self.sandbox_handler.resource_handlers:
-            if self.resource_handler != resource_handler:
+            if self.target_handler != resource_handler:
                 other_resource = resource_handler
                 other_resource.autoload()
                 return other_resource
@@ -36,11 +36,19 @@ class TestConnectivity(BaseTestCase):
                                       'for connectivity tests'.format(self.sandbox_handler.name))
 
     def test_connectivity(self):
-        cs_handler = self.resource_handler.cs_handler
-        other_handler = self.get_other_device_for_connectivity()
+        cs_handler = self.target_handler.cs_handler
 
-        res_info = self.resource_handler.get_details()
-        dut_info = cs_handler.get_resource_details(other_handler.name)
+        other_target_handler = self.get_other_device_for_connectivity()
+
+        for handler in (self.target_handler, other_target_handler):
+            if not handler.is_autoload_finished:
+                raise BaseAutomationException(
+                    'Autoload doesn\'t finish for the {} resource,'
+                    ' so skip testing connectivity'.format(handler.name)
+                )
+
+        res_info = self.target_handler.get_details()
+        dut_info = cs_handler.get_resource_details(other_target_handler.name)
 
         res_port1 = find_port_name(res_info)
         res_port2 = find_port_name(res_info, {res_port1})
@@ -49,7 +57,7 @@ class TestConnectivity(BaseTestCase):
 
         # adding physical connections
         cs_handler.add_physical_connection(
-            self.resource_handler.reservation_id,
+            self.target_handler.reservation_id,
             res_port1,
             dut_port1,
         )

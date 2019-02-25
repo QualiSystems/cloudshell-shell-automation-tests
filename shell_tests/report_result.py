@@ -1,13 +1,20 @@
+from itertools import chain
+
+
 class SandboxReport(object):
     def __init__(self, sandbox_name, is_success, test_result):
         self.name = sandbox_name
         self.sandbox_is_success = is_success
         self.test_result = test_result
         self.resources_reports = []  # type: list[ResourceReport]
+        self.services_reports = []  # type: list[ServiceReport]
 
     @property
     def is_success(self):
-        return all(r.is_success for r in self.resources_reports) and self.sandbox_is_success
+        children_success = all(
+            r.is_success for r in chain(self.resources_reports, self.services_reports))
+
+        return children_success and self.sandbox_is_success
 
     def __str__(self):
         sandbox_tests_result = ''
@@ -17,10 +24,15 @@ class SandboxReport(object):
                                     '{0.test_result}\n\n'.format(self, success_str))
 
         resources_tests_result = '\n\n'.join(map(str, self.resources_reports))
+        services_tests_result = '\n\n'.join(map(str, self.services_reports))
 
         success_str = 'successful' if self.is_success else 'unsuccessful'
-        result = 'Sandbox name: {}\nTests for sandbox and resources was {}\n\n{}{}'.format(
-            self.name, success_str, sandbox_tests_result, resources_tests_result)
+        result = (
+            'Sandbox name: {}\n'
+            'Tests for sandbox, resources and services was {}\n\n{}{}{}'.format(
+                self.name, success_str, sandbox_tests_result, resources_tests_result,
+                services_tests_result
+            ))
 
         return result
 
@@ -38,6 +50,23 @@ class ResourceReport(object):
         success_str = 'successful' if self.is_success else 'unsuccessful'
         result = ('Resource name: {0.name}, IP: {0.ip}, Type: {0.device_type}, Family: {0.family}\n'
                   'Test for the device was {1}\n'
+                  '{0.test_result}'.format(self, success_str))
+
+        return result
+
+
+class ServiceReport(object):
+    def __init__(self, service_name, device_type, family, is_success, test_result):
+        self.name = service_name
+        self.device_type = device_type
+        self.family = family
+        self.is_success = is_success
+        self.test_result = test_result
+
+    def __str__(self):
+        success_str = 'successful' if self.is_success else 'unsuccessful'
+        result = ('Service name: {0.name}, Type: {0.device_type}, Family: {0.family}\n'
+                  'Test for the service was {1}\n'
                   '{0.test_result}'.format(self, success_str))
 
         return result

@@ -1,66 +1,88 @@
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
+from shell_tests.helpers import call_exit_func_on_exc
 
-class ResourceHandler(object):
-    RESERVATION_NAME = 'automation_tests'
+
+class DeviceType(object):
     REAL_DEVICE = 'Real device'
     SIMULATOR = 'Simulator'
     WITHOUT_DEVICE = 'Without device'
 
-    def __init__(self, name, device_ip, attributes, tests_conf, cs_handler, sandbox_handler,
-                 shell_handler, logger):
+
+class ResourceHandler(object):
+    RESERVATION_NAME = 'automation_tests'
+
+    def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, first_gen,
+                 model, cs_handler, shell_handler, logger, sandbox_handler=None):
         """Handler for install shell and test it.
 
         :type name: str
         :type device_ip: str
         :type attributes: dict[str, str]
+        :type children_attributes: dict[dict[str, str]]
         :type tests_conf: shell_tests.configs.TestsConfig
+        :type first_gen: bool
+        :type model: str
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
-        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         :type shell_handler: shell_tests.shell_handler.ShellHandler
         :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         """
         self.name = name
         self.device_ip = device_ip
-        self.tests_config = tests_conf
+        self.tests_conf = tests_conf
         self.cs_handler = cs_handler
         self.sandbox_handler = sandbox_handler
         self.shell_handler = shell_handler
         self.logger = logger
-        self.model, self.family = shell_handler.model, shell_handler.family
+        self.model = model
+        self.first_gen = first_gen
+        self._family = None
 
         self.attributes = {}
         self._initial_attributes = attributes or {}
+        self.children_attributes = children_attributes
+
+        self.is_autoload_finished = False
 
     @classmethod
-    def from_conf(cls, conf, cs_handler, sandbox_handler, shell_handler, logger):
+    def from_conf(cls, conf, cs_handler, shell_handler, logger, sandbox_handler=None):
         """Create Resource Handler from the config and handlers.
 
         :type conf: shell_tests.configs.ResourceConfig
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
-        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         :type shell_handler: shell_tests.shell_handler.ShellHandler
         :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         """
         return cls(
             conf.name,
             conf.device_ip,
             conf.attributes,
+            conf.children_attributes,
             conf.tests_conf,
+            conf.first_gen,
+            getattr(shell_handler, 'model', conf.model),
             cs_handler,
-            sandbox_handler,
             shell_handler,
             logger,
+            sandbox_handler,
         )
 
     @property
     def device_type(self):
         if not self.device_ip:
-            return self.WITHOUT_DEVICE
+            return DeviceType.WITHOUT_DEVICE
         elif self.attributes.get('User'):
-            return self.REAL_DEVICE
+            return DeviceType.REAL_DEVICE
         else:
-            return self.SIMULATOR
+            return DeviceType.SIMULATOR
+
+    @property
+    def family(self):
+        if self._family is None:
+            self._family = self.get_details().ResourceFamilyName
+        return self._family
 
     def prepare_resource(self):
         """Prepare the Resource.
@@ -71,7 +93,6 @@ class ResourceHandler(object):
 
         self.name = self.cs_handler.create_resource(
             self.name,
-            self.family,
             self.model,
             self.device_ip or '127.0.0.1',  # if we don't have a real device
         )
@@ -87,6 +108,7 @@ class ResourceHandler(object):
 
         self.logger.info('The resource {} deleted'.format(self.name))
 
+    @call_exit_func_on_exc
     def __enter__(self):
         self.prepare_resource()
         return self
@@ -100,9 +122,35 @@ class ResourceHandler(object):
 
         :type attributes: dict[str, str]
         """
+        namespace = self.model if not self.first_gen else ''
         if attributes:
-            self.cs_handler.set_resource_attributes(self.name, self.model, attributes)
+            self.cs_handler.set_resource_attributes(self.name, namespace, attributes)
             self.attributes.update(attributes)
+
+    def set_children_attributes(self, children_attributes):
+        """Set children attributes.
+
+        :type children_attributes: dict[dict[str, str]]
+        """
+        for child_name, attributes in children_attributes.items():
+            child_name = '{}/{}'.format(self.name, child_name)
+            child_info = self.cs_handler.get_resource_details(child_name)
+
+            for attribute_name, attribute_value in attributes.items():
+                self.set_child_attribute(child_info, attribute_name, attribute_value)
+
+    def set_child_attribute(self, child_info, attribute_name, attribute_value):
+        namespace = child_info.ResourceModelName
+        for attribute_info in child_info.ResourceAttributes:
+            namespace, name = attribute_info.Name.rsplit('.', 1)
+            if name == attribute_name:
+                break
+
+        self.cs_handler.set_resource_attributes(
+            child_info.Name,
+            namespace,
+            {attribute_name: attribute_value},
+        )
 
     def autoload(self):
         """Run Autoload for the resource."""
@@ -114,6 +162,11 @@ class ResourceHandler(object):
 
             self.cs_handler.update_driver_for_the_resource(self.name, self.model)
             result = self.cs_handler.resource_autoload(self.name)
+
+        self.is_autoload_finished = True
+
+        if self.children_attributes:
+            self.set_children_attributes(self.children_attributes)
 
         return result
 
@@ -221,3 +274,127 @@ class ResourceHandler(object):
 
         self.logger.debug('Orchestration restore command output: {}'.format(output))
         return output
+
+
+class ServiceHandler(object):
+
+    def __init__(self, name, attributes, tests_conf, model, cs_handler, shell_handler, logger,
+                 sandbox_handler=None):
+        """Handler for the Service.
+
+        :type name: str
+        :type attributes: dict[str, str]
+        :type tests_conf: shell_tests.configs.TestsConfig
+        :type model: str
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type shell_handler: shell_tests.shell_handler.ShellHandler
+        :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        """
+        self.name = name
+        self.tests_conf = tests_conf
+        self.cs_handler = cs_handler
+        self.sandbox_handler = sandbox_handler
+        self.shell_handler = shell_handler
+        self.logger = logger
+        self.model = model
+        self.family = None
+        self.attributes = attributes
+
+        self._related_resource_handler = None
+
+    @classmethod
+    def from_conf(cls, conf, cs_handler, shell_handler, logger, sandbox_handler=None):
+        """Create Resource Handler from the config and handlers.
+
+        :type conf: shell_tests.configs.ServiceConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type shell_handler: shell_tests.shell_handler.ShellHandler
+        :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        """
+        return cls(
+            conf.name,
+            conf.attributes,
+            conf.tests_conf,
+            getattr(shell_handler, 'model', conf.model),
+            cs_handler,
+            shell_handler,
+            logger,
+            sandbox_handler,
+        )
+
+    @property
+    def device_type(self):
+        if self.related_resource_handler:
+            return self.related_resource_handler.device_type
+
+        return DeviceType.REAL_DEVICE
+
+    @property
+    def related_resource_handler(self):
+        """Return related resource for the service.
+
+        :rtype: ResourceHandler
+        """
+        if self._related_resource_handler is False:
+            return
+
+        if self._related_resource_handler is None:
+            self._related_resource_handler = self.sandbox_handler.resource_handlers[0]
+
+        return self._related_resource_handler
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return False
+
+    def execute_command(self, command_name, command_kwargs):
+        """Execute the command for the service.
+
+        :type command_name: str
+        :type command_kwargs: dict[str, str]
+        """
+        return self.sandbox_handler.execute_service_command(self.name, command_name, command_kwargs)
+
+    def load_config(self, config_path, extra_kwargs=None):
+        """Execute a command load_config for the service.
+
+        :type config_path: str
+        :type extra_kwargs: dict
+        """
+        extra_kwargs = extra_kwargs or {}
+        extra_kwargs.update(
+            {'config_file_location': config_path}
+        )
+        return self.execute_command('load_config', extra_kwargs)
+
+    def start_traffic(self, extra_kwargs=None):
+        """Execute a command start traffic for the service.
+
+        :type extra_kwargs: dict
+        """
+        return self.execute_command('start_traffic', extra_kwargs or {})
+
+    def stop_traffic(self, extra_kwargs=None):
+        """Execute a command stop traffic for the service.
+
+        :type extra_kwargs: dict
+        """
+        return self.execute_command('stop_traffic', extra_kwargs or {})
+
+    def get_statistics(self, extra_kwargs=None):
+        """Execute a command get statistics for the service.
+
+        :type extra_kwargs: dict
+        """
+        return self.execute_command('get_statistics', extra_kwargs or {})
+
+    def get_test_file(self, test_name):
+        """Execute a command get test file for the service.
+
+        :type test_name: str
+        """
+        return self.execute_command('get_test_file', {'test_name': test_name})

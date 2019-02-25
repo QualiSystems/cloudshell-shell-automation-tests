@@ -90,15 +90,5 @@ class DoHandler(object):
         return self.cs_ip, self.cs_user, self.cs_password, self.cs_os_user, self.cs_os_password
 
     def end_reservation(self):
-        """End CloudShell reservation"""
-
+        """End CloudShell reservation."""
         self.cs_handler.end_reservation(self.reservation_id)
-
-        for _ in range(30):
-            status = self.cs_handler.get_reservation_status(self.reservation_id).Status
-            if status == 'Completed':
-                break
-            time.sleep(30)
-        else:
-            raise BaseAutomationException('Can\'t end reservation')
-        self.logger.info('Reservation ended')

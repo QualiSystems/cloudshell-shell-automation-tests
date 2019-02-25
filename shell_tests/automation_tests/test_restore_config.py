@@ -13,38 +13,38 @@ class TestRestoreConfig(BaseTestCase):
         return 'ftp://{0.user}:{0.password}@{0.host}'.format(self.sandbox_handler.ftp_handler)
 
     def test_restore_running_config_append(self):
-        file_name = self.resource_handler.save(self.ftp_path, 'running')
+        file_name = self.target_handler.save(self.ftp_path, 'running')
         config_file_path = '{}/{}'.format(self.ftp_path, file_name)
 
         try:
-            self.resource_handler.restore(config_file_path, 'running', 'append')
+            self.target_handler.restore(config_file_path, 'running', 'append')
         finally:
             self.sandbox_handler.ftp_handler.delete_file(file_name)
 
     def test_restore_startup_config_append(self):
-        file_name = self.resource_handler.save(self.ftp_path, 'startup')
+        file_name = self.target_handler.save(self.ftp_path, 'startup')
         config_file_path = '{}/{}'.format(self.ftp_path, file_name)
 
         try:
-            self.resource_handler.restore(config_file_path, 'startup', 'append')
+            self.target_handler.restore(config_file_path, 'startup', 'append')
         finally:
             self.sandbox_handler.ftp_handler.delete_file(file_name)
 
     def test_restore_running_config_override(self):
-        file_name = self.resource_handler.save(self.ftp_path, 'running')
+        file_name = self.target_handler.save(self.ftp_path, 'running')
         config_file_path = '{}/{}'.format(self.ftp_path, file_name)
 
         try:
-            self.resource_handler.restore(config_file_path, 'running', 'override')
+            self.target_handler.restore(config_file_path, 'running', 'override')
         finally:
             self.sandbox_handler.ftp_handler.delete_file(file_name)
 
     def test_restore_startup_config_override(self):
-        file_name = self.resource_handler.save(self.ftp_path, 'startup')
+        file_name = self.target_handler.save(self.ftp_path, 'startup')
         config_file_path = '{}/{}'.format(self.ftp_path, file_name)
 
         try:
-            self.resource_handler.restore(config_file_path, 'startup', 'override')
+            self.target_handler.restore(config_file_path, 'startup', 'override')
         finally:
             self.sandbox_handler.ftp_handler.delete_file(file_name)
 
@@ -55,10 +55,10 @@ class TestRestoreConfig(BaseTestCase):
             }
         }
 
-        saved_artifact_info = self.resource_handler.orchestration_save(
+        saved_artifact_info = self.target_handler.orchestration_save(
             'shallow', json.dumps(custom_params))
         try:
-            self.resource_handler.orchestration_restore(
+            self.target_handler.orchestration_restore(
                 saved_artifact_info,
                 '',
             )
@@ -76,7 +76,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.restore,
+            self.target_handler.restore,
             self.FTP_PATH,
             'running',
             'append',
@@ -86,7 +86,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.restore,
+            self.target_handler.restore,
             self.FTP_PATH,
             'startup',
             'append',
@@ -96,7 +96,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.restore,
+            self.target_handler.restore,
             self.FTP_PATH,
             'running',
             'override',
@@ -106,7 +106,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.restore,
+            self.target_handler.restore,
             self.FTP_PATH,
             'startup',
             'override',
@@ -118,7 +118,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
                     'saved_artifact': {
                         'artifact_type': 'local',
                         'identifier': '/device-running-130618-155327'},
-                    'resource_name': self.resource_handler.name,
+                    'resource_name': self.target_handler.name,
                     'restore_rules': {'requires_same_resource': True},
                     'created_date': '2018-06-13T15:53:34.075000'}
             }
@@ -126,6 +126,6 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
         self.assertRaisesRegexp(
             CloudShellAPIError,
             r'SessionManagerException',
-            self.resource_handler.orchestration_restore,
+            self.target_handler.orchestration_restore,
             json.dumps(saved_artifact_info),
         )

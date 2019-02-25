@@ -5,7 +5,8 @@ from StringIO import StringIO
 from teamcity import is_running_under_teamcity
 from teamcity.unittestpy import TeamcityTestRunner
 
-from shell_tests.automation_tests.test_autoload import TestAutoload, TestAutoloadWithoutDevice
+from shell_tests.automation_tests.test_autoload import TestAutoloadNetworkDevices, \
+    TestAutoloadWithoutDevice, TestAutoloadTrafficGeneratorDevices, TestAutoloadWithoutPorts
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import TestRestoreConfigWithoutDevice, \
     TestRestoreConfig
@@ -13,16 +14,20 @@ from shell_tests.automation_tests.test_run_custom_command import TestRunCustomCo
     TestRunCustomCommand
 from shell_tests.automation_tests.test_save_config import TestSaveConfigWithoutDevice, \
     TestSaveConfig
+from shell_tests.automation_tests.test_traffic_generator_controller import TestLoadConfig, \
+    TestLoadConfigWithoutDevice, TestStartTraffic, TestStopTraffic, TestGetStatistics, \
+    TestStartTrafficWithoutDevice, TestStopTrafficWithoutDevice, TestGetStatisticsWithoutDevice, \
+    TestGetTestFile, TestGetTestFileWithoutDevice
 from shell_tests.helpers import get_driver_commands
-from shell_tests.report_result import ResourceReport, SandboxReport
-from shell_tests.resource_handler import ResourceHandler
+from shell_tests.report_result import ResourceReport, SandboxReport, ServiceReport
+from shell_tests.resource_handler import DeviceType
 
 
 TEST_CASES_FIREWALL = {
-    ResourceHandler.SIMULATOR: {
-        'autoload': TestAutoload,
+    DeviceType.SIMULATOR: {
+        'autoload': TestAutoloadNetworkDevices,
     },
-    ResourceHandler.WITHOUT_DEVICE: {
+    DeviceType.WITHOUT_DEVICE: {
         'autoload': TestAutoloadWithoutDevice,
         'run_custom_command': TestRunCustomCommandWithoutDevice,
         'run_custom_config_command': TestRunCustomCommandWithoutDevice,
@@ -31,8 +36,8 @@ TEST_CASES_FIREWALL = {
         'restore': TestRestoreConfigWithoutDevice,
         'orchestration_restore': TestRestoreConfigWithoutDevice,
     },
-    ResourceHandler.REAL_DEVICE: {
-        'autoload': TestAutoload,
+    DeviceType.REAL_DEVICE: {
+        'autoload': TestAutoloadNetworkDevices,
         'run_custom_command': TestRunCustomCommand,
         'run_custom_config_command': TestRunCustomCommand,
         'save': TestSaveConfig,
@@ -42,13 +47,58 @@ TEST_CASES_FIREWALL = {
     },
 }
 TEST_CASES_ROUTER = TEST_CASES_FIREWALL
-TEST_CASES_ROUTER[ResourceHandler.REAL_DEVICE]['applyconnectivitychanges'] = TestConnectivity
+TEST_CASES_ROUTER[DeviceType.REAL_DEVICE]['applyconnectivitychanges'] = TestConnectivity
 TEST_CASES_SWITCH = TEST_CASES_ROUTER
+TEST_CASES_TRAFFIC_GENERATOR_CHASSIS = {
+    DeviceType.REAL_DEVICE: {
+        'autoload': TestAutoloadTrafficGeneratorDevices,
+    },
+    DeviceType.WITHOUT_DEVICE: {
+        'autoload': TestAutoloadWithoutDevice,
+    },
+    DeviceType.SIMULATOR: {
+        'autoload': TestAutoloadTrafficGeneratorDevices,
+    }
+}
+TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER = {
+    DeviceType.REAL_DEVICE: {
+        'load_config': TestLoadConfig,
+        'start_traffic': TestStartTraffic,
+        'stop_traffic': TestStopTraffic,
+        'get_statistics': TestGetStatistics,
+        'get_test_file': TestGetTestFile,
+    },
+    DeviceType.WITHOUT_DEVICE: {
+        'load_config': TestLoadConfigWithoutDevice,
+        'start_traffic': TestStartTrafficWithoutDevice,
+        'stop_traffic': TestStopTrafficWithoutDevice,
+        'get_statistics': TestGetStatisticsWithoutDevice,
+        'get_test_file': TestGetTestFileWithoutDevice,
+    }
+}
+TEST_CASES_GENERIC_APP_FAMILY = {
+    DeviceType.REAL_DEVICE: {
+        'autoload': TestAutoloadWithoutPorts,
+    },
+    DeviceType.WITHOUT_DEVICE: {
+        'autoload': TestAutoloadWithoutDevice,
+    }
+}
 
 TEST_CASES_MAP = {
     'CS_Firewall': TEST_CASES_FIREWALL,
     'CS_Router': TEST_CASES_ROUTER,
     'CS_Switch': TEST_CASES_SWITCH,
+    'CS_TrafficGeneratorChassis': TEST_CASES_TRAFFIC_GENERATOR_CHASSIS,
+    'CS_TrafficGeneratorController': TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER,
+    'CS_GenericAppFamily': TEST_CASES_GENERIC_APP_FAMILY,
+}
+AUTOLOAD_TEST_FOR_FAMILIES = {
+    'CS_Router',
+    'CS_Firewall',
+    'CS_Switch',
+    'CS_TrafficGeneratorChassis',
+    'CS_GenericAppFamily',
 }
 
 
@@ -107,9 +157,14 @@ class RunTestsForSandbox(threading.Thread):
             sandbox_report = self.run_sandbox_tests()
 
             for resource_handler in self.sandbox_handler.resource_handlers:
-                if resource_handler.tests_config.run_tests:
+                if resource_handler.tests_conf.run_tests:
                     resource_report = self.run_resource_tests(resource_handler)
                     sandbox_report.resources_reports.append(resource_report)
+
+            for service_handler in self.sandbox_handler.service_handlers:
+                if service_handler.tests_conf.run_tests:
+                    service_report = self.run_service_tests(service_handler)
+                    sandbox_report.services_reports.append(service_report)
 
         with self.REPORT_LOCK:
             self.reporting.sandboxes_reports.append(sandbox_report)
@@ -133,28 +188,32 @@ class RunTestsForSandbox(threading.Thread):
         """
         return SandboxReport(self.sandbox_handler.name, True, '')
 
-    def run_resource_tests(self, resource_handler):
-        """Run tests based on the resource type and config.
+    def _run_target_tests(self, target_handler):
+        """Run tests based on the target type and config.
 
-        :type resource_handler: shell_tests.resource_handler.ResourceHandler
-        :rtype: ResourceReport
+        :type target_handler: shell_tests.resource_handler.ResourceHandler|shell_tests.resource_handler.ServiceHandler
+        :rtype (bool, str)
+        :return: is success and tests result
         """
         self.current_test_suite = PatchedTestSuite()
 
-        if resource_handler.device_type == resource_handler.WITHOUT_DEVICE:
+        if target_handler.device_type == DeviceType.WITHOUT_DEVICE:
             self.logger.warning(
                 '"{}" is a fake device so test only installing env '
                 'and trying to execute commands and getting an expected '
-                'error for connection'.format(resource_handler.name))
-        elif resource_handler.device_type == resource_handler.SIMULATOR:
+                'error for connection'.format(target_handler.name))
+        elif target_handler.device_type == DeviceType.SIMULATOR:
             self.logger.warning(
-                '"{}" is a simulator so testing only an Autoload'.format(resource_handler.name))
+                '"{}" is a simulator so testing only an Autoload'.format(target_handler.name))
 
-        test_cases_map = TEST_CASES_MAP[resource_handler.family][resource_handler.device_type]
+        test_cases_map = TEST_CASES_MAP[target_handler.family][target_handler.device_type]
 
-        test_cases = [test_cases_map['autoload']]
+        if target_handler.family in AUTOLOAD_TEST_FOR_FAMILIES:
+            test_cases = [test_cases_map.get('autoload')]
+        else:
+            test_cases = []
 
-        for command in get_driver_commands(resource_handler.shell_handler.shell_path):
+        for command in get_driver_commands(target_handler.shell_handler.shell_path):
             test_case = test_cases_map.get(command.lower())
             if test_case and test_case not in test_cases:
                 test_cases.append(test_case)
@@ -163,7 +222,7 @@ class RunTestsForSandbox(threading.Thread):
             for test_name in unittest.TestLoader().getTestCaseNames(test_case):
                 test_inst = test_case(
                     test_name,
-                    resource_handler,
+                    target_handler,
                     self.sandbox_handler,
                     self.logger,
                 )
@@ -175,14 +234,38 @@ class RunTestsForSandbox(threading.Thread):
             test_result, verbosity=2,
         ).run(self.current_test_suite).wasSuccessful()
 
-        report = ResourceReport(
+        self.current_test_suite = None
+        return is_success, test_result.getvalue()
+
+    def run_resource_tests(self, resource_handler):
+        """Run tests based on the resource type and config.
+
+        :type resource_handler: shell_tests.resource_handler.ResourceHandler
+        :rtype: ResourceReport
+        """
+        is_success, test_result = self._run_target_tests(resource_handler)
+
+        return ResourceReport(
             resource_handler.name,
             resource_handler.device_ip,
             resource_handler.device_type,
             resource_handler.family,
             is_success,
-            test_result.getvalue(),
+            test_result,
         )
 
-        self.current_test_suite = None
-        return report
+    def run_service_tests(self, service_handler):
+        """Run tests based on the service type and config.
+
+        :type service_handler: shell_tests.resource_handler.ServiceHandler
+        :rtype: ServiceReport
+        """
+        is_success, test_result = self._run_target_tests(service_handler)
+
+        return ServiceReport(
+            service_handler.name,
+            service_handler.device_type,
+            service_handler.family,
+            is_success,
+            test_result,
+        )

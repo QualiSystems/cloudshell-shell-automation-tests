@@ -4,6 +4,7 @@ from tests.base_tests import BaseTestCase, CS_USER
 
 
 @patch('shell_tests.run_tests.is_host_alive')
+@patch('shell_tests.cs_handler.time', MagicMock())
 class TestNetworkingDevice(BaseTestCase):
     def setUp(self):
         super(TestNetworkingDevice, self).setUp()
@@ -20,14 +21,14 @@ class TestNetworkingDevice(BaseTestCase):
     @patch('shell_tests.shell_handler.zipfile.ZipFile')
     @patch('shell_tests.run_tests_for_sandbox.get_driver_commands')
     @patch('shell_tests.smb_handler.SMBConnection')
-    @patch('shell_tests.shell_handler.get_resource_family_and_model')
+    @patch('shell_tests.shell_handler.get_resource_model_from_shell_definition')
     def test_networking_devices(
-            self, get_family_and_model_mock, smb_conn_mock, get_driver_comm_mock,
+            self, get_model_mock, smb_conn_mock, get_driver_comm_mock,
             zipfile_shell_handler_mock, is_host_alive_mock):
         # check preparing resource without executing tests
         # init
-        res_family, res_model = 'CS_Router', MagicMock()
-        get_family_and_model_mock.return_value = res_family, res_model
+        res_model = 'Cisco IOS Switch'
+        get_model_mock.return_value = res_model
         is_host_alive_mock.return_value = True
         get_driver_comm_mock.return_value = [
             'run_custom_command', 'run_custom_config_command', 'save', 'orchestration_save',
@@ -63,7 +64,7 @@ class TestNetworkingDevice(BaseTestCase):
         self.cs_api_mock.CreateImmediateReservation.assert_called_once_with(
             'first', CS_USER, 120)
         self.cs_api_mock.CreateResource.assert_called_once_with(
-            res_family, res_model, self.conf.resources_conf.keys()[0], '127.0.0.1')
+            '', res_model, self.conf.resources_conf.keys()[0], '127.0.0.1')
         self.cs_api_mock.AddResourcesToReservation.assert_called_once_with(
             self._cs_reservation_ids[0], [self.conf.resources_conf.keys()[0]])
 
@@ -78,11 +79,22 @@ class TestNetworkingDevice(BaseTestCase):
              for key, val in self.conf.resources_conf.values()[0].attributes.items()}
         )
 
+        self.cs_api_mock.EndReservation.assert_called_once_with(self._cs_reservation_ids[0])
+        self.cs_api_mock.GetReservationStatus.assert_called_with(self._cs_reservation_ids[0])
         self.cs_api_mock.DeleteReservation.assert_called_once_with(self._cs_reservation_ids[0])
         self.cs_api_mock.DeleteResource.assert_called_once_with(self.conf.resources_conf.keys()[0])
 
         executed_method_names = [call_[0] for call_ in self.cs_api_mock.method_calls]
         expected_method_names = [
-            'CreateImmediateReservation', 'CreateResource', 'SetAttributesValues',
-            'AddResourcesToReservation', 'DeleteReservation', 'DeleteResource']
+            'CreateResource',
+            'SetAttributesValues',
+            'CreateImmediateReservation',
+            'AddResourcesToReservation',
+            'GetResourceDetails',
+            'EndReservation',
+            'GetReservationStatus',
+            'GetReservationStatus',
+            'DeleteReservation',
+            'DeleteResource',
+        ]
         self.assertSequenceEqual(executed_method_names, expected_method_names)

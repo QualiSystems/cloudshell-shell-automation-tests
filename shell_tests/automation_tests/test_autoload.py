@@ -3,7 +3,7 @@ from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from shell_tests.automation_tests.base import BaseTestCase
 
 
-class TestAutoload(BaseTestCase):
+class TestAutoloadNetworkDevices(BaseTestCase):
 
     def _get_structure(self, resource_info):
         """Get nested resource structure
@@ -23,12 +23,28 @@ class TestAutoload(BaseTestCase):
             return resource_info.ResourceFamilyName
 
     def test_structure(self):
-        self.resource_handler.autoload()
+        self.target_handler.autoload()
 
-        info = self.resource_handler.get_details()
+        info = self.target_handler.get_details()
         structure = self._get_structure(info)
 
         self.assertIn('CS_Port', str(structure))
+
+
+class TestAutoloadWithoutPorts(BaseTestCase):
+    def test_autoload(self):
+        # just test that it runs without errors
+        self.target_handler.autoload()
+
+
+class TestAutoloadTrafficGeneratorDevices(TestAutoloadNetworkDevices):
+    def test_structure(self):
+        self.target_handler.autoload()
+
+        info = self.target_handler.get_details()
+        structure = self._get_structure(info)
+
+        self.assertIn('CS_TrafficGeneratorPort', str(structure))
 
 
 class TestAutoloadWithoutDevice(BaseTestCase):
@@ -37,4 +53,4 @@ class TestAutoloadWithoutDevice(BaseTestCase):
         error_pattern = r'(SessionManagerException|\'ConnectionError\')'
 
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
-            self.resource_handler.autoload()
+            self.target_handler.autoload()

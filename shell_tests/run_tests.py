@@ -1,5 +1,7 @@
 from collections import OrderedDict
+from itertools import chain
 
+from shell_tests.blueprint_handler import BlueprintHandler
 from shell_tests.configs import CloudShellConfig
 from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
@@ -7,6 +9,7 @@ from shell_tests.errors import ResourceIsNotAliveError, CSIsNotAliveError
 from shell_tests.ftp_handler import FTPHandler
 from shell_tests.helpers import is_host_alive, enter_stacks, wait_for_end_threads
 from shell_tests.report_result import Reporting
+from shell_tests.resource_handler import ResourceHandler, ServiceHandler
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
 from shell_tests.sandbox_handler import SandboxHandler
 from shell_tests.shell_handler import ShellHandler
@@ -62,7 +65,7 @@ class AutomatedTestsRunner(object):
                 error = None
                 return run_tests_inst
             finally:
-                if error or self.conf.do_conf.delete_cs:
+                if self.conf.do_conf.delete_cs:
                     self.do_handler.end_reservation()
 
         if not attempts and error:
@@ -120,6 +123,34 @@ class RunTestsInCloudShell(object):
             (shell_conf.name, ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
             for shell_conf in self.main_conf.shells_conf.values()
         )
+        self.blueprint_handlers = OrderedDict(
+            (conf.name, BlueprintHandler.from_conf(conf, self.cs_handler, self.logger))
+            for conf in self.main_conf.blueprints_conf.values()
+        )
+        self.resource_handlers = OrderedDict(
+            (
+                conf.name,
+                ResourceHandler.from_conf(
+                    conf,
+                    self.cs_handler,
+                    self.shell_handlers.get(conf.shell_name),
+                    logger,
+                ),
+            )
+            for conf in self.main_conf.resources_conf.values()
+        )
+        self.service_handlers = OrderedDict(
+            (
+                conf.name,
+                ServiceHandler.from_conf(
+                    conf,
+                    self.cs_handler,
+                    self.shell_handlers.get(conf.shell_name),
+                    logger,
+                ),
+            )
+            for conf in self.main_conf.services_conf.values()
+        )
 
     def run_tests_for_sandboxes(self):
         """Run tests for sandboxes."""
@@ -144,9 +175,16 @@ class RunTestsInCloudShell(object):
             raise
 
     def _create_sandbox_handler(self, sandbox_conf):
+        """Create the Sandbox Handler.
+
+        :type sandbox_conf: shell_tests.configs.SandboxConfig
+        """
+        resource_handlers = map(self.resource_handlers.get, sandbox_conf.resource_names)
+        service_handlers = map(self.service_handlers.get, sandbox_conf.service_names)
         return SandboxHandler.from_conf(
             sandbox_conf,
-            self.main_conf.resources_conf,
+            resource_handlers,
+            service_handlers,
             self.cs_handler,
             self.shell_handlers,
             self.ftp_handler,
@@ -158,7 +196,13 @@ class RunTestsInCloudShell(object):
 
         :rtype: Reporting
         """
-        with enter_stacks(self.shell_handlers.values()):
+        stacks = chain(
+            self.shell_handlers.values(),
+            self.blueprint_handlers.values(),
+            self.resource_handlers.values(),
+            self.service_handlers.values(),
+        )
+        with enter_stacks(stacks):
             self.run_tests_for_sandboxes()
 
         self.cs_handler.download_logs()
