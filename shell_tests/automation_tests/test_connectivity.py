@@ -36,8 +36,6 @@ class TestConnectivity(BaseTestCase):
                                       'for connectivity tests'.format(self.sandbox_handler.name))
 
     def test_connectivity(self):
-        cs_handler = self.target_handler.cs_handler
-
         other_target_handler = self.get_other_device_for_connectivity()
 
         for handler in (self.target_handler, other_target_handler):
@@ -48,7 +46,7 @@ class TestConnectivity(BaseTestCase):
                 )
 
         res_info = self.target_handler.get_details()
-        dut_info = cs_handler.get_resource_details(other_target_handler.name)
+        dut_info = other_target_handler.get_details()
 
         res_port1 = find_port_name(res_info)
         res_port2 = find_port_name(res_info, {res_port1})
@@ -56,28 +54,24 @@ class TestConnectivity(BaseTestCase):
         dut_port2 = find_port_name(dut_info, {dut_port1})
 
         # adding physical connections
-        cs_handler.add_physical_connection(
-            self.target_handler.reservation_id,
+        self.sandbox_handler.add_physical_connection(
             res_port1,
             dut_port1,
         )
-        cs_handler.add_physical_connection(
-            self.sandbox_handler.reservation_id,
+        self.sandbox_handler.add_physical_connection(
             res_port2,
             dut_port2,
         )
 
         # add VLAN
-        cs_handler.connect_ports_with_connector(
-            self.sandbox_handler.reservation_id,
+        self.sandbox_handler.connect_ports_with_connector(
             dut_port1,
             dut_port2,
             'connector',
         )
 
         # remove VLAN
-        cs_handler.remove_connector(
-            self.sandbox_handler.reservation_id,
+        self.sandbox_handler.remove_connector(
             dut_port1,
             dut_port2,
         )
