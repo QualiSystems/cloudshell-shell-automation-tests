@@ -112,6 +112,32 @@ class SandboxHandler(object):
         return self.cs_handler.execute_command_on_service(
             self.reservation_id, service_name, command_name, command_kwargs)
 
+    def add_physical_connection(self, port_name1, port_name2):
+        """Add physical connection between the ports.
+
+        :type port_name1:str
+        :type port_name2: str
+        """
+        self.cs_handler.add_physical_connection(self.reservation_id, port_name1, port_name2)
+
+    def connect_ports_with_connector(self, port_name1, port_name2, connector_name):
+        """Connect the ports with a connector.
+
+        :type port_name1: str
+        :type port_name2: str
+        :type connector_name: str
+        """
+        self.cs_handler.connect_ports_with_connector(
+            self.reservation_id, port_name1, port_name2, connector_name)
+
+    def remove_connector(self, port_name1, port_name2):
+        """Remove the connector between the ports.
+
+        :type port_name1: str
+        :type port_name2: str
+        """
+        self.cs_handler.remove_connector(self.reservation_id, port_name1, port_name2)
+
     @call_exit_func_on_exc
     def __enter__(self):
         self.create_reservation()
