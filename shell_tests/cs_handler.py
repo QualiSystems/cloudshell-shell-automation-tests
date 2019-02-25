@@ -1,16 +1,20 @@
 import os
 import re
 import shutil
+import time
 
 from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
     AttributeNameValue, InputNameValue, SetConnectorRequest, UpdateTopologyGlobalInputsRequest
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
 
+from shell_tests.errors import BaseAutomationException
+from shell_tests.smb_handler import SMB
+
 
 class CloudShellHandler(object):
     REST_API_PORT = 9000
-    DEFAULT_DOMAIN = 'Global'
+    CLOUDSHELL_SERVER_NAME = 'User-PC'
     CS_SHARE = 'C$'
     PYPI_PATH = r'Program Files (x86)\QualiSystems\CloudShell\Server\Config\Pypi Server Repository'
     CS_LOGS_DIR = 'cs_logs'
@@ -19,25 +23,45 @@ class CloudShellHandler(object):
                                 r'\Logs\QsPythonDriverHost')
     TOSCA_STANDARDS_DIR = r'Program Files (x86)\QualiSystems\CloudShell\Server\ToscaStandard'
 
-    def __init__(self, host, user, password, logger, domain=DEFAULT_DOMAIN, smb=None):
-        """Handler for CloudShell
+    def __init__(self, host, user, password, os_user, os_password, domain, logger):
+        """Handler for a CloudShell.
 
         :param str host: CloudShell ip
         :param str user: CloudShell admin user
         :param str password: password for user
-        :param logging.Logger logger:
+        :param str os_user: OS user
+        :param str os_password: OS password
         :param str domain: CloudShell domain
-        :param smb_handler.SMB smb: smb client
+        :param logging.Logger logger:
         """
-
         self.host = host
         self.user = user
         self.password = password
+        self.os_user = os_user
+        self.os_password = os_password
         self.domain = domain
         self.logger = logger
-        self.smb = smb
+
+        self._smb = None
         self._api = None
         self._rest_api = None
+
+    @classmethod
+    def from_conf(cls, conf, logger):
+        """Create CloudShell Handler from the config.
+
+        :type conf: shell_tests.configs.CloudShellConfig
+        :type logger: logging.Logger
+        """
+        return cls(
+            conf.host,
+            conf.user,
+            conf.password,
+            conf.os_user,
+            conf.os_password,
+            conf.domain,
+            logger,
+        )
 
     @property
     def rest_api(self):
@@ -55,6 +79,19 @@ class CloudShellHandler(object):
             self._api = CloudShellAPISession(self.host, self.user, self.password, self.domain)
             self.logger.debug('Connected to Automation API')
         return self._api
+
+    @property
+    def smb(self):
+        if self._smb is None and self.os_user:
+            self._smb = SMB(
+                self.os_user,
+                self.os_password,
+                self.host,
+                self.CLOUDSHELL_SERVER_NAME,
+                self.logger,
+            )
+
+        return self._smb
 
     def install_shell(self, shell_path):
         """Install Shell driver in the CloudShell
@@ -79,16 +116,42 @@ class CloudShellHandler(object):
             self.rest_api.update_shell(shell_path, shell_name)
             self.logger.debug('Updated {} Shell'.format(shell_name))
 
+    def import_package(self, package_path):
+        """Import the package to the CloudShell.
+
+        :type package_path: str
+        """
+        self.logger.info('Importing a package {} to the CloudShell'.format(package_path))
+        self.rest_api.import_package(package_path)
+        self.logger.debug('Imported the package')
+
     def add_cs_standard(self, standard_path):
         """Put standard into tosca standards' dir.
 
-        :type standard_path: str"""
+        :type standard_path: str
+        """
         standard_name = os.path.basename(standard_path)
         remote_standard_path = os.path.join(self.TOSCA_STANDARDS_DIR, standard_name)
-        self.logger.warning('Adding tosca standard {} to the CloudShell'.format(standard_name))
 
-        with open(standard_path) as fo:
-            self.smb.put_file(self.CS_SHARE, remote_standard_path, fo)
+        self.logger.warning('Adding a tosca standard {} to the CloudShell'.format(standard_name))
+        self.store_file(remote_standard_path, src_path=standard_path)
+
+    def store_file(self, dst_path, src_path=None, src_obj=None, force=False):
+        """Store the src file to the dst on the CS.
+
+        :type dst_path: str
+        :type src_path: str
+        :type src_obj: file
+        :type force: bool
+        """
+        if not src_obj:
+            src_obj = open(src_path, 'rb')
+
+        try:
+            return self.smb.put_file(self.CS_SHARE, dst_path, src_obj, force)
+        finally:
+            if src_path:
+                src_obj.close()
 
     def get_tosca_standards(self):
         """Get tosca standards from CloudShell.
@@ -142,20 +205,18 @@ class CloudShellHandler(object):
         self.logger.debug('Created a topology reservation id={}'.format(id_))
         return id_
 
-    def create_resource(self, name, family, model, address):
-        """Create resource
+    def create_resource(self, name, model, address, family=''):
+        """Create resource.
 
         :param str name: resource name
-        :param str family: resource family, CS_Switch, CS_Firewall, ...
         :param str model: resource model
         :param str address: resource address
+        :param str family: resource family, CS_Switch, CS_Firewall, ... (Optional)
         :return: resource name
         :rtype: str
         """
-
         self.logger.info('Creating the resource {}'.format(name))
-        self.logger.debug('Name: {}, family: {}, model: {}, address: {}'.format(
-            name, family, model, address))
+        self.logger.debug('Name: {}, model: {}, address: {}'.format(name, model, address))
 
         while True:
             try:
@@ -180,19 +241,19 @@ class CloudShellHandler(object):
 
         return name
 
-    def set_resource_attributes(self, resource_name, model, attributes):
-        """Set attributes for the resource
+    def set_resource_attributes(self, resource_name, namespace, attributes):
+        """Set attributes for the resource.
 
         :param str resource_name: resource name
-        :param str model: resource model
+        :param str namespace: name space
         :param dict attributes: resource attributes
         """
-
         self.logger.info('Setting attributes for {}\n{}'.format(resource_name, attributes))
 
+        namespace += '.' if namespace else ''
         self.api.SetAttributesValues([
             ResourceAttributesUpdateRequest(resource_name, [
-                AttributeNameValue('{}.{}'.format(model, key), value)
+                AttributeNameValue('{}{}'.format(namespace, key), value)
                 for key, value in attributes.items()
             ])
         ])
@@ -228,6 +289,26 @@ class CloudShellHandler(object):
         self.api.AddResourcesToReservation(reservation_id, [resource_name])
         self.logger.debug('Added a resource to the reservation')
 
+    def add_service_to_reservation(self, reservation_id, service_model, service_name, attributes):
+        """Add the service to the reservation.
+
+        :type reservation_id: str
+        :type service_model: str
+        :type service_name: str
+        :type attributes: dict
+        """
+        self.logger.info('Adding a service {} to a reservation {}'.format(
+            service_name, reservation_id))
+
+        attributes = [
+            AttributeNameValue('{}.{}'.format(service_model, key), value)
+            for key, value in attributes.items()
+        ]
+        self.api.AddServiceToReservation(
+            reservation_id, service_model, service_name, attributes)
+
+        self.logger.debug('Added the service to the reservation')
+
     def delete_resource(self, resource_name):
         """Delete the resource
 
@@ -248,18 +329,49 @@ class CloudShellHandler(object):
         self.api.DeleteReservation(reservation_id)
         self.logger.debug('Deleted the reservation')
 
-    def end_reservation(self, reservation_id):
-        """End the reservation
+    def end_reservation(self, reservation_id, wait=True):
+        """End the reservation.
 
-        :param str reservation_id:
+        :type reservation_id: str
+        :type wait: bool
         """
-
         self.logger.info('Ending a reservation for {}'.format(reservation_id))
         self.api.EndReservation(reservation_id)
 
+        if wait:
+            for _ in range(30):
+                status = self.get_reservation_status(reservation_id).Status
+                if status == 'Completed':
+                    break
+                time.sleep(30)
+            else:
+                raise BaseAutomationException('Can\'t end reservation')
+            self.logger.info('Reservation ended')
+
+    def _execute_command(self, reservation_id, target_name, target_type, command_name,
+                         command_kwargs):
+        """Execute a command on the target.
+
+        :type reservation_id: str
+        :type target_name: str
+        :type target_type: str
+        :param target_type: Resource or Service
+        :type command_name: str
+        :type command_kwargs: dict[str, str]
+        :rtype: str
+        """
+        self.logger.debug(
+            'Executing command {} with kwargs {} for the target {} in the reservation {}'.format(
+                command_name, command_kwargs, target_name, reservation_id))
+        command_kwargs = [InputNameValue(key, value) for key, value in command_kwargs.items()]
+        resp = self.api.ExecuteCommand(
+            reservation_id, target_name, target_type, command_name, command_kwargs, True)
+        self.logger.debug('Executed command, output {}'.format(resp.Output))
+        return resp.Output
+
     def execute_command_on_resource(
             self, reservation_id, resource_name, command_name, command_kwargs):
-        """Execute a command on the resource
+        """Execute a command on the resource.
 
         :param str reservation_id: reservation id
         :param str resource_name: resource name
@@ -267,15 +379,13 @@ class CloudShellHandler(object):
         :param dict command_kwargs: command params
         :rtype: str
         """
+        return self._execute_command(
+            reservation_id, resource_name, 'Resource', command_name, command_kwargs)
 
-        self.logger.debug(
-            'Executing command {} with kwargs {} for resource {} in reservation {}'.format(
-                command_name, command_kwargs, resource_name, reservation_id))
-        command_kwargs = [InputNameValue(key, value) for key, value in command_kwargs.items()]
-        resp = self.api.ExecuteCommand(
-            reservation_id, resource_name, 'Resource', command_name, command_kwargs, True)
-        self.logger.debug('Executed command, output {}'.format(resp.Output))
-        return resp.Output
+    def execute_command_on_service(
+            self, reservation_id, service_name, command_name, command_kwargs):
+        return self._execute_command(
+            reservation_id, service_name, 'Service', command_name, command_kwargs)
 
     def get_resource_details(self, resource_name):
         """Get resource details
@@ -300,7 +410,7 @@ class CloudShellHandler(object):
 
         self.logger.info('Getting topologies for a category {}'.format(category_name))
         output = self.api.GetTopologiesByCategory(category_name).Topologies
-        self.logger.debug('Got topologies {}'.format(output))
+        self.logger.debug('Got topologies {}'.format(sorted(output)))
         return output
 
     def get_reservation_details(self, reservation_id):
@@ -341,7 +451,7 @@ class CloudShellHandler(object):
 
         file_path = os.path.join(self.PYPI_PATH, file_name)
         self.logger.debug('Adding a file {} to offline PyPI'.format(file_path))
-        self.smb.put_file(self.CS_SHARE, file_path, file_obj)
+        self.store_file(file_path, src_obj=file_obj)
 
     def get_package_names_from_offline_pypi(self):
         """Get package names from offline PyPI"""

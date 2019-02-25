@@ -8,26 +8,57 @@ import tempfile
 import zipfile
 from io import BytesIO
 
-from cs_handler import CloudShellHandler
-from shell_tests.helpers import download_file, is_url
+from shell_tests.helpers import download_file, is_url, get_resource_model_from_shell_definition, \
+    call_exit_func_on_exc
 
 
 class ShellHandler(object):
-    def __init__(self, cs_handler, shell_path, dependencies_path, extra_standards, logger):
+    def __init__(self, cs_handler, name, shell_path, dependencies_path, extra_standards,
+                 files_to_store, tests_conf, logger):
         """Handler for the Shell driver.
 
-        :param CloudShellHandler cs_handler:
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type name: str
         :param str shell_path:
         :param str dependencies_path:
         :type extra_standards: list
+        :type files_to_store: dict[str, str]
+        :type tests_conf: shell_tests.configs.TestsConfig
         :param logging.Logger logger:
         """
         self.logger = logger
         self.downloaded_files = []
         self.cs_handler = cs_handler
+        self.name = name
+        self.tests_conf = tests_conf
+
         self.shell_path = self.download_if_url(shell_path)
         self.dependencies_path = self.download_if_url(dependencies_path)
         self.extra_standards = map(self.download_if_url, extra_standards)
+        self.files_to_store = {
+            self.download_if_url(src): dst
+            for src, dst in files_to_store.items()
+        }
+        self.model = get_resource_model_from_shell_definition(self.shell_path, logger)
+
+    @classmethod
+    def from_conf(cls, conf, cs_handler, logger):
+        """Create Shell Handler from the config.
+
+        :type conf: shell_tests.configs.ShellConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type logger: logging.Logger
+        """
+        return cls(
+            cs_handler,
+            conf.name,
+            conf.path,
+            conf.dependencies_path,
+            conf.extra_standards_paths,
+            conf.files_to_store,
+            conf.tests_conf,
+            logger,
+        )
 
     def download_if_url(self, path):
         if path and is_url(path):
@@ -118,7 +149,11 @@ class ShellHandler(object):
         """Delete downloaded files."""
         for path in self.downloaded_files:
             self.logger.info('Deleting the downloaded file {}'.format(path))
-            os.remove(path)
+            try:
+                os.remove(path)
+            except OSError as e:
+                if 'No such file or directory' not in str(e):
+                    raise e
 
     def prepare_shell(self):
         """Prepare Shell."""
@@ -143,15 +178,15 @@ class ShellHandler(object):
 
         self.logger.info('The Shell is deleted')
 
-    def __enter__(self):
-        try:
-            self.prepare_shell()
-        except Exception:
-            if self.__exit__(*sys.exc_info()):
-                pass
-            else:
-                raise
+    def store_files(self):
+        for src, dst in self.files_to_store.items():
+            self.logger.debug('Storing file {} to the {}'.format(src, dst))
+            self.cs_handler.store_file(dst, src_path=src, force=True)
 
+    @call_exit_func_on_exc
+    def __enter__(self):
+        self.prepare_shell()
+        self.store_files()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

@@ -1,0 +1,25 @@
+Do:
+  Host: 192.168.100.1
+  User: user
+  Password: password
+  Domain: Global
+
+  CS Version: CloudShell 8.3 GA
+
+FTP:
+  Host: 192.168.101.2
+  User: ftp_user
+  Password: ftp_password
+
+Shells:
+  - Name: DUT Shell
+    Path: None
+
+Resources:
+  - Name: DUT
+    Shell Name: DUT Shell
+
+Sandboxes:
+  - Name: first
+    Resources:
+      - DUT

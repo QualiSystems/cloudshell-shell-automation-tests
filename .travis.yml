@@ -1,0 +1,14 @@
+language: python
+python:
+    - '2.7'
+
+install:
+    - python setup.py install
+    - pip install -r test_requirements.txt
+    - pip install codecov
+
+script:
+    - nosetests --with-coverage --cover-package=shell_tests tests
+
+after_success:
+    - codecov

@@ -1,0 +1,31 @@
+CloudShell:
+  Host: 192.168.101.1
+  User: cs_user
+  Password: cs_password
+  OS User: os_user
+  OS Password: os_password
+
+FTP:
+  Host: 192.168.101.2
+  User: ftp_user
+  Password: ftp_password
+
+
+Shells:
+  - Name: Cisco IOS Router
+    Path: https://github.com/QualiSystems/Cisco-IOS-Router-Shell-2G/releases/download/2.0.1/CiscoIOSRouterShell2G.zip
+    Dependencies Path: https://github.com/QualiSystems/Cisco-IOS-Router-Shell-2G/releases/download/2.0.1/cloudshell-networking-cisco-ios-2-gen-dependencies-package-1.0.9.zip
+
+
+Resources:
+  - Name: Cisco-without-device
+    Shell Name: Cisco IOS Router
+
+    Attributes:
+      SNMP Read Community: public
+
+
+Sandboxes:
+  - Name: first
+    Resources:
+      - Cisco-without-device
