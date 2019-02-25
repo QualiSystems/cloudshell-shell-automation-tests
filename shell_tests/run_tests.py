@@ -65,7 +65,7 @@ class AutomatedTestsRunner(object):
                 error = None
                 return run_tests_inst
             finally:
-                if self.conf.do_conf.delete_cs:
+                if error and self.conf.do_conf.delete_cs:
                     self.do_handler.end_reservation()
 
         if not attempts and error:
@@ -78,7 +78,11 @@ class AutomatedTestsRunner(object):
         self.check_all_resources_is_alive()
 
         run_tests_inst = self.get_run_tests_in_cloudshell()
-        return run_tests_inst.run()
+        try:
+            return run_tests_inst.run()
+        finally:
+            if self.conf.do_conf and self.conf.do_conf.delete_cs:
+                self.do_handler.end_reservation()
 
     def check_all_resources_is_alive(self):
         resources_to_check = {
