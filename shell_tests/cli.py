@@ -32,7 +32,7 @@ def get_logger():
     return logger
 
 
-@cli.command()
+@cli.command('run_tests')
 @click.argument('test_conf')
 @click.argument('env_conf', required=False)
 def run_tests(test_conf, env_conf=None):
