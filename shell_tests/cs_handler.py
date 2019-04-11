@@ -162,33 +162,35 @@ class CloudShellHandler(object):
         self.logger.debug('Installed tosca standards: {}'.format(standards))
         return standards
 
-    def create_reservation(self, name, duration=120):
+    def create_reservation(self, name, duration=120, wait=True):
         """Create reservation
 
         :param str name: reservation name
         :param int duration: duration of reservation
+        :param bool wait: wait for reservation is started
         :return: reservation id  (uuid)
         :rtype: str
         """
-
         self.logger.info('Creating the reservation {}'.format(name))
         resp = self.api.CreateImmediateReservation(name, self.api.username, duration)
         id_ = resp.Reservation.Id
-        self.logger.debug('Created the reservation id={}'.format(id_))
+
+        if wait:
+            self.wait_reservation_is_started(id_)
         return id_
 
     def create_topology_reservation(
-            self, name, topology_name, duration=24*60, specific_version=None):
+            self, name, topology_name, duration=24*60, specific_version=None, wait=True):
         """Create topology reservation
 
         :param str topology_name: Topology Name
         :param str name: reservation name
         :param int duration: duration of reservation
         :param str specific_version:
+        :param bool wait: wait for reservation is started
         :return: reservation id (uuid)
         :rtype: str
         """
-
         if specific_version:
             global_input_req = [UpdateTopologyGlobalInputsRequest('Version', specific_version)]
         else:
@@ -202,8 +204,21 @@ class CloudShellHandler(object):
             globalInputs=global_input_req,
         )
         id_ = resp.Reservation.Id
-        self.logger.debug('Created a topology reservation id={}'.format(id_))
+
+        if wait:
+            self.wait_reservation_is_started(id_)
         return id_
+
+    def wait_reservation_is_started(self, reservation_id):
+        for _ in range(60):
+            status = self.get_reservation_status(reservation_id).ProvisioningStatus
+            if status == 'Ready':
+                break
+            time.sleep(30)
+        else:
+            raise BaseAutomationException('The reservation {} doesn\'t started'.format(
+                reservation_id))
+        self.logger.info('The reservation created')
 
     def create_resource(self, name, model, address, family=''):
         """Create resource.

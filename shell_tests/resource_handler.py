@@ -10,8 +10,6 @@ class DeviceType(object):
 
 
 class ResourceHandler(object):
-    RESERVATION_NAME = 'automation_tests'
-
     def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, first_gen,
                  model, cs_handler, shell_handler, logger, sandbox_handler=None):
         """Handler for install shell and test it.
