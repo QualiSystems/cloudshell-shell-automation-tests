@@ -58,16 +58,9 @@ class DoHandler(object):
         """Start CloudShell and wait for starting it"""
 
         self.logger.info('Start creating CloudShell with version {}'.format(version))
-        self.start_cloudshell(version, cs_specific_version)
-
-        self.logger.debug('Wait for creating CloudShell')
-        time.sleep(5 * 60)
-        for _ in range(30):
-            status = self.cs_handler.get_reservation_status(self.reservation_id).ProvisioningStatus
-            if status == 'Ready':
-                break
-            time.sleep(60)
-        else:
+        try:
+            self.start_cloudshell(version, cs_specific_version)
+        except BaseAutomationException:
             raise BaseAutomationException('CloudShell isn\'t started')
 
         self.resource_name = self._get_resource_name()
