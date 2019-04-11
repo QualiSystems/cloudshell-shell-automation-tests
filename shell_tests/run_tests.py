@@ -65,7 +65,7 @@ class AutomatedTestsRunner(object):
                 error = None
                 return run_tests_inst
             finally:
-                if error and self.conf.do_conf.delete_cs:
+                if error or self.conf.do_conf.delete_cs:
                     self.do_handler.end_reservation()
 
         if not attempts and error:
