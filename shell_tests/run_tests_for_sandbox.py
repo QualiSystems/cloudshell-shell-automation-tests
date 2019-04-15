@@ -6,7 +6,8 @@ from teamcity import is_running_under_teamcity
 from teamcity.unittestpy import TeamcityTestRunner
 
 from shell_tests.automation_tests.test_autoload import TestAutoloadNetworkDevices, \
-    TestAutoloadWithoutDevice, TestAutoloadTrafficGeneratorDevices, TestAutoloadWithoutPorts
+    TestAutoloadWithoutDevice, TestAutoloadTrafficGeneratorDevices, TestAutoloadWithoutPorts, \
+    TestAutoloadVirtualTrafficGeneratorDevices
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import TestRestoreConfigWithoutDevice, \
     TestRestoreConfig
@@ -19,7 +20,8 @@ from shell_tests.automation_tests.test_traffic_generator_controller import TestL
     TestStartTrafficWithoutDevice, TestStopTrafficWithoutDevice, TestGetStatisticsWithoutDevice, \
     TestGetTestFile, TestGetTestFileWithoutDevice
 from shell_tests.helpers import get_driver_commands
-from shell_tests.report_result import ResourceReport, SandboxReport, ServiceReport
+from shell_tests.report_result import ResourceReport, SandboxReport, ServiceReport, \
+    DeploymentResourceReport
 from shell_tests.resource_handler import DeviceType
 
 
@@ -60,6 +62,11 @@ TEST_CASES_TRAFFIC_GENERATOR_CHASSIS = {
         'autoload': TestAutoloadTrafficGeneratorDevices,
     }
 }
+TEST_CASES_VIRTUAL_TRAFFIC_GENERATOR_CHASSIS = {
+    DeviceType.REAL_DEVICE: {
+        'autoload': TestAutoloadVirtualTrafficGeneratorDevices,
+    },
+}
 TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER = {
     DeviceType.REAL_DEVICE: {
         'load_config': TestLoadConfig,
@@ -90,6 +97,7 @@ TEST_CASES_MAP = {
     'CS_Router': TEST_CASES_ROUTER,
     'CS_Switch': TEST_CASES_SWITCH,
     'CS_TrafficGeneratorChassis': TEST_CASES_TRAFFIC_GENERATOR_CHASSIS,
+    'CS_VirtualTrafficGeneratorChassis': TEST_CASES_VIRTUAL_TRAFFIC_GENERATOR_CHASSIS,
     'CS_TrafficGeneratorController': TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER,
     'CS_GenericAppFamily': TEST_CASES_GENERIC_APP_FAMILY,
 }
@@ -98,6 +106,7 @@ AUTOLOAD_TEST_FOR_FAMILIES = {
     'CS_Firewall',
     'CS_Switch',
     'CS_TrafficGeneratorChassis',
+    'CS_VirtualTrafficGeneratorChassis',
     'CS_GenericAppFamily',
 }
 
@@ -155,6 +164,11 @@ class RunTestsForSandbox(threading.Thread):
                 raise KeyboardInterrupt
 
             sandbox_report = self.run_sandbox_tests()
+
+            for deployment_resource_handler in self.sandbox_handler.deployment_resource_handlers:
+                if deployment_resource_handler.tests_conf.run_tests:
+                    report = self.run_deployment_resource_tests(deployment_resource_handler)
+                    sandbox_report.deployment_resources_reports.append(report)
 
             for resource_handler in self.sandbox_handler.resource_handlers:
                 if resource_handler.tests_conf.run_tests:
@@ -250,6 +264,23 @@ class RunTestsForSandbox(threading.Thread):
             resource_handler.device_ip,
             resource_handler.device_type,
             resource_handler.family,
+            is_success,
+            test_result,
+        )
+
+    def run_deployment_resource_tests(self, deployment_resource_handler):
+        """Run tests based on the deployment resource type and config.
+
+        :type deployment_resource_handler: shell_tests.resource_handler.DeploymentResourceHandler
+        :rtype: DeploymentResourceReport
+        """
+        is_success, test_result = self._run_target_tests(deployment_resource_handler)
+
+        return DeploymentResourceReport(
+            deployment_resource_handler.name,
+            deployment_resource_handler.device_ip,
+            deployment_resource_handler.device_type,
+            deployment_resource_handler.family,
             is_success,
             test_result,
         )

@@ -1,6 +1,6 @@
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.helpers import call_exit_func_on_exc
+from shell_tests.helpers import call_exit_func_on_exc, cached_property
 
 
 class DeviceType(object):
@@ -26,6 +26,9 @@ class ResourceHandler(object):
         :type logger: logging.Logger
         :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
         """
+        self._model = None
+        self._device_ip = None
+
         self.name = name
         self.device_ip = device_ip
         self.tests_conf = tests_conf
@@ -35,7 +38,6 @@ class ResourceHandler(object):
         self.logger = logger
         self.model = model
         self.first_gen = first_gen
-        self._family = None
 
         self.attributes = {}
         self._initial_attributes = attributes or {}
@@ -67,6 +69,30 @@ class ResourceHandler(object):
             sandbox_handler,
         )
 
+    @cached_property
+    def resource_details(self):
+        return self.get_details()
+
+    @property
+    def family(self):
+        return self.resource_details.ResourceFamilyName
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, value):
+        self._model = value
+
+    @property
+    def device_ip(self):
+        return self._device_ip
+
+    @device_ip.setter
+    def device_ip(self, value):
+        self._device_ip = value
+
     @property
     def device_type(self):
         if not self.device_ip:
@@ -75,12 +101,6 @@ class ResourceHandler(object):
             return DeviceType.REAL_DEVICE
         else:
             return DeviceType.SIMULATOR
-
-    @property
-    def family(self):
-        if self._family is None:
-            self._family = self.get_details().ResourceFamilyName
-        return self._family
 
     def prepare_resource(self):
         """Prepare the Resource.
@@ -120,8 +140,8 @@ class ResourceHandler(object):
 
         :type attributes: dict[str, str]
         """
-        namespace = self.model if not self.first_gen else ''
         if attributes:
+            namespace = self.model if not self.first_gen else ''
             self.cs_handler.set_resource_attributes(self.name, namespace, attributes)
             self.attributes.update(attributes)
 
@@ -396,3 +416,96 @@ class ServiceHandler(object):
         :type test_name: str
         """
         return self.execute_command('get_test_file', {'test_name': test_name})
+
+
+class DeploymentResourceHandler(ResourceHandler):
+    def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, first_gen,
+                 model, cs_handler, shell_handler, logger, sandbox_handler=None, name_prefix=None):
+        """Handler for a Deployment Resource.
+
+        :type name: str
+        :type device_ip: str
+        :type attributes: dict[str, str]
+        :type children_attributes: dict[dict[str, str]]
+        :type tests_conf: shell_tests.configs.TestsConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type first_gen: bool
+        :type model: str
+        :type shell_handler: shell_tests.shell_handler.ShellHandler
+        :type logger: logging.Logger
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        :type name_prefix: str
+        """
+        super(DeploymentResourceHandler, self).__init__(
+            name,
+            None,
+            attributes,
+            children_attributes,
+            tests_conf,
+            first_gen,
+            None,
+            cs_handler,
+            shell_handler,
+            logger,
+            sandbox_handler,
+        )
+        self.name_prefix = name_prefix
+
+    @classmethod
+    def from_conf(cls, conf, cs_handler, shell_handler, logger, sandbox_handler=None):
+        """Create a Deployment Resource Handler from the config and handlers.
+
+        :type conf: shell_tests.configs.DeploymentResourceConfig
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
+        :type shell_handler: shell_tests.shell_handler.ShellHandler
+        :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
+        :type logger: logging.Logger
+        """
+        return cls(
+            conf.name,
+            None,
+            conf.attributes,
+            conf.children_attributes,
+            conf.tests_conf,
+            conf.first_gen,
+            None,
+            cs_handler,
+            shell_handler,
+            logger,
+            sandbox_handler,
+            conf.name_prefix,
+        )
+
+    @property
+    def device_type(self):
+        return DeviceType.REAL_DEVICE
+
+    @property
+    def model(self):
+        return self.resource_details.ResourceModelName
+
+    @model.setter
+    def model(self, value):
+        pass
+
+    @property
+    def device_ip(self):
+        return self.resource_details.Address
+
+    @device_ip.setter
+    def device_ip(self, value):
+        pass
+
+    def prepare_resource(self):
+        """Prepare the Deployment Resource."""
+        self.logger.info('Start preparing the resource {}'.format(self.name))
+
+        current_name = self.sandbox_handler.get_deployment_resource_name(self.name_prefix)
+        self.cs_handler.rename_resource(current_name, self.name)
+        self.set_attributes(self._initial_attributes)
+        self.is_autoload_finished = True
+
+        self.logger.info('The resource {} prepared'.format(self.name))
+
+    def delete_resource(self):
+        pass  # it'll be deleted when sandbox ended

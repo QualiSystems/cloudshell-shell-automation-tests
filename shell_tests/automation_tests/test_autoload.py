@@ -54,3 +54,11 @@ class TestAutoloadWithoutDevice(BaseTestCase):
 
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
             self.target_handler.autoload()
+
+
+class TestAutoloadVirtualTrafficGeneratorDevices(TestAutoloadNetworkDevices):
+    def test_structure(self):
+        info = self.target_handler.get_details()
+        structure = self._get_structure(info)
+
+        self.assertIn('CS_VirtualTrafficGeneratorPort', str(structure))
