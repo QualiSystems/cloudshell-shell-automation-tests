@@ -9,7 +9,7 @@ from shell_tests.errors import ResourceIsNotAliveError, CSIsNotAliveError
 from shell_tests.ftp_handler import FTPHandler
 from shell_tests.helpers import is_host_alive, enter_stacks, wait_for_end_threads
 from shell_tests.report_result import Reporting
-from shell_tests.resource_handler import ResourceHandler, ServiceHandler
+from shell_tests.resource_handler import ResourceHandler, ServiceHandler, DeploymentResourceHandler
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
 from shell_tests.sandbox_handler import SandboxHandler
 from shell_tests.shell_handler import ShellHandler
@@ -143,6 +143,18 @@ class RunTestsInCloudShell(object):
             )
             for conf in self.main_conf.resources_conf.values()
         )
+        self.deployment_resource_handlers = OrderedDict(
+            (
+                conf.name,
+                DeploymentResourceHandler.from_conf(
+                    conf,
+                    self.cs_handler,
+                    self.shell_handlers.get(conf.shell_name),
+                    logger,
+                ),
+            )
+            for conf in self.main_conf.deployment_resources_conf.values()
+        )
         self.service_handlers = OrderedDict(
             (
                 conf.name,
@@ -184,10 +196,15 @@ class RunTestsInCloudShell(object):
         :type sandbox_conf: shell_tests.configs.SandboxConfig
         """
         resource_handlers = map(self.resource_handlers.get, sandbox_conf.resource_names)
+        deployment_resource_handlers = map(
+            self.deployment_resource_handlers.get,
+            sandbox_conf.deployment_resource_names,
+        )
         service_handlers = map(self.service_handlers.get, sandbox_conf.service_names)
         return SandboxHandler.from_conf(
             sandbox_conf,
             resource_handlers,
+            deployment_resource_handlers,
             service_handlers,
             self.cs_handler,
             self.shell_handlers,
@@ -202,8 +219,8 @@ class RunTestsInCloudShell(object):
         """
         stacks = chain(
             self.shell_handlers.values(),
-            self.blueprint_handlers.values(),
             self.resource_handlers.values(),
+            self.blueprint_handlers.values(),
             self.service_handlers.values(),
         )
         with enter_stacks(stacks):

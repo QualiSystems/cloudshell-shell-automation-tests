@@ -256,6 +256,9 @@ class CloudShellHandler(object):
 
         return name
 
+    def rename_resource(self, current_name, new_name):
+        return self.api.RenameResource(current_name, new_name)
+
     def set_resource_attributes(self, resource_name, namespace, attributes):
         """Set attributes for the resource.
 
@@ -541,3 +544,16 @@ class CloudShellHandler(object):
         self.logger.info('Removing connector between {} and {}'.format(port1, port2))
         self.api.DisconnectRoutesInReservation(reservation_id, [port1, port2])
         self.api.RemoveConnectorsFromReservation(reservation_id, [port1, port2])
+
+    def get_resources_names_in_reservation(self, reservation_id):
+        """Get resources names in the reservation.
+
+        :type reservation_id: str
+        :rtype: list[str]
+        """
+        self.logger.info('Get resources names in the reservation {}'.format(reservation_id))
+        resources_info = self.api.GetReservationResourcesPositions(
+            reservation_id).ResourceDiagramLayouts
+        names = [resource.ResourceName for resource in resources_info]
+        self.logger.info('Resources names are: {}'.format(names))
+        return names

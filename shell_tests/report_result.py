@@ -7,6 +7,7 @@ class SandboxReport(object):
         self.sandbox_is_success = is_success
         self.test_result = test_result
         self.resources_reports = []  # type: list[ResourceReport]
+        self.deployment_resources_reports = []  # type: list[DeploymentResourceReport]
         self.services_reports = []  # type: list[ServiceReport]
 
     @property
@@ -24,14 +25,19 @@ class SandboxReport(object):
                                     '{0.test_result}\n\n'.format(self, success_str))
 
         resources_tests_result = '\n\n'.join(map(str, self.resources_reports))
+        deployment_resources_tests_result = '\n\n'.join(map(str, self.deployment_resources_reports))
         services_tests_result = '\n\n'.join(map(str, self.services_reports))
 
         success_str = 'successful' if self.is_success else 'unsuccessful'
         result = (
             'Sandbox name: {}\n'
-            'Tests for sandbox, resources and services was {}\n\n{}{}{}'.format(
-                self.name, success_str, sandbox_tests_result, resources_tests_result,
-                services_tests_result
+            'Tests for sandbox, resources and services was {}\n\n{}{}{}{}'.format(
+                self.name,
+                success_str,
+                sandbox_tests_result,
+                resources_tests_result,
+                deployment_resources_tests_result,
+                services_tests_result,
             ))
 
         return result
@@ -52,6 +58,13 @@ class ResourceReport(object):
                   'Test for the device was {1}\n'
                   '{0.test_result}'.format(self, success_str))
 
+        return result
+
+
+class DeploymentResourceReport(ResourceReport):
+    def __str__(self):
+        result = super(DeploymentResourceReport, self).__str__()
+        result = result.replace('Resource name', 'Deployment Resource name')
         return result
 
 
