@@ -12,3 +12,7 @@ class CSIsNotAliveError(ResourceIsNotAliveError):
 
 class DeploymentResourceNotFoundError(BaseAutomationException):
     """Could not find a deployment resource."""
+
+
+class CreationReservationError(BaseAutomationException):
+    """Error with creating a reservation"""
