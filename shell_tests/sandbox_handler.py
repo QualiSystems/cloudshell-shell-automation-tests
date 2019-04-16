@@ -178,7 +178,8 @@ class SandboxHandler(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._stacks.__exit__(exc_type, exc_val, exc_tb)
+        if self._stacks:
+            self._stacks.__exit__(exc_type, exc_val, exc_tb)
 
         if self.reservation_id:
             self.end_reservation()
