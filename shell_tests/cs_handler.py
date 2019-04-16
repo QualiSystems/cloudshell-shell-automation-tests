@@ -8,7 +8,7 @@ from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttribut
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
 
-from shell_tests.errors import BaseAutomationException
+from shell_tests.errors import BaseAutomationException, CreationReservationError
 from shell_tests.smb_handler import SMB
 
 
@@ -214,6 +214,9 @@ class CloudShellHandler(object):
             status = self.get_reservation_status(reservation_id).ProvisioningStatus
             if status == 'Ready':
                 break
+            elif status == 'Error':
+                raise CreationReservationError
+
             time.sleep(30)
         else:
             raise BaseAutomationException('The reservation {} doesn\'t started'.format(
