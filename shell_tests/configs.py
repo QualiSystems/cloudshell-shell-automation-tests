@@ -392,7 +392,11 @@ class MainConfig(object):
 
     @staticmethod
     def _update_resource_tests_conf(conf):
-        for resource_dict in chain(conf.get('Resources', []), conf.get('Services', [])):
+        for resource_dict in chain(
+                conf.get('Resources', []),
+                conf.get('Services', []),
+                conf.get('Deployment Resources'),
+        ):
             for shell_dict in conf['Shells']:
                 if shell_dict['Name'] == resource_dict.get('Shell Name'):
                     resource_dict['Tests'] = merge_dicts(
