@@ -395,7 +395,7 @@ class MainConfig(object):
         for resource_dict in chain(
                 conf.get('Resources', []),
                 conf.get('Services', []),
-                conf.get('Deployment Resources'),
+                conf.get('Deployment Resources', []),
         ):
             for shell_dict in conf['Shells']:
                 if shell_dict['Name'] == resource_dict.get('Shell Name'):
