@@ -211,10 +211,13 @@ class CloudShellHandler(object):
 
     def wait_reservation_is_started(self, reservation_id):
         for _ in range(60):
-            status = self.get_reservation_status(reservation_id).ProvisioningStatus
-            if status == 'Ready':
+            status = self.get_reservation_status(reservation_id)
+            if (
+                    status.ProvisioningStatus == 'Ready'
+                    or status.ProvisioningStatus == 'Not Run' and status.Status == 'Started'
+            ):
                 break
-            elif status == 'Error':
+            elif status.ProvisioningStatus == 'Error':
                 raise CreationReservationError
 
             time.sleep(30)
