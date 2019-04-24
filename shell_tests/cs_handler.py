@@ -226,6 +226,22 @@ class CloudShellHandler(object):
                 reservation_id))
         self.logger.info('The reservation created')
 
+    @staticmethod
+    def create_new_resource_name(name):
+        """Create new name with index.
+
+        :type name: str
+        :rtype: str
+        """
+        try:
+            match = re.search(r'^(?P<name>.+)-(?P<v>\d+)$', name)
+            version = int(match.group('v'))
+            name = match.group('name')
+        except (AttributeError, KeyError):
+            version = 0
+
+        return '{}-{}'.format(name, version + 1)
+
     def create_resource(self, name, model, address, family=''):
         """Create resource.
 
@@ -245,16 +261,7 @@ class CloudShellHandler(object):
             except CloudShellAPIError as e:
                 if str(e.code) != '114':
                     raise
-
-                try:
-                    match = re.search(r'^(?P<name>.+)-(?P<v>\d+)$', name)
-                    version = int(match.group('v'))
-                    name = match.group('name')
-                except (AttributeError, KeyError):
-                    version = 0
-
-                name = '{}-{}'.format(name, version + 1)
-
+                name = self.create_new_resource_name(name)
             else:
                 break
 
@@ -263,7 +270,26 @@ class CloudShellHandler(object):
         return name
 
     def rename_resource(self, current_name, new_name):
-        return self.api.RenameResource(current_name, new_name)
+        """Rename resource.
+
+        :type current_name: str
+        :type new_name: str
+        :rtype: str
+        """
+        self.logger.info('Renaming resource "{}" to "{}"'.format(current_name, new_name))
+
+        while True:
+            try:
+                self.api.RenameResource(current_name, new_name)
+            except CloudShellAPIError as e:
+                if str(e.code) != '114':
+                    raise
+                new_name = self.create_new_resource_name(new_name)
+            else:
+                break
+
+        self.logger.debug('Resource "{}" renamed to "{}"'.format(current_name, new_name))
+        return new_name
 
     def set_resource_attributes(self, resource_name, namespace, attributes):
         """Set attributes for the resource.
