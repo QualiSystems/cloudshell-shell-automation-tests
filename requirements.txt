@@ -3,6 +3,7 @@ cloudshell-automation-api>=9.2,<10
 cloudshell-rest-api>=8.2,<9
 contextlib2>=0.5,<0.6
 pysmb>=1.1,<2
+pyvmomi>=6.7,<7
 PyYAML>=5.1,<6
 requests>=2.20,<3
 teamcity-messages>=1.21,<2

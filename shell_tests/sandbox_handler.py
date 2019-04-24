@@ -7,28 +7,33 @@ from shell_tests.helpers import call_exit_func_on_exc, enter_stacks
 
 
 class SandboxHandler(object):
-    def __init__(self, name, blueprint_name, resource_handlers, deployment_resource_handlers,
-                 service_handlers, cs_handler, shell_handlers, ftp_handler, logger):
+    def __init__(self, name, blueprint_name, tests_conf, resource_handlers,
+                 deployment_resource_handlers, service_handlers, cs_handler, shell_handlers,
+                 ftp_handler, vcenter_handler, logger):
         """Sandbox Handler that creates reservation adds resources.
 
         :type name: str
         :type blueprint_name: str
-        :type resource_handlers: list[shell_tests.resource_handler.ResourceHandler]
+        :type tests_conf: shell_tests.configs.TestsConfig
+        :type resource_handlers: list[shell_tests.resource_handler.ResourceHandler]+-
         :type deployment_resource_handlers: list[shell_tests.resource_handler.DeploymentResourceHandler]
         :type service_handlers: list[shell_tests.resource_handler.ServiceHandler]
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :type shell_handlers: OrderedDict[str, shell_tests.shell_handler.ShellHandler]
         :type ftp_handler: shell_tests.ftp_handler.FTPHandler
+        :type vcenter_handler: shell_tests.vcenter_handler.VcenterHandler
         :type logger: logging.Logger
         """
         self.name = name
         self.blueprint_name = blueprint_name
+        self.tests_conf = tests_conf
         self.resource_handlers = resource_handlers
         self.deployment_resource_handlers = deployment_resource_handlers
         self.service_handlers = service_handlers
         self.cs_handler = cs_handler
         self.shell_handlers = shell_handlers
         self.ftp_handler = ftp_handler
+        self.vcenter_handler = vcenter_handler
         self.logger = logger
 
         self.reservation_id = None
@@ -40,7 +45,7 @@ class SandboxHandler(object):
 
     @classmethod
     def from_conf(cls, conf, resource_handlers, deployment_resource_handlers, service_handlers,
-                  cs_handler, shell_handlers, ftp_handler, logger):
+                  cs_handler, shell_handlers, ftp_handler, vcenter_handler, logger):
         """Create SandboxHandler from the config and handlers.
 
         :type conf: shell_tests.configs.SandboxConfig
@@ -50,17 +55,20 @@ class SandboxHandler(object):
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :type shell_handlers: OrderedDict[str, shell_tests.shell_handler.ShellHandler]
         :type ftp_handler: shell_tests.ftp_handler.FTPHandler
+        :type vcenter_handler: shell_tests.vcenter_handler.VcenterHandler
         :type logger: logging.Logger
         """
         return cls(
             conf.name,
             conf.blueprint_name,
+            conf.tests_conf,
             resource_handlers,
             deployment_resource_handlers,
             service_handlers,
             cs_handler,
             shell_handlers,
             ftp_handler,
+            vcenter_handler,
             logger,
         )
 
