@@ -236,9 +236,9 @@ class RunTestsForSandbox(threading.Thread):
             for test_name in unittest.TestLoader().getTestCaseNames(test_case):
                 test_inst = test_case(
                     test_name,
+                    self.logger,
                     target_handler,
                     self.sandbox_handler,
-                    self.logger,
                 )
 
                 self.current_test_suite.addTest(test_inst)
