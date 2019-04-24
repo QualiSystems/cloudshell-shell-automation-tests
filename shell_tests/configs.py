@@ -273,22 +273,26 @@ class SandboxConfig(object):
         :type deployment_resource_names: list[str]
         :type service_names: list[str]
         :type blueprint_name: str
+        :type tests_conf: TestsConfig
         """
         self.name = name
         self.resource_names = resource_names
         self.deployment_resource_names = deployment_resource_names
         self.service_names = service_names
         self.blueprint_name = blueprint_name
+        self.tests_conf = tests_conf
 
     @classmethod
     def from_dict(cls, config):
         if config:
+            tests_conf = TestsConfig.from_dict(config.get('Tests'))
             return cls(
                 config['Name'],
                 config.get('Resources', []),
                 config.get('Deployment Resources', []),
                 config.get('Services', []),
                 config.get('Blueprint Name'),
+                tests_conf,
             )
 
 

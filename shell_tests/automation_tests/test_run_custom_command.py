@@ -1,9 +1,9 @@
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.automation_tests.base import BaseTestCase
+from shell_tests.automation_tests.base import BaseResourceServiceTestCase
 
 
-class TestRunCustomCommand(BaseTestCase):
+class TestRunCustomCommand(BaseResourceServiceTestCase):
 
     def test_run_custom_command(self):
         output = self.target_handler.run_custom_command('show version')
@@ -16,7 +16,7 @@ class TestRunCustomCommand(BaseTestCase):
         self.assertTrue(output)
 
 
-class TestRunCustomCommandWithoutDevice(BaseTestCase):
+class TestRunCustomCommandWithoutDevice(BaseResourceServiceTestCase):
 
     def test_run_custom_command(self):
         self.assertRaisesRegexp(
