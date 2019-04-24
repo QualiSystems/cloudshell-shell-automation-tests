@@ -14,6 +14,7 @@ from shell_tests.resource_handler import ResourceHandler, ServiceHandler, Deploy
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
 from shell_tests.sandbox_handler import SandboxHandler
 from shell_tests.shell_handler import ShellHandler
+from shell_tests.vcenter_handler import VcenterHandler
 
 
 class AutomatedTestsRunner(object):
@@ -119,6 +120,7 @@ class RunTestsInCloudShell(object):
 
         self.reporting = Reporting()
         self.ftp_handler = FTPHandler.from_conf(self.main_conf.ftp_conf, logger)
+        self.vcenter_handler = VcenterHandler.from_config(self.main_conf.vcenter_conf)
         self.shell_handlers = OrderedDict(
             (shell_conf.name, ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
             for shell_conf in self.main_conf.shells_conf.values()
@@ -220,6 +222,7 @@ class RunTestsInCloudShell(object):
             self.cs_handler,
             self.shell_handlers,
             self.ftp_handler,
+            self.vcenter_handler,
             self.logger,
         )
 

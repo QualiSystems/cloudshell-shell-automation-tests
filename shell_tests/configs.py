@@ -315,9 +315,31 @@ class BlueprintConfig(object):
             )
 
 
+class VcenterConfig(object):
+    def __init__(self, host, user, password):
+        """vCenter config.
+
+        :type host: str
+        :type user: str
+        :type password: str
+        """
+        self.host = host
+        self.user = user
+        self.password = password
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Host'],
+                config['User'],
+                config['Password'],
+            )
+
+
 class MainConfig(object):
     def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, deployment_resource_conf,
-                 services_conf, sandboxes_conf, ftp_conf, blueprints_conf):
+                 services_conf, sandboxes_conf, ftp_conf, blueprints_conf, vcenter_conf):
         """Main config.
 
         :type do_conf: DoConfig
@@ -329,6 +351,7 @@ class MainConfig(object):
         :type sandboxes_conf: OrderedDict[str, SandboxConfig]
         :type ftp_conf: FTPConfig
         :type blueprints_conf: OrderedDict[str, BlueprintConfig]
+        :type vcenter_conf: VcenterConfig
         """
         self.do_conf = do_conf
         self.cs_conf = cs_conf
@@ -339,6 +362,7 @@ class MainConfig(object):
         self.sandboxes_conf = sandboxes_conf
         self.ftp_conf = ftp_conf
         self.blueprints_conf = blueprints_conf
+        self.vcenter_conf = vcenter_conf
 
     @classmethod
     def parse_from_yaml(cls, test_conf_path, env_conf_path=None):
@@ -381,6 +405,7 @@ class MainConfig(object):
             (blueprint_conf['Name'], BlueprintConfig.from_dict(blueprint_conf))
             for blueprint_conf in config.get('Blueprints', [])
         )
+        vcenter_conf = VcenterConfig.from_dict(config.get('vCenter'))
 
         return cls(
             do_conf,
@@ -392,6 +417,7 @@ class MainConfig(object):
             sandboxes_conf,
             ftp_conf,
             blueprints_conf,
+            vcenter_conf,
         )
 
     @staticmethod
