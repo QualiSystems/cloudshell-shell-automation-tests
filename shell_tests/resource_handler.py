@@ -293,6 +293,14 @@ class ResourceHandler(object):
         self.logger.debug('Orchestration restore command output: {}'.format(output))
         return output
 
+    def rename(self, new_name):
+        """Rename the resource.
+
+        :type new_name: str
+        :rtype: str
+        """
+        self.name = self.cs_handler.rename_resource(self.name, new_name)
+
 
 class ServiceHandler(object):
 
