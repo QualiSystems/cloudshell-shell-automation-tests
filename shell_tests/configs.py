@@ -113,7 +113,7 @@ class ResourceConfig(object):
 
 class DeploymentResourceConfig(ResourceConfig):
     def __init__(self, name, shell_name, model, device_ip, attributes, children_attributes,
-                 tests_conf, first_gen=False, name_prefix=None):
+                 tests_conf, first_gen=False, blueprint_name=None):
         """Deployment Resource config.
 
         :type name: str
@@ -124,7 +124,7 @@ class DeploymentResourceConfig(ResourceConfig):
         :type children_attributes: dict[dict[str, str]]
         :type tests_conf: TestsConfig
         :type first_gen: bool
-        :type name_prefix: str
+        :type blueprint_name: str
         """
         super(DeploymentResourceConfig, self).__init__(
             name,
@@ -136,7 +136,7 @@ class DeploymentResourceConfig(ResourceConfig):
             tests_conf,
             first_gen,
         )
-        self.name_prefix = name_prefix
+        self.blueprint_name = blueprint_name
 
     @classmethod
     def from_dict(cls, config):
@@ -152,7 +152,7 @@ class DeploymentResourceConfig(ResourceConfig):
                 config.get('Children Attributes'),
                 tests_conf,
                 config.get('First Gen', False),
-                config['Name Prefix'],
+                config['Blueprint Name'],
             )
 
 
@@ -265,7 +265,7 @@ class ShellConfig(object):
 
 class SandboxConfig(object):
     def __init__(self, name, resource_names, deployment_resource_names, service_names,
-                 blueprint_name):
+                 blueprint_name, tests_conf):
         """Sandbox config.
 
         :type name: str

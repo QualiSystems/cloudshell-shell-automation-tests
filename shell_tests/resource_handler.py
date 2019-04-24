@@ -420,7 +420,7 @@ class ServiceHandler(object):
 
 class DeploymentResourceHandler(ResourceHandler):
     def __init__(self, name, device_ip, attributes, children_attributes, tests_conf, first_gen,
-                 model, cs_handler, shell_handler, logger, sandbox_handler=None, name_prefix=None):
+                 model, cs_handler, shell_handler, logger, sandbox_handler=None, blueprint_name=None):
         """Handler for a Deployment Resource.
 
         :type name: str
@@ -434,10 +434,10 @@ class DeploymentResourceHandler(ResourceHandler):
         :type shell_handler: shell_tests.shell_handler.ShellHandler
         :type logger: logging.Logger
         :type sandbox_handler: shell_tests.sandbox_handler.SandboxHandler
-        :type name_prefix: str
+        :type blueprint_name: str
         """
         super(DeploymentResourceHandler, self).__init__(
-            name,
+            None,
             None,
             attributes,
             children_attributes,
@@ -449,7 +449,9 @@ class DeploymentResourceHandler(ResourceHandler):
             logger,
             sandbox_handler,
         )
-        self.name_prefix = name_prefix
+        self._requested_name = name
+        self._blueprint_name = blueprint_name
+        self.vm_name = None
 
     @classmethod
     def from_conf(cls, conf, cs_handler, shell_handler, logger, sandbox_handler=None):
@@ -473,7 +475,7 @@ class DeploymentResourceHandler(ResourceHandler):
             shell_handler,
             logger,
             sandbox_handler,
-            conf.name_prefix,
+            conf.blueprint_name,
         )
 
     @property
@@ -500,8 +502,9 @@ class DeploymentResourceHandler(ResourceHandler):
         """Prepare the Deployment Resource."""
         self.logger.info('Start preparing the resource {}'.format(self.name))
 
-        current_name = self.sandbox_handler.get_deployment_resource_name(self.name_prefix)
-        self.cs_handler.rename_resource(current_name, self.name)
+        self.vm_name = self.name = self.sandbox_handler.get_deployment_resource_name(
+            self._blueprint_name)
+        self.rename(self._requested_name)
         self.set_attributes(self._initial_attributes)
         self.is_autoload_finished = True
 
