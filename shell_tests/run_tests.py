@@ -1,3 +1,4 @@
+import time
 from collections import OrderedDict
 from itertools import chain
 
@@ -114,12 +115,7 @@ class RunTestsInCloudShell(object):
 
         self.cs_handler = CloudShellHandler.from_conf(main_conf.cs_conf, logger)
         # check CS is alive
-        try:
-            self.cs_handler.api
-        except IOError:
-            self._smb_handler = None
-            self.logger.warning('CloudShell {} is not alive'.format(self.cs_handler.host))
-            raise CSIsNotAliveError
+        self._wait_for_cs_is_started()
 
         self.reporting = Reporting()
         self.ftp_handler = FTPHandler.from_conf(self.main_conf.ftp_conf, logger)
@@ -167,6 +163,21 @@ class RunTestsInCloudShell(object):
             )
             for conf in self.main_conf.services_conf.values()
         )
+
+    def _wait_for_cs_is_started(self):
+        attempts = 10
+        while attempts:
+            attempts -= 1
+            try:
+                self.cs_handler.api
+            except IOError:
+                time.sleep(10)  # wait CS is started
+            else:
+                break
+        else:
+            self._smb_handler = None
+            self.logger.warning('CloudShell {} is not alive'.format(self.cs_handler.host))
+            raise CSIsNotAliveError
 
     def run_tests_for_sandboxes(self):
         """Run tests for sandboxes."""
