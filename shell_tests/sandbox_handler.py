@@ -148,18 +148,18 @@ class SandboxHandler(object):
         """
         self.cs_handler.remove_connector(self.reservation_id, port_name1, port_name2)
 
-    def get_deployment_resource_name(self, name_prefix):
+    def get_deployment_resource_name(self, blueprint_name):
         names = self.cs_handler.get_resources_names_in_reservation(self.reservation_id)
         for resource_name in names:
             if re.search(
-                    r'^{}_\w{{4}}-\w{{4}}$'.format(name_prefix),
+                    r'^{}_\w{{4}}-\w{{4}}$'.format(blueprint_name),
                     resource_name,
             ):
                 return resource_name
 
         raise DeploymentResourceNotFoundError(
             'Could not find the deployment resource with prefix {} in the reservation {}. '
-            'Available resources are {}'.format(name_prefix, self.reservation_id, names)
+            'Available resources are {}'.format(blueprint_name, self.reservation_id, names)
         )
 
     @call_exit_func_on_exc
