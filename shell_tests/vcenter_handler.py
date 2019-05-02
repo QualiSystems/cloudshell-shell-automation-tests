@@ -34,7 +34,7 @@ class VcenterHandler(object):
     @property
     def si(self):
         if self._si is None:
-            raise VcenterError('You have to login first')
+            self.login()
         return self._si
 
     def login(self):
