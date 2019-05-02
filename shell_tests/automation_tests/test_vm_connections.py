@@ -18,11 +18,13 @@ class PortInfo(object):
 
     def __eq__(self, other):
         if not isinstance(other, type(self)):
-            return all((
-                self.mac == other.mac,
-                self.adapter_name == other.adapter_name,
-                self.port_group_name == other.port_group_name,
-            ))
+            raise ValueError
+
+        return all((
+            self.mac == other.mac,
+            self.adapter_name == other.adapter_name,
+            self.port_group_name == other.port_group_name,
+        ))
 
 
 class TestVMConnections(BaseSandboxTestCase):
