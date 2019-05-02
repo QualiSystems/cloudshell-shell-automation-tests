@@ -50,7 +50,7 @@ class TestVMConnections(BaseSandboxTestCase):
         vm = self.sandbox_handler.vcenter_handler.get_vm_by_uuid(vm_uuid)
 
         for device in vm.config.hardware.device:
-            if device.deviceInfoLabel == adapter_name:
+            if device.deviceInfo.label == adapter_name:
                 break
         else:
             raise BaseAutomationException(
@@ -60,7 +60,7 @@ class TestVMConnections(BaseSandboxTestCase):
         port_group_key = device.backing.port.portgroupKey
 
         for network in vm.network:
-            if network.key == port_group_key:
+            if getattr(network, 'key', '') == port_group_key:
                 break
         else:
             raise BaseAutomationException(
