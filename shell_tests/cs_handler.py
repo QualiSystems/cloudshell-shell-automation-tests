@@ -9,6 +9,7 @@ from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
 
 from shell_tests.errors import BaseAutomationException, CreationReservationError
+from shell_tests.helpers import cached_property
 from shell_tests.smb_handler import SMB
 
 
@@ -42,10 +43,6 @@ class CloudShellHandler(object):
         self.domain = domain
         self.logger = logger
 
-        self._smb = None
-        self._api = None
-        self._rest_api = None
-
     @classmethod
     def from_conf(cls, conf, logger):
         """Create CloudShell Handler from the config.
@@ -63,35 +60,31 @@ class CloudShellHandler(object):
             logger,
         )
 
-    @property
+    @cached_property
     def rest_api(self):
-        if self._rest_api is None:
-            self.logger.debug('Connecting to REST API')
-            self._rest_api = PackagingRestApiClient(
-                self.host, self.REST_API_PORT, self.user, self.password, self.domain)
-            self.logger.debug('Connected to REST API')
-        return self._rest_api
+        self.logger.debug('Connecting to REST API')
+        rest_api = PackagingRestApiClient(self.host, self.REST_API_PORT, self.user, self.password, self.domain)
+        self.logger.debug('Connected to REST API')
+        return rest_api
 
-    @property
+    @cached_property
     def api(self):
-        if self._api is None:
-            self.logger.debug('Connecting to Automation API')
-            self._api = CloudShellAPISession(self.host, self.user, self.password, self.domain)
-            self.logger.debug('Connected to Automation API')
-        return self._api
+        self.logger.debug('Connecting to Automation API')
+        api = CloudShellAPISession(self.host, self.user, self.password, self.domain)
+        self.logger.debug('Connected to Automation API')
+        return api
 
-    @property
+    @cached_property
     def smb(self):
-        if self._smb is None and self.os_user:
-            self._smb = SMB(
+        if self.os_user:
+            smb = SMB(
                 self.os_user,
                 self.os_password,
                 self.host,
                 self.CLOUDSHELL_SERVER_NAME,
                 self.logger,
             )
-
-        return self._smb
+            return smb
 
     def install_shell(self, shell_path):
         """Install Shell driver in the CloudShell
