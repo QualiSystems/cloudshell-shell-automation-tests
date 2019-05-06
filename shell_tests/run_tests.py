@@ -223,6 +223,7 @@ class RunTestsInCloudShell(object):
             self.shell_handlers,
             self.ftp_handler,
             self.vcenter_handler,
+            self.blueprint_handlers[sandbox_conf.blueprint_name],
             self.logger,
         )
 
