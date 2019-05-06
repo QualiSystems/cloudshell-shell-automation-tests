@@ -9,7 +9,7 @@ from shell_tests.helpers import call_exit_func_on_exc, enter_stacks
 class SandboxHandler(object):
     def __init__(self, name, blueprint_name, tests_conf, resource_handlers,
                  deployment_resource_handlers, service_handlers, cs_handler, shell_handlers,
-                 ftp_handler, vcenter_handler, logger):
+                 ftp_handler, vcenter_handler, blueprint_handler, logger):
         """Sandbox Handler that creates reservation adds resources.
 
         :type name: str
@@ -22,6 +22,7 @@ class SandboxHandler(object):
         :type shell_handlers: OrderedDict[str, shell_tests.shell_handler.ShellHandler]
         :type ftp_handler: shell_tests.ftp_handler.FTPHandler
         :type vcenter_handler: shell_tests.vcenter_handler.VcenterHandler
+        :type blueprint_handler: shell_tests.blueprint_handler.BlueprintHandler
         :type logger: logging.Logger
         """
         self.name = name
@@ -34,6 +35,7 @@ class SandboxHandler(object):
         self.shell_handlers = shell_handlers
         self.ftp_handler = ftp_handler
         self.vcenter_handler = vcenter_handler
+        self.blueprint_handler = blueprint_handler
         self.logger = logger
 
         self.reservation_id = None
@@ -45,7 +47,7 @@ class SandboxHandler(object):
 
     @classmethod
     def from_conf(cls, conf, resource_handlers, deployment_resource_handlers, service_handlers,
-                  cs_handler, shell_handlers, ftp_handler, vcenter_handler, logger):
+                  cs_handler, shell_handlers, ftp_handler, vcenter_handler, blueprint_handler, logger):
         """Create SandboxHandler from the config and handlers.
 
         :type conf: shell_tests.configs.SandboxConfig
@@ -56,6 +58,7 @@ class SandboxHandler(object):
         :type shell_handlers: OrderedDict[str, shell_tests.shell_handler.ShellHandler]
         :type ftp_handler: shell_tests.ftp_handler.FTPHandler
         :type vcenter_handler: shell_tests.vcenter_handler.VcenterHandler
+        :type blueprint_handler: shell_tests.blueprint_handler.BlueprintHandler
         :type logger: logging.Logger
         """
         return cls(
@@ -69,6 +72,7 @@ class SandboxHandler(object):
             shell_handlers,
             ftp_handler,
             vcenter_handler,
+            blueprint_handler,
             logger,
         )
 
