@@ -70,12 +70,8 @@ class ResourceHandler(object):
         )
 
     @cached_property
-    def resource_details(self):
-        return self.get_details()
-
-    @property
     def family(self):
-        return self.resource_details.ResourceFamilyName
+        return self.get_details().ResourceFamilyName
 
     @property
     def model(self):
@@ -490,17 +486,17 @@ class DeploymentResourceHandler(ResourceHandler):
     def device_type(self):
         return DeviceType.REAL_DEVICE
 
-    @property
+    @cached_property
     def model(self):
-        return self.resource_details.ResourceModelName
+        return self.get_details().ResourceModelName
 
     @model.setter
     def model(self, value):
         pass
 
-    @property
+    @cached_property
     def device_ip(self):
-        return self.resource_details.Address
+        return self.get_details().Address
 
     @device_ip.setter
     def device_ip(self, value):
