@@ -582,3 +582,13 @@ class CloudShellHandler(object):
         names = [resource.ResourceName for resource in resources_info]
         self.logger.info('Resources names are: {}'.format(names))
         return names
+
+    def refresh_vm_details(self, reservation_id, app_names):
+        """Refresh VM Details.
+
+        :type reservation_id: str
+        :type app_names: list[str]
+        """
+        self.logger.info('Refresh VM Details for the "{}"'.format(app_names))
+        self.api.RefreshVMDetails(reservation_id, app_names)
+        self.logger.debug('VM Details are refreshed')
