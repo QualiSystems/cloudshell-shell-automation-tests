@@ -10,10 +10,12 @@ import time
 import urllib2
 import urlparse
 import zipfile
+from collections import defaultdict
 from contextlib import closing
 from functools import wraps
 from xml.etree import ElementTree
 
+import xmltodict
 import yaml
 from contextlib2 import ExitStack
 
@@ -181,3 +183,70 @@ class cached_property(object):
             return self
         value = obj.__dict__[self.func.__name__] = self.func(obj)
         return value
+
+
+def get_str_connections_form_blueprint(path, bp_name):
+    """Get a list of connections in the blueprint.
+
+    :param path: path to a package zip file
+    :type path: str
+    :param bp_name: name of the Blueprint
+    :type bp_name: str
+    :rtype: tuple[tuple[str, str], tuple[str, str]]
+    :return: (first_resource_name, requested_port_names), (second_resource_name, requested_port_names)
+    """
+    xml_name = '{}.xml'.format(bp_name)
+    xml_path = 'Topologies/{}'.format(xml_name)
+
+    with zipfile.ZipFile(path) as zip_file:
+        xml_data = zip_file.read(xml_path)
+
+    data = xmltodict.parse(xml_data)
+    source_ports = target_ports = ''
+
+    connector = data['TopologyInfo']['Routes']['Connector']
+    source_name = connector['@Source']
+    target_name = connector['@Target']
+
+    for attribute in connector['Attributes']['Attribute']:
+        if attribute['@Name'] == 'Requested Target vNIC Name':
+            target_ports = attribute['@Value']
+        elif attribute['@Name'] == 'Requested Source vNIC Name':
+            source_ports = attribute['@Value']
+
+    return (source_name, source_ports), (target_name, target_ports)
+
+
+def parse_connections(source_name, source_ports, target_name, target_ports):
+    """Parse ports from blueprint.
+
+    :param str source_name: blueprint resource name
+    :param str source_ports: requested ports to connect, "2,3", "", ...
+    :param str target_name: blueprint resource name
+    :param str target_ports: requested ports to connect, "3,2", "", ...
+    :rtype: dict[tuple[str, str], list[tuple[str, str]]]
+    :return:
+        {
+            (first_resource, requested_port_name): [(second_resource, requested_port_name)]
+        }
+    """
+    connections = defaultdict(list)
+
+    target_ports = target_ports.split(',')
+    source_ports = source_ports.split(',')
+
+    max_len = max(map(len, [target_ports, source_ports]))
+    for i in range(max_len):
+        try:
+            target = target_ports[i]
+        except IndexError:
+            target = 'any'
+
+        try:
+            source = source_ports[i]
+        except IndexError:
+            source = 'any'
+
+        connections[(source_name, source)].append((target_name, target))
+
+    return connections

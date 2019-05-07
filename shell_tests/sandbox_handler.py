@@ -15,7 +15,7 @@ class SandboxHandler(object):
         :type name: str
         :type blueprint_name: str
         :type tests_conf: shell_tests.configs.TestsConfig
-        :type resource_handlers: list[shell_tests.resource_handler.ResourceHandler]+-
+        :type resource_handlers: list[shell_tests.resource_handler.ResourceHandler]
         :type deployment_resource_handlers: list[shell_tests.resource_handler.DeploymentResourceHandler]
         :type service_handlers: list[shell_tests.resource_handler.ServiceHandler]
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler

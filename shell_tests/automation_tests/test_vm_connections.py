@@ -1,11 +1,15 @@
+import re
+
 from shell_tests.automation_tests.base import BaseSandboxTestCase
 from shell_tests.errors import BaseAutomationException
+from shell_tests.helpers import get_str_connections_form_blueprint, parse_connections
 
 
 class AppNetworkInfo(object):
-    def __init__(self, vm_name, cs_name, vm_uuid):
+    def __init__(self, vm_name, cs_name, blueprint_name, vm_uuid):
         self.vm_name = vm_name
         self.cs_name = cs_name
+        self.blueprint_name = blueprint_name
         self.vm_uuid = vm_uuid
         self.ports = {}  # type: dict[str, PortInfo]
 
@@ -25,6 +29,11 @@ class PortInfo(object):
             self.adapter_name == other.adapter_name,
             self.port_group_name == other.port_group_name,
         ))
+
+    def __str__(self):
+        return 'PortInfo(mac="{0.mac}", adapter_name="{0.adapter_name}", port_group_name="{0.port_group_name}")'.format(
+            self,
+        )
 
 
 class TestVMConnections(BaseSandboxTestCase):
@@ -77,20 +86,91 @@ class TestVMConnections(BaseSandboxTestCase):
         apps_info = {}
 
         for handler in self.sandbox_handler.deployment_resource_handlers:
+            vm_details = handler.get_details().VmDetails
             app_info = AppNetworkInfo(
                 handler.vm_name,
                 handler.name,
-                handler.resource_details.VmDetails.UID,
+                handler._blueprint_name,
+                vm_details.UID,
             )
-            apps_info[app_info.cs_name] = app_info
+            apps_info[app_info.blueprint_name] = app_info
 
-            for network_data in handler.resource_details.VmDetails.NetworkData:
+            for network_data in vm_details.NetworkData:
                 cs_port_info = self._get_port_info_from_vm_details_network_data(network_data)
                 vm_port_info = self._get_port_info_from_vcenter(
                     app_info.vm_uuid,
                     cs_port_info.adapter_name,
                 )
-                self.assertEqual(cs_port_info, vm_port_info)
-                app_info.ports[cs_port_info.adapter_name] = cs_port_info
+                self.assertEqual(
+                    cs_port_info,
+                    vm_port_info,
+                    'Information about the port from CloudShell and from vCenter is different.\n'
+                    'CS port info: {}\n'
+                    'vCenter port info: {}'.format(cs_port_info, vm_port_info),
+                )
+                app_info.ports[vm_port_info.adapter_name] = vm_port_info
 
-        print apps_info
+        self._test_correct_port_group_from_blueprint(apps_info)
+
+    def _find_port_in_app_info_with_conn_name(self, app_info, conn_name):
+        if conn_name == 'any':
+            return None
+
+        port_regex = re.compile(r'\W{}$'.format(conn_name))  # todo check me!
+        for port_name, port_info in app_info.ports.items():
+            if port_regex.search(port_name):
+                break
+        else:
+            self.fail(
+                'Cannot find the port in ports: {}\n by using connection name: "{}"'.format(
+                    app_info.ports.values(), conn_name,
+                )
+            )
+
+        return port_info
+
+    def _test_connection_with_one_specified_port(self, specified_port_info, other_app_info):
+        self.assertIn(
+            specified_port_info.port_group_name,
+            [port_info.port_group_name for port_info in other_app_info.ports.values()],
+        )
+
+    def _test_correct_port_group_from_blueprint(self, apps_info):
+        connections_from_blueprint = parse_connections(
+            *get_str_connections_form_blueprint(
+                self.sandbox_handler.blueprint_handler.path,
+                self.sandbox_handler.blueprint_name,
+            )
+        )
+
+        for (source_name, source_conn_name), target_conns in connections_from_blueprint.items():
+            for target_name, target_conn_name in target_conns:
+                source_app_info = apps_info[source_name]
+                target_app_info = apps_info[target_name]
+
+                source_port_info = self._find_port_in_app_info_with_conn_name(source_app_info, source_conn_name)
+                target_port_info = self._find_port_in_app_info_with_conn_name(target_app_info, target_conn_name)
+
+                if source_port_info and target_port_info:
+                    self.assertEqual(
+                        source_port_info.port_group_name,
+                        target_port_info.port_group_name,
+                        'Should be the same port group of the source port {} and target port {} '
+                        'but it\'s different'.format(source_port_info, target_port_info),
+                    )
+                elif source_port_info is target_port_info is None:
+                    # we didn't specify ports in blueprint
+                    self.assertEqual(len(connections_from_blueprint.keys()), 1)
+                    self.assertEqual(len(connections_from_blueprint.values()[0]), 1)
+                    self.assertEqual(len(source_app_info.ports), 1)
+                    self.assertEqual(len(target_app_info.ports), 1)
+                    self.assertEqual(
+                        source_app_info.ports.values()[0].port_group_name,
+                        target_app_info.ports.values()[0].port_group_name,
+                    )
+                else:
+                    # we specified a port only from one side
+                    if source_port_info:
+                        self._test_connection_with_one_specified_port(source_port_info, target_app_info)
+                    else:
+                        self._test_connection_with_one_specified_port(target_port_info, source_app_info)
