@@ -490,21 +490,13 @@ class DeploymentResourceHandler(ResourceHandler):
     def model(self):
         return self.get_details().ResourceModelName
 
-    @model.setter
-    def model(self, value):
-        pass
-
     @cached_property
     def device_ip(self):
         return self.get_details().Address
 
-    @device_ip.setter
-    def device_ip(self, value):
-        pass
-
     def prepare_resource(self):
         """Prepare the Deployment Resource."""
-        self.logger.info('Start preparing the resource {}'.format(self.name))
+        self.logger.info('Start preparing the resource {}'.format(self.vm_name))
 
         self.vm_name = self.name = self.sandbox_handler.get_deployment_resource_name(
             self._blueprint_name)
