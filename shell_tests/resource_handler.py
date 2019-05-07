@@ -510,9 +510,14 @@ class DeploymentResourceHandler(ResourceHandler):
             self._blueprint_name)
         self.rename(self._requested_name)
         self.set_attributes(self._initial_attributes)
+        self.refresh_vm_details()
         self.is_autoload_finished = True
 
         self.logger.info('The resource {} prepared'.format(self.name))
 
     def delete_resource(self):
         pass  # it'll be deleted when sandbox ended
+
+    def refresh_vm_details(self):
+        """Refresh VM Details for the App"""
+        self.cs_handler.refresh_vm_details(self.sandbox_handler.reservation_id, [self.name])
