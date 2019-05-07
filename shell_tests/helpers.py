@@ -1,4 +1,5 @@
 import io
+import itertools
 import os
 import platform
 import re
@@ -235,18 +236,7 @@ def parse_connections(source_name, source_ports, target_name, target_ports):
     target_ports = target_ports.split(',')
     source_ports = source_ports.split(',')
 
-    max_len = max(map(len, [target_ports, source_ports]))
-    for i in range(max_len):
-        try:
-            target = target_ports[i]
-        except IndexError:
-            target = 'any'
-
-        try:
-            source = source_ports[i]
-        except IndexError:
-            source = 'any'
-
-        connections[(source_name, source)].append((target_name, target))
+    for source_port, target_port in itertools.izip_longest(source_ports, target_ports, fillvalue='any'):
+        connections[(source_name, source_port)].append((target_name, target_port))
 
     return connections
