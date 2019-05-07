@@ -19,6 +19,7 @@ from shell_tests.automation_tests.test_traffic_generator_controller import TestL
     TestLoadConfigWithoutDevice, TestStartTraffic, TestStopTraffic, TestGetStatistics, \
     TestStartTrafficWithoutDevice, TestStopTrafficWithoutDevice, TestGetStatisticsWithoutDevice, \
     TestGetTestFile, TestGetTestFileWithoutDevice
+from shell_tests.automation_tests.test_vm_connections import TestVMConnections
 from shell_tests.helpers import get_driver_commands
 from shell_tests.report_result import ResourceReport, SandboxReport, ServiceReport, \
     DeploymentResourceReport
@@ -200,7 +201,29 @@ class RunTestsForSandbox(threading.Thread):
 
         :rtype: SandboxReport
         """
-        return SandboxReport(self.sandbox_handler.name, True, '')
+        self.current_test_suite = PatchedTestSuite()
+
+        test_cases = []
+        if len(self.sandbox_handler.deployment_resource_handlers) > 1:
+            test_cases.append(TestVMConnections)
+
+        for test_case in test_cases:
+            for test_name in unittest.TestLoader().getTestCaseNames(test_case):
+                test_inst = test_case(
+                    test_name,
+                    self.logger,
+                    self.sandbox_handler,
+                )
+
+                self.current_test_suite.addTest(test_inst)
+
+        test_result = StringIO()
+        is_success = self.test_runner(
+            test_result, verbosity=2,
+        ).run(self.current_test_suite).wasSuccessful()
+
+        self.current_test_suite = None
+        return SandboxReport(self.sandbox_handler.name, is_success, test_result.getvalue())
 
     def _run_target_tests(self, target_handler):
         """Run tests based on the target type and config.
