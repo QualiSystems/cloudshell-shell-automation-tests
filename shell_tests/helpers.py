@@ -203,19 +203,19 @@ def get_str_connections_form_blueprint(path, bp_name):
         xml_data = zip_file.read(xml_path)
 
     data = xmltodict.parse(xml_data)
-    source_ports = target_ports = ''
+    source_ports = target_ports = 'any'
 
     connector = data['TopologyInfo']['Routes']['Connector']
     source_name = connector['@Source']
     target_name = connector['@Target']
 
-    for attribute in connector['Attributes']['Attribute']:
+    for attribute in connector.get('Attributes', {}).get('Attribute', []):
         if attribute['@Name'] == 'Requested Target vNIC Name':
             target_ports = attribute['@Value']
         elif attribute['@Name'] == 'Requested Source vNIC Name':
             source_ports = attribute['@Value']
 
-    return (source_name, source_ports), (target_name, target_ports)
+    return source_name, source_ports, target_name, target_ports
 
 
 def parse_connections(source_name, source_ports, target_name, target_ports):
