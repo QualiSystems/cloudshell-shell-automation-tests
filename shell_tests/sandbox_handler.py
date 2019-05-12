@@ -76,12 +76,12 @@ class SandboxHandler(object):
             logger,
         )
 
-    def create_reservation(self):
+    def create_reservation(self, duration=2*60):
         """Create the reservation."""
         if self.blueprint_name:
-            rid = self.cs_handler.create_topology_reservation(self.name, self.blueprint_name)
+            rid = self.cs_handler.create_topology_reservation(self.name, self.blueprint_name, duration)
         else:
-            rid = self.cs_handler.create_reservation(self.name)
+            rid = self.cs_handler.create_reservation(self.name, duration)
 
         self.reservation_id = rid
 
