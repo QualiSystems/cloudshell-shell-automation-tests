@@ -155,7 +155,7 @@ class CloudShellHandler(object):
         self.logger.debug('Installed tosca standards: {}'.format(standards))
         return standards
 
-    def create_reservation(self, name, duration=120, wait=True):
+    def create_reservation(self, name, duration=120):
         """Create reservation
 
         :param str name: reservation name
@@ -166,14 +166,9 @@ class CloudShellHandler(object):
         """
         self.logger.info('Creating the reservation {}'.format(name))
         resp = self.api.CreateImmediateReservation(name, self.api.username, duration)
-        id_ = resp.Reservation.Id
+        return resp.Reservation.Id
 
-        if wait:
-            self.wait_reservation_is_started(id_)
-        return id_
-
-    def create_topology_reservation(
-            self, name, topology_name, duration=24*60, specific_version=None, wait=True):
+    def create_topology_reservation(self, name, topology_name, duration=24*60, specific_version=None):
         """Create topology reservation
 
         :param str topology_name: Topology Name
@@ -196,11 +191,7 @@ class CloudShellHandler(object):
             name, self.api.username, duration, topologyFullPath=topology_name,
             globalInputs=global_input_req,
         )
-        id_ = resp.Reservation.Id
-
-        if wait:
-            self.wait_reservation_is_started(id_)
-        return id_
+        return resp.Reservation.Id
 
     def wait_reservation_is_started(self, reservation_id):
         for _ in range(60):
