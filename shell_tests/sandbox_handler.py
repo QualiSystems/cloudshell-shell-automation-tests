@@ -82,8 +82,8 @@ class SandboxHandler(object):
             rid = self.cs_handler.create_topology_reservation(self.name, self.blueprint_name, duration)
         else:
             rid = self.cs_handler.create_reservation(self.name, duration)
-
         self.reservation_id = rid
+        self.cs_handler.wait_reservation_is_started(rid)
 
     def add_resource_to_reservation(self, resource_handler):
         """Add a resource to the reservation.
