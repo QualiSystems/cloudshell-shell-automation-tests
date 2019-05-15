@@ -1,6 +1,6 @@
 import time
 
-from shell_tests.errors import BaseAutomationException
+from shell_tests.errors import BaseAutomationException, CSIsNotAliveError
 
 
 class DoHandler(object):
@@ -50,8 +50,14 @@ class DoHandler(object):
 
     def _get_resource_name(self):
         """Get CloudShell resource name"""
+        for _ in range(10*6):
+            info = self.cs_handler.get_reservation_details(self.reservation_id)
+            if info.ReservationDescription.Resources:
+                break
+            time.sleep(10)
+        else:
+            raise BaseAutomationException('Could not create CloudShell instance')
 
-        info = self.cs_handler.get_reservation_details(self.reservation_id)
         return info.ReservationDescription.Resources[0].Name
 
     def get_new_cloudshell(self, version, cs_specific_version=None):
@@ -65,8 +71,14 @@ class DoHandler(object):
 
         self.resource_name = self._get_resource_name()
 
-        resource_info = self.cs_handler.get_resource_details(self.resource_name)
-        self.cs_ip = resource_info.FullAddress
+        for _ in range(10 * 60):
+            resource_info = self.cs_handler.get_resource_details(self.resource_name)
+            self.cs_ip = resource_info.FullAddress
+            if self.cs_ip != 'NA':
+                break
+            time.sleep(10)
+        else:
+            raise CSIsNotAliveError
 
         for attr in resource_info.ResourceAttributes:
             if attr.Name == 'OS Login':
