@@ -213,8 +213,7 @@ class CloudShellHandler(object):
 
             time.sleep(30)
         else:
-            raise BaseAutomationException('The reservation {} doesn\'t started'.format(
-                reservation_id))
+            raise CreationReservationError('The reservation {} doesn\'t started'.format(reservation_id))
         self.logger.info('The reservation created')
 
     def get_reservation_errors(self, reservation_id):
