@@ -5,6 +5,7 @@ from tests.base_tests import BaseTestCase
 
 
 @patch('shell_tests.run_tests.is_host_alive')
+@patch('shell_tests.run_tests.time', MagicMock())
 @patch('shell_tests.do_handler.time', MagicMock())
 @patch('shell_tests.cs_handler.time', MagicMock())
 class TestCreatingCloudShellInDo(BaseTestCase):
@@ -34,7 +35,10 @@ class TestCreatingCloudShellInDo(BaseTestCase):
             MagicMock(ReservationSlimStatus=MagicMock(Status='Completed')),
         ]
 
-        with self.patch_api((self.do_api_mock, IOError, IOError, IOError, IOError, IOError)):
+        apis = [IOError] * 10 * 5
+        apis.insert(0, self.do_api_mock)
+
+        with self.patch_api(apis):
             with self.assertRaises(CSIsNotAliveError):
                 self.test_runner.run()
 
