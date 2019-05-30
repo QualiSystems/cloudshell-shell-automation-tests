@@ -120,7 +120,12 @@ class RunTestsInCloudShell(object):
 
         self.reporting = Reporting()
         self.ftp_handler = FTPHandler.from_conf(self.main_conf.ftp_conf, logger)
-        self.vcenter_handler = VcenterHandler.from_config(self.main_conf.vcenter_conf)
+
+        if self.main_conf.vcenter_conf:
+            self.vcenter_handler = VcenterHandler.from_config(self.main_conf.vcenter_conf)
+        else:
+            self.vcenter_handler = None
+
         self.shell_handlers = OrderedDict(
             (shell_conf.name, ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
             for shell_conf in self.main_conf.shells_conf.values()
@@ -223,7 +228,7 @@ class RunTestsInCloudShell(object):
             self.shell_handlers,
             self.ftp_handler,
             self.vcenter_handler,
-            self.blueprint_handlers[sandbox_conf.blueprint_name],
+            self.blueprint_handlers.get(sandbox_conf.blueprint_name),
             self.logger,
         )
 

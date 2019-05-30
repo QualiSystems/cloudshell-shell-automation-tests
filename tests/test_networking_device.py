@@ -89,6 +89,8 @@ class TestNetworkingDevice(BaseTestCase):
             'CreateResource',
             'SetAttributesValues',
             'CreateImmediateReservation',
+            'GetReservationStatus',
+            'GetReservationStatus',
             'AddResourcesToReservation',
             'GetResourceDetails',
             'EndReservation',
