@@ -1,8 +1,12 @@
+import base64
 import os
 import re
 import shutil
 import time
 
+import requests
+from Crypto.Cipher import PKCS1_v1_5 as Cipher
+from Crypto.PublicKey import RSA
 from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
     AttributeNameValue, InputNameValue, SetConnectorRequest, UpdateTopologyGlobalInputsRequest
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
@@ -202,13 +206,51 @@ class CloudShellHandler(object):
             ):
                 break
             elif status.ProvisioningStatus == 'Error':
-                raise CreationReservationError
+                errors = list(self.get_reservation_errors(reservation_id))
+                self.logger.error('Reservation {} started with errors: {}'.format(reservation_id, errors))
+                raise CreationReservationError(errors)
 
             time.sleep(30)
         else:
             raise BaseAutomationException('The reservation {} doesn\'t started'.format(
                 reservation_id))
         self.logger.info('The reservation created')
+
+    def get_reservation_errors(self, reservation_id):
+        """Get error messages from activity tab in reservation."""
+        login_url = 'http://{}/Account/Login'.format(self.host)
+        get_activities_url = 'http://{}/api/WorkspaceApi/GetFilteredActivityFeedInfoList?diagramId={}'.format(
+            self.host, reservation_id)
+        public_key_url = 'http://{}/Account/PublicKey'.format(self.host)
+        get_activity_url = 'http://{}/api/WorkspaceApi/GetActivityFeedInfo?eventId='.format(self.host)
+
+        data = {
+            'FromEventId': 0,
+            'IsError': True,
+        }
+
+        with requests.session() as session:
+            resp = session.get(public_key_url)  # download public key
+            public_key = RSA.importKey(resp.content)
+
+            encoder = Cipher.new(public_key)
+            username = encoder.encrypt(self.user)
+
+            username = base64.b64encode(username)
+            password = encoder.encrypt(self.password)
+            password = base64.b64encode(password)
+
+            session.post(login_url, data={'username': username, 'password': password})
+            resp = session.post(get_activities_url, data=data)
+
+            for id_ in [item['Id'] for item in resp.json()['Data']['Items']]:
+                url = get_activity_url + str(id_)
+                resp = session.get(url)
+                data = resp.json()['Data']
+                text = data['Text']
+                output = data['Output']
+
+                yield text, output
 
     @staticmethod
     def create_new_resource_name(name):
