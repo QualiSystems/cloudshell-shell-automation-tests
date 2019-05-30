@@ -11,7 +11,7 @@ class DoHandler(object):
     def __init__(self, cs_handler, logger, reservation_name=RESERVATION_NAME):
         """Handler for creating CloudShell instance on DO
 
-        :param src.cs_handler.CloudShellHandler cs_handler: CloudShell Handler
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :param logging.Logger logger:
         :param str reservation_name: CloudShell reservation name
         """
@@ -47,6 +47,7 @@ class DoHandler(object):
 
         self.reservation_id = self.cs_handler.create_topology_reservation(
             self.reservation_name, cs_name, specific_version=cs_specific_version)
+        self.cs_handler.wait_reservation_is_started(self.reservation_id)
 
     def _get_resource_name(self):
         """Get CloudShell resource name"""
