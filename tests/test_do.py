@@ -71,7 +71,7 @@ class TestCreatingCloudShellInDo(BaseTestCase):
     def test_cloudshell_dont_starts(self, is_host_alive_mock):
         is_host_alive_mock.return_value = True
         reservation_status = [
-            MagicMock(ReservationSlimStatus=MagicMock(ProvisioningStatus='Setup'))] * 30
+            MagicMock(ReservationSlimStatus=MagicMock(ProvisioningStatus='Setup'))] * 60
         # end do reservation
         reservation_status.append(MagicMock(ReservationSlimStatus=MagicMock(Status='Completed')))
         self.do_api_mock.GetReservationStatus.side_effect = reservation_status
