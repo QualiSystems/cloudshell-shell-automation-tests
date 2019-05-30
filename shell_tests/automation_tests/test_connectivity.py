@@ -1,4 +1,4 @@
-from shell_tests.automation_tests.base import BaseTestCase
+from shell_tests.automation_tests.base import BaseResourceServiceTestCase
 from shell_tests.errors import BaseAutomationException
 
 
@@ -24,7 +24,7 @@ def find_port_name(resource_info, excluded=None):
                 return name
 
 
-class TestConnectivity(BaseTestCase):
+class TestConnectivity(BaseResourceServiceTestCase):
     def get_other_device_for_connectivity(self):
         for resource_handler in self.sandbox_handler.resource_handlers:
             if self.target_handler != resource_handler:

@@ -2,11 +2,11 @@ import json
 
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.automation_tests.base import BaseTestCase
+from shell_tests.automation_tests.base import BaseResourceServiceTestCase
 from shell_tests.helpers import get_file_name_from_url
 
 
-class TestRestoreConfig(BaseTestCase):
+class TestRestoreConfig(BaseResourceServiceTestCase):
 
     @property
     def ftp_path(self):

@@ -1,3 +1,4 @@
+import time
 from collections import OrderedDict
 from itertools import chain
 
@@ -9,10 +10,11 @@ from shell_tests.errors import ResourceIsNotAliveError, CSIsNotAliveError
 from shell_tests.ftp_handler import FTPHandler
 from shell_tests.helpers import is_host_alive, enter_stacks, wait_for_end_threads
 from shell_tests.report_result import Reporting
-from shell_tests.resource_handler import ResourceHandler, ServiceHandler
+from shell_tests.resource_handler import ResourceHandler, ServiceHandler, DeploymentResourceHandler
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
 from shell_tests.sandbox_handler import SandboxHandler
 from shell_tests.shell_handler import ShellHandler
+from shell_tests.vcenter_handler import VcenterHandler
 
 
 class AutomatedTestsRunner(object):
@@ -65,7 +67,7 @@ class AutomatedTestsRunner(object):
                 error = None
                 return run_tests_inst
             finally:
-                if error and self.conf.do_conf.delete_cs:
+                if error:
                     self.do_handler.end_reservation()
 
         if not attempts and error:
@@ -114,15 +116,16 @@ class RunTestsInCloudShell(object):
 
         self.cs_handler = CloudShellHandler.from_conf(main_conf.cs_conf, logger)
         # check CS is alive
-        try:
-            self.cs_handler.api
-        except IOError:
-            self._smb_handler = None
-            self.logger.warning('CloudShell {} is not alive'.format(self.cs_handler.host))
-            raise CSIsNotAliveError
+        self._wait_for_cs_is_started()
 
         self.reporting = Reporting()
         self.ftp_handler = FTPHandler.from_conf(self.main_conf.ftp_conf, logger)
+
+        if self.main_conf.vcenter_conf:
+            self.vcenter_handler = VcenterHandler.from_config(self.main_conf.vcenter_conf)
+        else:
+            self.vcenter_handler = None
+
         self.shell_handlers = OrderedDict(
             (shell_conf.name, ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
             for shell_conf in self.main_conf.shells_conf.values()
@@ -143,6 +146,18 @@ class RunTestsInCloudShell(object):
             )
             for conf in self.main_conf.resources_conf.values()
         )
+        self.deployment_resource_handlers = OrderedDict(
+            (
+                conf.name,
+                DeploymentResourceHandler.from_conf(
+                    conf,
+                    self.cs_handler,
+                    self.shell_handlers.get(conf.shell_name),
+                    logger,
+                ),
+            )
+            for conf in self.main_conf.deployment_resources_conf.values()
+        )
         self.service_handlers = OrderedDict(
             (
                 conf.name,
@@ -155,6 +170,21 @@ class RunTestsInCloudShell(object):
             )
             for conf in self.main_conf.services_conf.values()
         )
+
+    def _wait_for_cs_is_started(self):
+        attempts = 10
+        while attempts:
+            attempts -= 1
+            try:
+                self.cs_handler.api
+            except IOError:
+                time.sleep(10)  # wait CS is started
+            else:
+                break
+        else:
+            self._smb_handler = None
+            self.logger.warning('CloudShell {} is not alive'.format(self.cs_handler.host))
+            raise CSIsNotAliveError
 
     def run_tests_for_sandboxes(self):
         """Run tests for sandboxes."""
@@ -184,14 +214,21 @@ class RunTestsInCloudShell(object):
         :type sandbox_conf: shell_tests.configs.SandboxConfig
         """
         resource_handlers = map(self.resource_handlers.get, sandbox_conf.resource_names)
+        deployment_resource_handlers = map(
+            self.deployment_resource_handlers.get,
+            sandbox_conf.deployment_resource_names,
+        )
         service_handlers = map(self.service_handlers.get, sandbox_conf.service_names)
         return SandboxHandler.from_conf(
             sandbox_conf,
             resource_handlers,
+            deployment_resource_handlers,
             service_handlers,
             self.cs_handler,
             self.shell_handlers,
             self.ftp_handler,
+            self.vcenter_handler,
+            self.blueprint_handlers.get(sandbox_conf.blueprint_name),
             self.logger,
         )
 
@@ -202,8 +239,8 @@ class RunTestsInCloudShell(object):
         """
         stacks = chain(
             self.shell_handlers.values(),
-            self.blueprint_handlers.values(),
             self.resource_handlers.values(),
+            self.blueprint_handlers.values(),
             self.service_handlers.values(),
         )
         with enter_stacks(stacks):

@@ -1,14 +1,20 @@
+import base64
 import os
 import re
 import shutil
 import time
 
+import requests
 from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
     AttributeNameValue, InputNameValue, SetConnectorRequest, UpdateTopologyGlobalInputsRequest
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
 
-from shell_tests.errors import BaseAutomationException
+from shell_tests.errors import BaseAutomationException, CreationReservationError
+from shell_tests.helpers import cached_property
 from shell_tests.smb_handler import SMB
 
 
@@ -42,10 +48,6 @@ class CloudShellHandler(object):
         self.domain = domain
         self.logger = logger
 
-        self._smb = None
-        self._api = None
-        self._rest_api = None
-
     @classmethod
     def from_conf(cls, conf, logger):
         """Create CloudShell Handler from the config.
@@ -63,35 +65,31 @@ class CloudShellHandler(object):
             logger,
         )
 
-    @property
+    @cached_property
     def rest_api(self):
-        if self._rest_api is None:
-            self.logger.debug('Connecting to REST API')
-            self._rest_api = PackagingRestApiClient(
-                self.host, self.REST_API_PORT, self.user, self.password, self.domain)
-            self.logger.debug('Connected to REST API')
-        return self._rest_api
+        self.logger.debug('Connecting to REST API')
+        rest_api = PackagingRestApiClient(self.host, self.REST_API_PORT, self.user, self.password, self.domain)
+        self.logger.debug('Connected to REST API')
+        return rest_api
 
-    @property
+    @cached_property
     def api(self):
-        if self._api is None:
-            self.logger.debug('Connecting to Automation API')
-            self._api = CloudShellAPISession(self.host, self.user, self.password, self.domain)
-            self.logger.debug('Connected to Automation API')
-        return self._api
+        self.logger.debug('Connecting to Automation API')
+        api = CloudShellAPISession(self.host, self.user, self.password, self.domain)
+        self.logger.debug('Connected to Automation API')
+        return api
 
-    @property
+    @cached_property
     def smb(self):
-        if self._smb is None and self.os_user:
-            self._smb = SMB(
+        if self.os_user:
+            smb = SMB(
                 self.os_user,
                 self.os_password,
                 self.host,
                 self.CLOUDSHELL_SERVER_NAME,
                 self.logger,
             )
-
-        return self._smb
+            return smb
 
     def install_shell(self, shell_path):
         """Install Shell driver in the CloudShell
@@ -167,28 +165,25 @@ class CloudShellHandler(object):
 
         :param str name: reservation name
         :param int duration: duration of reservation
+        :param bool wait: wait for reservation is started
         :return: reservation id  (uuid)
         :rtype: str
         """
-
         self.logger.info('Creating the reservation {}'.format(name))
         resp = self.api.CreateImmediateReservation(name, self.api.username, duration)
-        id_ = resp.Reservation.Id
-        self.logger.debug('Created the reservation id={}'.format(id_))
-        return id_
+        return resp.Reservation.Id
 
-    def create_topology_reservation(
-            self, name, topology_name, duration=24*60, specific_version=None):
+    def create_topology_reservation(self, name, topology_name, duration=24*60, specific_version=None):
         """Create topology reservation
 
         :param str topology_name: Topology Name
         :param str name: reservation name
         :param int duration: duration of reservation
         :param str specific_version:
+        :param bool wait: wait for reservation is started
         :return: reservation id (uuid)
         :rtype: str
         """
-
         if specific_version:
             global_input_req = [UpdateTopologyGlobalInputsRequest('Version', specific_version)]
         else:
@@ -201,9 +196,75 @@ class CloudShellHandler(object):
             name, self.api.username, duration, topologyFullPath=topology_name,
             globalInputs=global_input_req,
         )
-        id_ = resp.Reservation.Id
-        self.logger.debug('Created a topology reservation id={}'.format(id_))
-        return id_
+        return resp.Reservation.Id
+
+    def wait_reservation_is_started(self, reservation_id):
+        for _ in range(60):
+            status = self.get_reservation_status(reservation_id)
+            if (
+                    status.ProvisioningStatus == 'Ready'
+                    or status.ProvisioningStatus == 'Not Run' and status.Status == 'Started'
+            ):
+                break
+            elif status.ProvisioningStatus == 'Error':
+                errors = list(self.get_reservation_errors(reservation_id))
+                self.logger.error('Reservation {} started with errors: {}'.format(reservation_id, errors))
+                raise CreationReservationError(errors)
+
+            time.sleep(30)
+        else:
+            raise CreationReservationError('The reservation {} doesn\'t started'.format(reservation_id))
+        self.logger.info('The reservation created')
+
+    def get_reservation_errors(self, reservation_id):
+        """Get error messages from activity tab in reservation."""
+        login_url = 'http://{}/Account/Login'.format(self.host)
+        get_activities_url = 'http://{}/api/WorkspaceApi/GetFilteredActivityFeedInfoList?diagramId={}'.format(
+            self.host, reservation_id)
+        public_key_url = 'http://{}/Account/PublicKey'.format(self.host)
+        get_activity_url = 'http://{}/api/WorkspaceApi/GetActivityFeedInfo?eventId='.format(self.host)
+
+        data = {
+            'FromEventId': 0,
+            'IsError': True,
+        }
+
+        with requests.session() as session:
+            resp = session.get(public_key_url)  # download public key
+            public_key = serialization.load_pem_public_key(resp.content, default_backend())
+
+            username = public_key.encrypt(self.user, padding.PKCS1v15())
+            username = base64.b64encode(username)
+            password = public_key.encrypt(self.password, padding.PKCS1v15())
+            password = base64.b64encode(password)
+
+            session.post(login_url, data={'username': username, 'password': password})
+            resp = session.post(get_activities_url, data=data)
+
+            for id_ in [item['Id'] for item in resp.json()['Data']['Items']]:
+                url = get_activity_url + str(id_)
+                resp = session.get(url)
+                data = resp.json()['Data']
+                text = data['Text']
+                output = data['Output']
+
+                yield text, output
+
+    @staticmethod
+    def create_new_resource_name(name):
+        """Create new name with index.
+
+        :type name: str
+        :rtype: str
+        """
+        try:
+            match = re.search(r'^(?P<name>.+)-(?P<v>\d+)$', name)
+            version = int(match.group('v'))
+            name = match.group('name')
+        except (AttributeError, KeyError):
+            version = 0
+
+        return '{}-{}'.format(name, version + 1)
 
     def create_resource(self, name, model, address, family=''):
         """Create resource.
@@ -224,22 +285,35 @@ class CloudShellHandler(object):
             except CloudShellAPIError as e:
                 if str(e.code) != '114':
                     raise
-
-                try:
-                    match = re.search(r'^(?P<name>.+)-(?P<v>\d+)$', name)
-                    version = int(match.group('v'))
-                    name = match.group('name')
-                except (AttributeError, KeyError):
-                    version = 0
-
-                name = '{}-{}'.format(name, version + 1)
-
+                name = self.create_new_resource_name(name)
             else:
                 break
 
         self.logger.debug('Created the resource {}'.format(name))
 
         return name
+
+    def rename_resource(self, current_name, new_name):
+        """Rename resource.
+
+        :type current_name: str
+        :type new_name: str
+        :rtype: str
+        """
+        self.logger.info('Renaming resource "{}" to "{}"'.format(current_name, new_name))
+
+        while True:
+            try:
+                self.api.RenameResource(current_name, new_name)
+            except CloudShellAPIError as e:
+                if str(e.code) != '114':
+                    raise
+                new_name = self.create_new_resource_name(new_name)
+            else:
+                break
+
+        self.logger.debug('Resource "{}" renamed to "{}"'.format(current_name, new_name))
+        return new_name
 
     def set_resource_attributes(self, resource_name, namespace, attributes):
         """Set attributes for the resource.
@@ -526,3 +600,26 @@ class CloudShellHandler(object):
         self.logger.info('Removing connector between {} and {}'.format(port1, port2))
         self.api.DisconnectRoutesInReservation(reservation_id, [port1, port2])
         self.api.RemoveConnectorsFromReservation(reservation_id, [port1, port2])
+
+    def get_resources_names_in_reservation(self, reservation_id):
+        """Get resources names in the reservation.
+
+        :type reservation_id: str
+        :rtype: list[str]
+        """
+        self.logger.info('Get resources names in the reservation {}'.format(reservation_id))
+        resources_info = self.api.GetReservationResourcesPositions(
+            reservation_id).ResourceDiagramLayouts
+        names = [resource.ResourceName for resource in resources_info]
+        self.logger.info('Resources names are: {}'.format(names))
+        return names
+
+    def refresh_vm_details(self, reservation_id, app_names):
+        """Refresh VM Details.
+
+        :type reservation_id: str
+        :type app_names: list[str]
+        """
+        self.logger.info('Refresh VM Details for the "{}"'.format(app_names))
+        self.api.RefreshVMDetails(reservation_id, app_names)
+        self.logger.debug('VM Details are refreshed')

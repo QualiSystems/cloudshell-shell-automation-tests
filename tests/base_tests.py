@@ -65,6 +65,9 @@ class BaseTestCase(unittest.TestCase):
         cs_api_mock = create_autospec(CloudShellAPISession)
         cs_api_mock.CreateImmediateReservation.side_effect = self._get_cs_reservation_id
         cs_api_mock.GetReservationStatus.side_effect = [
+            # create sandbox
+            MagicMock(ReservationSlimStatus=MagicMock(ProvisioningStatus='Setup')),
+            MagicMock(ReservationSlimStatus=MagicMock(ProvisioningStatus='Ready')),
             # ending cs
             MagicMock(ReservationSlimStatus=MagicMock(Status='Teardown')),
             MagicMock(ReservationSlimStatus=MagicMock(Status='Completed')),

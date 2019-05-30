@@ -111,6 +111,51 @@ class ResourceConfig(object):
             )
 
 
+class DeploymentResourceConfig(ResourceConfig):
+    def __init__(self, name, shell_name, model, device_ip, attributes, children_attributes,
+                 tests_conf, first_gen=False, blueprint_name=None):
+        """Deployment Resource config.
+
+        :type name: str
+        :type shell_name: str
+        :type model: str
+        :type device_ip: str
+        :type attributes: dict[str, str]
+        :type children_attributes: dict[dict[str, str]]
+        :type tests_conf: TestsConfig
+        :type first_gen: bool
+        :type blueprint_name: str
+        """
+        super(DeploymentResourceConfig, self).__init__(
+            name,
+            shell_name,
+            model,
+            device_ip,
+            attributes,
+            children_attributes,
+            tests_conf,
+            first_gen,
+        )
+        self.blueprint_name = blueprint_name
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            tests_conf = TestsConfig.from_dict(config.get('Tests'))
+
+            return cls(
+                config['Name'],
+                config.get('Shell Name'),
+                config.get('Model'),
+                config.get('Device IP'),
+                config.get('Attributes'),
+                config.get('Children Attributes'),
+                tests_conf,
+                config.get('First Gen', False),
+                config['Blueprint Name'],
+            )
+
+
 class ServiceConfig(object):
     def __init__(self, name, shell_name, model, attributes, tests_conf):
         """Service config.
@@ -219,27 +264,35 @@ class ShellConfig(object):
 
 
 class SandboxConfig(object):
-    def __init__(self, name, resource_names, service_names, blueprint_name):
+    def __init__(self, name, resource_names, deployment_resource_names, service_names,
+                 blueprint_name, tests_conf):
         """Sandbox config.
 
         :type name: str
         :type resource_names: list[str]
+        :type deployment_resource_names: list[str]
         :type service_names: list[str]
         :type blueprint_name: str
+        :type tests_conf: TestsConfig
         """
         self.name = name
         self.resource_names = resource_names
+        self.deployment_resource_names = deployment_resource_names
         self.service_names = service_names
         self.blueprint_name = blueprint_name
+        self.tests_conf = tests_conf
 
     @classmethod
     def from_dict(cls, config):
         if config:
+            tests_conf = TestsConfig.from_dict(config.get('Tests'))
             return cls(
                 config['Name'],
-                config['Resources'],
+                config.get('Resources', []),
+                config.get('Deployment Resources', []),
                 config.get('Services', []),
                 config.get('Blueprint Name'),
+                tests_conf,
             )
 
 
@@ -262,28 +315,54 @@ class BlueprintConfig(object):
             )
 
 
+class VcenterConfig(object):
+    def __init__(self, host, user, password):
+        """vCenter config.
+
+        :type host: str
+        :type user: str
+        :type password: str
+        """
+        self.host = host
+        self.user = user
+        self.password = password
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Host'],
+                config['User'],
+                config['Password'],
+            )
+
+
 class MainConfig(object):
-    def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, services_conf, sandboxes_conf,
-                 ftp_conf, blueprints_conf):
+    def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, deployment_resource_conf,
+                 services_conf, sandboxes_conf, ftp_conf, blueprints_conf, vcenter_conf):
         """Main config.
 
         :type do_conf: DoConfig
         :type cs_conf: CloudShellConfig
         :type shells_conf: OrderedDict[str, ShellConfig]
         :type resources_conf: OrderedDict[str, ResourceConfig]
+        :type deployment_resource_conf: OrderedDict[str, DeploymentResourceConfig]
         :type services_conf: OrderedDict[str, ServiceConfig]
         :type sandboxes_conf: OrderedDict[str, SandboxConfig]
         :type ftp_conf: FTPConfig
         :type blueprints_conf: OrderedDict[str, BlueprintConfig]
+        :type vcenter_conf: VcenterConfig
         """
         self.do_conf = do_conf
         self.cs_conf = cs_conf
         self.shells_conf = shells_conf
         self.resources_conf = resources_conf
+        self.deployment_resources_conf = deployment_resource_conf
         self.services_conf = services_conf
         self.sandboxes_conf = sandboxes_conf
         self.ftp_conf = ftp_conf
         self.blueprints_conf = blueprints_conf
+        self.vcenter_conf = vcenter_conf
 
     @classmethod
     def parse_from_yaml(cls, test_conf_path, env_conf_path=None):
@@ -309,6 +388,10 @@ class MainConfig(object):
             (resource_conf['Name'], ResourceConfig.from_dict(resource_conf))
             for resource_conf in config['Resources']
         )
+        deployment_resources_conf = OrderedDict(
+            (resource_conf['Name'], DeploymentResourceConfig.from_dict(resource_conf))
+            for resource_conf in config.get('Deployment Resources', [])
+        )
         services_conf = OrderedDict(
             (service_conf['Name'], ServiceConfig.from_dict(service_conf))
             for service_conf in config.get('Services', [])
@@ -322,21 +405,28 @@ class MainConfig(object):
             (blueprint_conf['Name'], BlueprintConfig.from_dict(blueprint_conf))
             for blueprint_conf in config.get('Blueprints', [])
         )
+        vcenter_conf = VcenterConfig.from_dict(config.get('vCenter'))
 
         return cls(
             do_conf,
             cs_conf,
             shells_conf,
             resources_conf,
+            deployment_resources_conf,
             services_conf,
             sandboxes_conf,
             ftp_conf,
             blueprints_conf,
+            vcenter_conf,
         )
 
     @staticmethod
     def _update_resource_tests_conf(conf):
-        for resource_dict in chain(conf.get('Resources', []), conf.get('Services', [])):
+        for resource_dict in chain(
+                conf.get('Resources', []),
+                conf.get('Services', []),
+                conf.get('Deployment Resources', []),
+        ):
             for shell_dict in conf['Shells']:
                 if shell_dict['Name'] == resource_dict.get('Shell Name'):
                     resource_dict['Tests'] = merge_dicts(

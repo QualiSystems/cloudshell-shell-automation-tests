@@ -1,67 +1,89 @@
+import re
 from collections import OrderedDict
 from itertools import chain
 
-from shell_tests.helpers import call_exit_func_on_exc
+from shell_tests.errors import DeploymentResourceNotFoundError
+from shell_tests.helpers import call_exit_func_on_exc, enter_stacks
 
 
 class SandboxHandler(object):
-    def __init__(self, name, blueprint_name, resource_handlers, service_handlers, cs_handler,
-                 shell_handlers, ftp_handler, logger):
+    def __init__(self, name, blueprint_name, tests_conf, resource_handlers,
+                 deployment_resource_handlers, service_handlers, cs_handler, shell_handlers,
+                 ftp_handler, vcenter_handler, blueprint_handler, logger):
         """Sandbox Handler that creates reservation adds resources.
 
         :type name: str
         :type blueprint_name: str
+        :type tests_conf: shell_tests.configs.TestsConfig
         :type resource_handlers: list[shell_tests.resource_handler.ResourceHandler]
+        :type deployment_resource_handlers: list[shell_tests.resource_handler.DeploymentResourceHandler]
         :type service_handlers: list[shell_tests.resource_handler.ServiceHandler]
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :type shell_handlers: OrderedDict[str, shell_tests.shell_handler.ShellHandler]
         :type ftp_handler: shell_tests.ftp_handler.FTPHandler
+        :type vcenter_handler: shell_tests.vcenter_handler.VcenterHandler
+        :type blueprint_handler: shell_tests.blueprint_handler.BlueprintHandler
         :type logger: logging.Logger
         """
         self.name = name
         self.blueprint_name = blueprint_name
+        self.tests_conf = tests_conf
         self.resource_handlers = resource_handlers
+        self.deployment_resource_handlers = deployment_resource_handlers
         self.service_handlers = service_handlers
         self.cs_handler = cs_handler
         self.shell_handlers = shell_handlers
         self.ftp_handler = ftp_handler
+        self.vcenter_handler = vcenter_handler
+        self.blueprint_handler = blueprint_handler
         self.logger = logger
 
         self.reservation_id = None
         self.resource_service_stack = None
+        self._stacks = None
+
+        for deployment_resource_handler in self.deployment_resource_handlers:
+            deployment_resource_handler.sandbox_handler = self
 
     @classmethod
-    def from_conf(cls, conf, resource_handlers, service_handlers, cs_handler, shell_handlers,
-                  ftp_handler, logger):
+    def from_conf(cls, conf, resource_handlers, deployment_resource_handlers, service_handlers,
+                  cs_handler, shell_handlers, ftp_handler, vcenter_handler, blueprint_handler, logger):
         """Create SandboxHandler from the config and handlers.
 
         :type conf: shell_tests.configs.SandboxConfig
         :type resource_handlers: list[shell_tests.resource_handler.ResourceHandler]
+        :type deployment_resource_handlers: list[shell_tests.resource_handler.DeploymentResourceHandler]
         :type service_handlers: list[shell_tests.resource_handler.ServiceHandler]
         :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :type shell_handlers: OrderedDict[str, shell_tests.shell_handler.ShellHandler]
         :type ftp_handler: shell_tests.ftp_handler.FTPHandler
+        :type vcenter_handler: shell_tests.vcenter_handler.VcenterHandler
+        :type blueprint_handler: shell_tests.blueprint_handler.BlueprintHandler
         :type logger: logging.Logger
         """
         return cls(
             conf.name,
             conf.blueprint_name,
+            conf.tests_conf,
             resource_handlers,
+            deployment_resource_handlers,
             service_handlers,
             cs_handler,
             shell_handlers,
             ftp_handler,
+            vcenter_handler,
+            blueprint_handler,
             logger,
         )
 
-    def create_reservation(self):
+    def create_reservation(self, duration=2*60):
         """Create the reservation."""
         if self.blueprint_name:
-            rid = self.cs_handler.create_topology_reservation(self.name, self.blueprint_name)
+            rid = self.cs_handler.create_topology_reservation(self.name, self.blueprint_name, duration)
         else:
-            rid = self.cs_handler.create_reservation(self.name)
-
+            rid = self.cs_handler.create_reservation(self.name, duration)
         self.reservation_id = rid
+        self.cs_handler.wait_reservation_is_started(rid)
 
     def add_resource_to_reservation(self, resource_handler):
         """Add a resource to the reservation.
@@ -138,9 +160,26 @@ class SandboxHandler(object):
         """
         self.cs_handler.remove_connector(self.reservation_id, port_name1, port_name2)
 
+    def get_deployment_resource_name(self, blueprint_name):
+        names = self.cs_handler.get_resources_names_in_reservation(self.reservation_id)
+        for resource_name in names:
+            if re.search(
+                    r'^{}_\w{{4}}-\w{{4}}$'.format(blueprint_name),
+                    resource_name,
+            ):
+                return resource_name
+
+        raise DeploymentResourceNotFoundError(
+            'Could not find the deployment resource with prefix {} in the reservation {}. '
+            'Available resources are {}'.format(blueprint_name, self.reservation_id, names)
+        )
+
     @call_exit_func_on_exc
     def __enter__(self):
         self.create_reservation()
+
+        self._stacks = enter_stacks(self.deployment_resource_handlers)
+        self._stacks.__enter__()
 
         for resource_handler in self.resource_handlers:
             self.add_resource_to_reservation(resource_handler)
@@ -151,6 +190,9 @@ class SandboxHandler(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._stacks:
+            self._stacks.__exit__(exc_type, exc_val, exc_tb)
+
         if self.reservation_id:
             self.end_reservation()
             self.delete_reservation()

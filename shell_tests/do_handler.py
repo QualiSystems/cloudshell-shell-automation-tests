@@ -1,6 +1,6 @@
 import time
 
-from shell_tests.errors import BaseAutomationException
+from shell_tests.errors import BaseAutomationException, CSIsNotAliveError, CreationReservationError
 
 
 class DoHandler(object):
@@ -11,7 +11,7 @@ class DoHandler(object):
     def __init__(self, cs_handler, logger, reservation_name=RESERVATION_NAME):
         """Handler for creating CloudShell instance on DO
 
-        :param src.cs_handler.CloudShellHandler cs_handler: CloudShell Handler
+        :type cs_handler: shell_tests.cs_handler.CloudShellHandler
         :param logging.Logger logger:
         :param str reservation_name: CloudShell reservation name
         """
@@ -47,11 +47,21 @@ class DoHandler(object):
 
         self.reservation_id = self.cs_handler.create_topology_reservation(
             self.reservation_name, cs_name, specific_version=cs_specific_version)
+        try:
+            self.cs_handler.wait_reservation_is_started(self.reservation_id)
+        except CreationReservationError:
+            raise BaseAutomationException('CloudShell isn\'t started')
 
     def _get_resource_name(self):
         """Get CloudShell resource name"""
+        for _ in range(10*6):
+            info = self.cs_handler.get_reservation_details(self.reservation_id)
+            if info.ReservationDescription.Resources:
+                break
+            time.sleep(10)
+        else:
+            raise BaseAutomationException('Could not create CloudShell instance')
 
-        info = self.cs_handler.get_reservation_details(self.reservation_id)
         return info.ReservationDescription.Resources[0].Name
 
     def get_new_cloudshell(self, version, cs_specific_version=None):
@@ -60,20 +70,16 @@ class DoHandler(object):
         self.logger.info('Start creating CloudShell with version {}'.format(version))
         self.start_cloudshell(version, cs_specific_version)
 
-        self.logger.debug('Wait for creating CloudShell')
-        time.sleep(5 * 60)
-        for _ in range(30):
-            status = self.cs_handler.get_reservation_status(self.reservation_id).ProvisioningStatus
-            if status == 'Ready':
-                break
-            time.sleep(60)
-        else:
-            raise BaseAutomationException('CloudShell isn\'t started')
-
         self.resource_name = self._get_resource_name()
 
-        resource_info = self.cs_handler.get_resource_details(self.resource_name)
-        self.cs_ip = resource_info.FullAddress
+        for _ in range(10 * 60):
+            resource_info = self.cs_handler.get_resource_details(self.resource_name)
+            self.cs_ip = resource_info.FullAddress
+            if self.cs_ip != 'NA':
+                break
+            time.sleep(10)
+        else:
+            raise CSIsNotAliveError
 
         for attr in resource_info.ResourceAttributes:
             if attr.Name == 'OS Login':

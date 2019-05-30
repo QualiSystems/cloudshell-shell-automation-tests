@@ -2,11 +2,11 @@ import re
 
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.automation_tests.base import BaseTestCase
+from shell_tests.automation_tests.base import BaseResourceServiceTestCase
 from shell_tests.errors import BaseAutomationException
 
 
-class BaseControllerTestCase(BaseTestCase):
+class BaseControllerTestCase(BaseResourceServiceTestCase):
     RUN_AUTOLOAD_FOR_RELATED_RESOURCE = True
 
     def setUp(self):
