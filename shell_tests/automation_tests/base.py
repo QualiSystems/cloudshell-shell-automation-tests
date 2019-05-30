@@ -51,7 +51,7 @@ class BaseResourceServiceTestCase(BaseTestCase):
         self.add_decorator_for_expect_failed_func(method_name, target_handler.tests_conf)
 
     def id(self):
-        id_ = super(BaseResourceServiceTestCase, self).id()
+        id_ = unittest.TestCase.id(self)
         return '{}-{}'.format(id_, self.target_handler.name)
 
 
@@ -69,5 +69,5 @@ class BaseSandboxTestCase(BaseTestCase):
         self.add_decorator_for_expect_failed_func(method_name, sandbox_handler.tests_conf)
 
     def id(self):
-        id_ = super(BaseSandboxTestCase, self).id()
+        id_ = unittest.TestCase.id(self)
         return '{}-{}'.format(id_, self.sandbox_handler.name)
