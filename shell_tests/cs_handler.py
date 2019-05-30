@@ -5,12 +5,13 @@ import shutil
 import time
 
 import requests
-from Crypto.Cipher import PKCS1_v1_5 as Cipher
-from Crypto.PublicKey import RSA
 from cloudshell.api.cloudshell_api import CloudShellAPISession, ResourceAttributesUpdateRequest, \
     AttributeNameValue, InputNameValue, SetConnectorRequest, UpdateTopologyGlobalInputsRequest
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
 
 from shell_tests.errors import BaseAutomationException, CreationReservationError
 from shell_tests.helpers import cached_property
@@ -231,13 +232,11 @@ class CloudShellHandler(object):
 
         with requests.session() as session:
             resp = session.get(public_key_url)  # download public key
-            public_key = RSA.importKey(resp.content)
+            public_key = serialization.load_pem_public_key(resp.content, default_backend())
 
-            encoder = Cipher.new(public_key)
-            username = encoder.encrypt(self.user)
-
+            username = public_key.encrypt(self.user, padding.PKCS1v15())
             username = base64.b64encode(username)
-            password = encoder.encrypt(self.password)
+            password = public_key.encrypt(self.password, padding.PKCS1v15())
             password = base64.b64encode(password)
 
             session.post(login_url, data={'username': username, 'password': password})
