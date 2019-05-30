@@ -1,6 +1,6 @@
 import time
 
-from shell_tests.errors import BaseAutomationException, CSIsNotAliveError
+from shell_tests.errors import BaseAutomationException, CSIsNotAliveError, CreationReservationError
 
 
 class DoHandler(object):
@@ -47,7 +47,10 @@ class DoHandler(object):
 
         self.reservation_id = self.cs_handler.create_topology_reservation(
             self.reservation_name, cs_name, specific_version=cs_specific_version)
-        self.cs_handler.wait_reservation_is_started(self.reservation_id)
+        try:
+            self.cs_handler.wait_reservation_is_started(self.reservation_id)
+        except CreationReservationError:
+            raise BaseAutomationException('CloudShell isn\'t started')
 
     def _get_resource_name(self):
         """Get CloudShell resource name"""
@@ -65,10 +68,7 @@ class DoHandler(object):
         """Start CloudShell and wait for starting it"""
 
         self.logger.info('Start creating CloudShell with version {}'.format(version))
-        try:
-            self.start_cloudshell(version, cs_specific_version)
-        except BaseAutomationException:
-            raise BaseAutomationException('CloudShell isn\'t started')
+        self.start_cloudshell(version, cs_specific_version)
 
         self.resource_name = self._get_resource_name()
 
