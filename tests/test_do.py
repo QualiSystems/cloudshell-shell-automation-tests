@@ -52,7 +52,7 @@ class TestCreatingCloudShellInDo(BaseTestCase):
             self.test_runner.run()
 
         run_tests_inst.run.assert_called_once()
-        self.assertSequenceEqual(
+        self.assertItemsEqual(
             is_host_alive_mock.call_args_list,
             map(call, [self.conf.ftp_conf.host, self.conf.do_conf.host])
         )

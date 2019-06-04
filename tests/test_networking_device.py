@@ -58,7 +58,7 @@ class TestNetworkingDevice(BaseTestCase):
         ips_to_test = [
             r.device_ip for r in self.conf.resources_conf.values() if r.device_ip is not None]
         ips_to_test.extend([self.conf.ftp_conf.host, self.conf.cs_conf.host])
-        self.assertSequenceEqual(is_host_alive_mock.call_args_list, map(call, ips_to_test))
+        self.assertItemsEqual(is_host_alive_mock.call_args_list, map(call, ips_to_test))
 
         # check that correct commands was sent to CS via API
         self.cs_api_mock.CreateImmediateReservation.assert_called_once_with(
