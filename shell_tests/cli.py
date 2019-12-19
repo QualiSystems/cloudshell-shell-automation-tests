@@ -1,4 +1,5 @@
 import logging
+import sys
 
 import click
 
@@ -42,7 +43,7 @@ def run_tests(test_conf, env_conf=None):
     report = AutomatedTestsRunner(conf, logger).run()
 
     print '\n\nTest results:\n{}'.format(report)
-    return report.is_success, report
+    sys.exit(not report.is_success)
 
 
 if __name__ == '__main__':
