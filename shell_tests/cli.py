@@ -1,5 +1,4 @@
 import logging
-import sys
 
 import click
 
@@ -40,13 +39,10 @@ def run_tests(test_conf, env_conf=None):
     logger = get_logger()
     conf = MainConfig.parse_from_yaml(test_conf, env_conf)
 
-    try:
-        report = AutomatedTestsRunner(conf, logger).run()
-    except Exception:
-        sys.exit(1)
-    else:
-        print '\n\nTest results:\n{}'.format(report)
-        sys.exit(not report.is_success)
+    report = AutomatedTestsRunner(conf, logger).run()
+
+    print '\n\nTest results:\n{}'.format(report)
+    return report.is_success, report
 
 
 if __name__ == '__main__':
