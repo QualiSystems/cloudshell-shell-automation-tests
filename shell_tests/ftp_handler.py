@@ -3,6 +3,20 @@ import ftplib
 import StringIO
 
 
+class FtpError(Exception):
+    """Base Error"""
+
+
+class FtpFileNotFoundError(FtpError):
+    """File not found"""
+
+    def __init__(self, file_name):
+        self.file_name = file_name
+
+    def __str__(self):
+        return 'File not found - {}'.format(self.file_name)
+
+
 class FTPHandler(object):
     def __init__(self, host, user, password, logger):
         """FTP Handler
@@ -45,7 +59,14 @@ class FTPHandler(object):
         s_io = StringIO.StringIO()
 
         self.logger.info('Reading file {} from FTP'.format(file_name))
-        self.session.retrbinary('RETR {}'.format(file_name), s_io.writelines)
+
+        try:
+            self.session.retrbinary('RETR {}'.format(file_name), s_io.writelines)
+        except ftplib.Error as e:
+            if str(e).startswith('550 No such file'):
+                raise FtpFileNotFoundError(file_name)
+            raise e
+
         text = s_io.getvalue()
 
         self.logger.debug('File content:\n{}'.format(text))
@@ -53,4 +74,10 @@ class FTPHandler(object):
 
     def delete_file(self, file_name):
         self.logger.info('Deleting file {}'.format(file_name))
-        self.session.delete(file_name)
+
+        try:
+            self.session.delete(file_name)
+        except ftplib.Error as e:
+            if str(e).startswith('550 No such file'):
+                raise FtpFileNotFoundError(file_name)
+            raise e
