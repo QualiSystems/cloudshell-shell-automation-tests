@@ -550,6 +550,7 @@ class CloudShellHandler(object):
     def download_logs(self):
         """Download logs from CloudShell"""
 
+        self.logger.info('Start downloading CS logs')
         if os.path.exists(self.CS_LOGS_DIR):
             shutil.rmtree(self.CS_LOGS_DIR)
 
@@ -562,6 +563,7 @@ class CloudShellHandler(object):
 
         self.smb.download_dir(self.CS_SHARE, self.CS_LOGS_SHELL_DIR, shell_logs_path)
         self.smb.download_dir(self.CS_SHARE, self.CS_LOGS_INSTALLATION_DIR, installation_logs_path)
+        self.logger.debug('CS logs downloaded')
 
     def add_physical_connection(self, reservation_id, port1, port2):
         """Add physical connection between two ports
