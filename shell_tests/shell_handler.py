@@ -1,15 +1,13 @@
-import contextlib
-import glob
 import os
-import shutil
-import sys
-import tarfile
-import tempfile
 import zipfile
-from io import BytesIO
 
-from shell_tests.helpers import download_file, is_url, get_resource_model_from_shell_definition, \
-    call_exit_func_on_exc
+from shell_tests.helpers import (
+    download_file,
+    is_url,
+    get_resource_model_from_shell_definition,
+    call_exit_func_on_exc,
+    patch_logging,
+)
 
 
 class ShellHandler(object):
@@ -85,58 +83,14 @@ class ShellHandler(object):
                 self.cs_handler.add_cs_standard(standard_path)
 
     def add_dependencies_to_offline_pypi(self):
-        """Upload all dependencies from zip file to offline PyPI"""
-
+        """Upload all dependencies from zip file to offline PyPI."""
         self.logger.info('Putting dependencies to offline PyPI')
 
         with zipfile.ZipFile(self.dependencies_path) as zip_file:
             for file_obj in map(zip_file.open, zip_file.filelist):
-
-                if 'cloudshell-core' in file_obj.name:
-                    with self.patch_cs_core(file_obj) as new_file_obj:
-                        self.cs_handler.add_file_to_offline_pypi(new_file_obj, file_obj.name)
-                else:
-                    self.cs_handler.add_file_to_offline_pypi(file_obj, file_obj.name)
-
-    @contextlib.contextmanager
-    def patch_cs_core(self, zip_ext_file):
-        """Extract config file from the archive, change log level and pack it back."""
-        buffer_ = BytesIO(zip_ext_file.read())
-        tar_file = tarfile.open(fileobj=buffer_)
-        tmp_dir = tempfile.mkdtemp()
-
-        try:
-            tar_file.extractall(tmp_dir)
-            dir_path = glob.glob('{}/**'.format(tmp_dir))[0]
-
-            self._rewrite_config_file_with_debug(dir_path)
-
-            file_path = os.path.join(tmp_dir, 'cloudshell-core.tar.gz')
-            with tarfile.open(file_path, 'w:gz') as tar_file:
-                tar_file.add(dir_path, os.path.basename(dir_path))
-
-            file_obj = open(file_path, 'rb')
-
-            try:
-                yield file_obj
-            finally:
-                file_obj.close()
-
-        finally:
-            shutil.rmtree(tmp_dir)
-
-    @staticmethod
-    def _rewrite_config_file_with_debug(dir_path):
-        """Change log level in config file to DEBUG."""
-        config_path = os.path.join(dir_path, 'cloudshell/core/logger/qs_config.ini')
-
-        with open(config_path) as f:
-            config_str = f.read()
-
-        config_str = config_str.replace("'INFO'", "'DEBUG'")
-
-        with open(config_path, 'w') as f:
-            f.write(config_str)
+                package_name = file_obj.name
+                with patch_logging(file_obj) as new_file_obj:
+                    self.cs_handler.add_file_to_offline_pypi(new_file_obj, package_name)
 
     def clear_offline_pypi(self):
         """Delete all packages from offline PyPI"""
