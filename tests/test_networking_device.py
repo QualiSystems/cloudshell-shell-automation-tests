@@ -43,9 +43,12 @@ class TestNetworkingDevice(BaseTestCase):
             'TOSCA-Metadata/TOSCA.meta',
         ]
 
+        zipfile_open_mock = MagicMock()
+        zipfile_open_mock.name = ''
         zipfile_shell_handler_mock.return_value.__enter__.return_value = MagicMock(
             filelist=dependency_files,
             namelist=MagicMock(return_value=zip_namelist),
+            open=MagicMock(return_value=zipfile_open_mock),
             read=MagicMock(return_value=''),
         )
 

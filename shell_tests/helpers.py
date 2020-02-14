@@ -342,7 +342,7 @@ class patch_logging(object):
             match = self.FILE_PATTERN.match(self._zip_ext_file.name)
             if not match:
                 return self._zip_ext_file
-    
+
             ext = match.group(5)
             package_name = match.group(1).replace('_', '-')
             buffer_ = BytesIO(self._zip_ext_file.read())
