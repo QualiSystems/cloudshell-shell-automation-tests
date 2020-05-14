@@ -1,6 +1,6 @@
 import threading
 import unittest
-from StringIO import StringIO
+from io import StringIO
 
 from teamcity import is_running_under_teamcity
 from teamcity.unittestpy import TeamcityTestRunner
@@ -149,19 +149,19 @@ class RunTestsForSandbox(threading.Thread):
         self.logger = logger
         self.reporting = reporting
 
-        self._stop = False
+        self._stop_flag = False
         self.current_test_suite = None
         self._test_runner = None
 
     def stop(self):
         if self.current_test_suite:
             self.current_test_suite.stop()
-        self._stop = True
+        self._stop_flag = True
 
     def run(self):
         """Run tests for the Sandbox and resources."""
         with self.sandbox_handler:
-            if self._stop:
+            if self._stop_flag:
                 raise KeyboardInterrupt
 
             sandbox_report = self.run_sandbox_tests()

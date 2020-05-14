@@ -41,7 +41,7 @@ def run_tests(test_conf, env_conf=None):
 
     report = AutomatedTestsRunner(conf, logger).run()
 
-    print '\n\nTest results:\n{}'.format(report)
+    print('\n\nTest results:\n{}'.format(report))
     return report.is_success, report
 
 

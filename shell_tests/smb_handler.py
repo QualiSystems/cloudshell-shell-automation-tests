@@ -96,7 +96,7 @@ class SMB(object):
         self.session.deleteFiles(share, file_path)
 
     def download_file(self, share, file_path, path_to_save):
-        with open(path_to_save, 'w') as file_obj:
+        with open(path_to_save, 'wb') as file_obj:
             self.session.retrieveFile(share, file_path, file_obj)
 
     def download_dir(self, share, r_dir_path, l_dir_path):
