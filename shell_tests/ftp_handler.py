@@ -1,6 +1,5 @@
 import ftplib
-
-import StringIO
+from io import StringIO
 
 
 class FtpError(Exception):
@@ -56,7 +55,7 @@ class FTPHandler(object):
         return self._session
 
     def get_file(self, file_name):
-        s_io = StringIO.StringIO()
+        s_io = StringIO()
 
         self.logger.info('Reading file {} from FTP'.format(file_name))
 
