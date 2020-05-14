@@ -11,18 +11,18 @@ import tarfile
 import tempfile
 import threading
 import time
-import urllib2
-import urlparse
+from urllib.parse import urlparse
+from urllib.request import urlopen
+
 import zipfile
 from collections import defaultdict
-from contextlib import closing
+from contextlib import closing, ExitStack
 from functools import wraps
 from io import BytesIO
 from xml.etree import ElementTree
 
 import xmltodict
 import yaml
-from contextlib2 import ExitStack
 
 DOWNLOAD_FOLDER = 'shell_tests'
 
@@ -38,7 +38,8 @@ def get_resource_model_from_shell_definition(shell_path, logger):
     with zipfile.ZipFile(shell_path) as zip_file:
         data = yaml.safe_load(zip_file.read('shell-definition.yaml'))
 
-    model = data['node_types'].keys()[0].rsplit('.', 1)[-1]
+    node_type = next(iter(data['node_types']))
+    model = node_type.rsplit('.', 1)[-1]
     logger.debug('Model: {} for the Shell {}'.format(model, shell_path))
     return model
 
@@ -60,18 +61,18 @@ def download_file(url, folder_path=None):
             os.mkdir(folder_path)
 
     file_path = os.path.join(folder_path, file_name)
-    with closing(urllib2.urlopen(url)) as data, open(file_path, 'wb') as file_obj:
+    with closing(urlopen(url)) as data, open(file_path, 'wb') as file_obj:
         file_obj.write(data.read())
 
     return file_path
 
 
 def is_url(url):
-    return urlparse.urlparse(url).scheme in ('http', 'https', 'ftp', 'ftps', 'tftp')
+    return urlparse(url).scheme in ('http', 'https', 'ftp', 'ftps', 'tftp')
 
 
 def get_file_name_from_url(url):
-    return os.path.basename(urlparse.urlparse(url).path)
+    return os.path.basename(urlparse(url).path)
 
 
 def is_host_alive(host):
@@ -122,7 +123,7 @@ def merge_dicts(first, second):
     """
     new_dict = second.copy()
 
-    for key, val in first.iteritems():
+    for key, val in first.items():
         if isinstance(val, dict):
             new_dict[key] = merge_dicts(val, new_dict.get(key, {}))
         elif isinstance(val, list):
@@ -151,7 +152,8 @@ class enter_stacks(object):
 
     def __enter__(self):
         self.main_stack.__enter__()
-        map(self.main_stack.enter_context, self.stacks)
+        for stack in self.stacks:
+            self.main_stack.enter_context(stack)
 
     def __exit__(self, *args):
         self.main_stack.__exit__(*args)

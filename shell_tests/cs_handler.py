@@ -103,12 +103,13 @@ class CloudShellHandler(object):
             self.rest_api.add_shell(shell_path)
             self.logger.debug('Installed the new Shell')
         except Exception as e:
-            if 'already exists' not in e.message:
+            err_msg = e.args[0] if e.args else ''
+            if 'already exists' not in err_msg:
                 raise e
 
             shell_name = re.search(
                 "named '(?P<name>.+)' already exists",
-                e.message,
+                err_msg,
             ).group('name')
 
             self.rest_api.update_shell(shell_path, shell_name)

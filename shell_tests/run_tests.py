@@ -101,7 +101,7 @@ class AutomatedTestsRunner(object):
         else:
             resources_to_check['CloudShell'] = self.conf.cs_conf.host
 
-        for name, host in resources_to_check.iteritems():
+        for name, host in resources_to_check.items():
             if not is_host_alive(host):
                 raise ResourceIsNotAliveError('{} ({}) is not alive, check it'.format(name, host))
 
@@ -218,12 +218,12 @@ class RunTestsInCloudShell(object):
 
         :type sandbox_conf: shell_tests.configs.SandboxConfig
         """
-        resource_handlers = map(self.resource_handlers.get, sandbox_conf.resource_names)
-        deployment_resource_handlers = map(
+        resource_handlers = list(map(self.resource_handlers.get, sandbox_conf.resource_names))
+        deployment_resource_handlers = list(map(
             self.deployment_resource_handlers.get,
             sandbox_conf.deployment_resource_names,
-        )
-        service_handlers = map(self.service_handlers.get, sandbox_conf.service_names)
+        ))
+        service_handlers = list(map(self.service_handlers.get, sandbox_conf.service_names))
         return SandboxHandler.from_conf(
             sandbox_conf,
             resource_handlers,
