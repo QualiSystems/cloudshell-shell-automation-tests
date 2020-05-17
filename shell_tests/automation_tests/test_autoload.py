@@ -16,7 +16,7 @@ class TestAutoloadNetworkDevices(BaseResourceServiceTestCase):
         if resource_info.ChildResources:
             return {
                 resource_info.ResourceFamilyName:
-                    sorted([self._get_structure(child) for child in resource_info.ChildResources])
+                    [self._get_structure(child) for child in resource_info.ChildResources]
             }
 
         else:
