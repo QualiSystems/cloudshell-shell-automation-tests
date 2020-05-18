@@ -33,3 +33,10 @@ class TestRunCustomCommandWithoutDevice(BaseResourceServiceTestCase):
             self.target_handler.run_custom_config_command,
             'show version',
         )
+
+class TestRunCustomCommandShellFromTemplate(BaseResourceServiceTestCase):
+    def test_run_custom_config_command(self):
+        self.target_handler.run_custom_config_command('show version')
+
+    def test_run_custom_command(self):
+        self.target_handler.run_custom_command('show version')

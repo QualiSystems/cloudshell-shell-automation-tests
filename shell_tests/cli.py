@@ -44,6 +44,6 @@ def run_tests(test_conf, env_conf=None):
     print('\n\nTest results:\n{}'.format(report))
     return report.is_success, report
 
-
 if __name__ == '__main__':
-    cli()
+    import sys
+    cli(sys.argv[1:])
