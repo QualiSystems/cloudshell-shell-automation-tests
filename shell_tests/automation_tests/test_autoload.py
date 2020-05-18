@@ -62,3 +62,8 @@ class TestAutoloadVirtualTrafficGeneratorDevices(TestAutoloadNetworkDevices):
         structure = self._get_structure(info)
 
         self.assertIn('CS_VirtualTrafficGeneratorPort', str(structure))
+
+
+class TestAutoloadShellFromTemplate(BaseResourceServiceTestCase):
+    def test_execute_without_error(self):
+        self.target_handler.autoload()

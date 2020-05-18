@@ -8,6 +8,8 @@ from shell_tests.cs_handler import CloudShellHandler
 from shell_tests.do_handler import DoHandler
 from shell_tests.errors import ResourceIsNotAliveError, CSIsNotAliveError
 from shell_tests.ftp_handler import FTPHandler
+from shell_tests.scp_handler import SCPHandler
+from shell_tests.tftp_handler import TFTPHandler
 from shell_tests.helpers import is_host_alive, enter_stacks, wait_for_end_threads
 from shell_tests.report_result import Reporting
 from shell_tests.resource_handler import ResourceHandler, ServiceHandler, DeploymentResourceHandler
@@ -111,6 +113,7 @@ class RunTestsInCloudShell(object):
         :type main_conf: shell_tests.configs.MainConfig
         :type logger: logging.Logger
         """
+
         self.main_conf = main_conf
         self.logger = logger
 
@@ -119,7 +122,9 @@ class RunTestsInCloudShell(object):
         self._wait_for_cs_is_started()
 
         self.reporting = Reporting()
-        self.ftp_handler = FTPHandler.from_conf(self.main_conf.ftp_conf, logger)
+        self.ftp_handler = FTPHandler.from_conf(self.main_conf.ftp_conf, logger)  # todo
+        self.scp_handler = SCPHandler.from_conf(self.main_conf.scp_conf, logger)  # todo
+        self.tftp_handler = TFTPHandler.from_conf(self.main_conf.tftp_conf, logger)
 
         if self.main_conf.vcenter_conf:
             self.vcenter_handler = VcenterHandler.from_config(self.main_conf.vcenter_conf)
@@ -227,6 +232,8 @@ class RunTestsInCloudShell(object):
             self.cs_handler,
             self.shell_handlers,
             self.ftp_handler,
+            self.scp_handler,
+            self.tftp_handler,
             self.vcenter_handler,
             self.blueprint_handlers.get(sandbox_conf.blueprint_name),
             self.logger,
