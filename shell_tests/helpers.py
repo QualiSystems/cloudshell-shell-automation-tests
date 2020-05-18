@@ -359,5 +359,7 @@ class patch_logging(object):
         return self._archive_obj
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._archive_obj is not None:
+            self._archive_obj.close()
         self._remove_tmp_files()
         return False
