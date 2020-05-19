@@ -47,7 +47,7 @@ class Shellfoundry:
         self.logger.info("Shellfondry command is performing [{}]".format(command))
         response = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if 'local' in command:
-            add_response = response.communicate('\n')
+            add_response = response.communicate(b'\n')
             cmd_stdout = add_response[0]
         else:
             cmd_stdout = response.stdout.read()
@@ -115,7 +115,7 @@ def check_shellfoundry_templates():
     logger = get_logger()
 
     shell_name = 'shell_created_by_test'
-    template = 'local:c:\Users\dmit\Documents\myprojects\shellfoundry-tosca-networking-template'
+    template = r'local:c:\Users\dmit\Documents\myprojects\shellfoundry-tosca-networking-template'
 
     sf = Shellfoundry(logger)
     sf.new(shell_name, template)
