@@ -258,7 +258,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
 
 class TestRestoreConfigFromTemplate(BaseResourceServiceTestCase):
     def test_restore_running_config_append(self):
-        self.target_handler.save('ftp://', 'running')
+        self.target_handler.restore('ftp://', 'running', 'override')
 
     def test_orchestration_restore(self):
         saved_artifact_info = {
