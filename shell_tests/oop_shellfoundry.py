@@ -8,26 +8,6 @@ import os
 from shell_tests.configs import MainConfig
 from shell_tests.run_tests import AutomatedTestsRunner
 
-def get_logger():
-    log_level = logging.DEBUG
-
-    logger = logging.getLogger('Automation Tests')
-    logger.setLevel(log_level)
-
-    file_handler = logging.FileHandler('shell-tests.log', 'w')
-    file_handler.setLevel(log_level)
-    std_handler = logging.StreamHandler()
-    std_handler.setLevel(logging.INFO)
-
-    formatter = logging.Formatter('%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
-    std_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-
-    logger.addHandler(std_handler)
-    logger.addHandler(file_handler)
-
-    return logger
-
 
 class Shellfoundry:
 
@@ -35,12 +15,6 @@ class Shellfoundry:
         self.logger = logger
         self.root_dir = os.getcwd()
 
-    # @property
-    # def cmd_process(self):
-    #     return subprocess.Popen('cmd', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #
-    # def get_templates(self):
-    #     response = self.cmd_process().communicate(f'shellfoundry list\n'.encode())
 
     def run_command(self, command, add_command = None):
 
@@ -110,27 +84,24 @@ def _run_tests(logger, test_conf, env_conf=None):
     return report.is_success
 
 
-def check_shellfoundry_templates():
-
-    logger = get_logger()
+def check_shellfoundry_templates(logger, template_path, test_conf):
 
     shell_name = 'shell_created_by_test'
-    template = r'local:c:\Users\dmit\Documents\myprojects\shellfoundry-tosca-networking-template'
 
     sf = Shellfoundry(logger)
-    sf.new(shell_name, template)
+    sf.new(shell_name, template_path)
     shell_dir = sf.pack(shell_name)
 
     shell_path = sf.get_path_to_zip()
 
-    conf_path = 'C:\myprojects\cloudshell-shell-automation-tests\shell-from-template.yaml'
+    conf_path = 'shell-from-template.yaml'
 
-    with open('C:\myprojects\cloudshell-shell-automation-tests\shell-from-template-dummy.yaml') as f:
+    with open(test_conf) as f:
         data = f.read()
 
     data = data.replace('$shell_path', shell_path)
 
-    with open('C:\myprojects\cloudshell-shell-automation-tests\shell-from-template.yaml', 'w') as f:
+    with open(conf_path, 'w') as f:
         f.write(data)
 
     _run_tests(logger, conf_path)
