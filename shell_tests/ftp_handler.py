@@ -16,6 +16,20 @@ class FtpFileNotFoundError(FtpError):
         return 'File not found - {}'.format(self.file_name)
 
 
+class FtpError(Exception):
+    """Base Error"""
+
+
+class FtpFileNotFoundError(FtpError):
+    """File not found"""
+
+    def __init__(self, file_name):
+        self.file_name = file_name
+
+    def __str__(self):
+        return 'File not found - {}'.format(self.file_name)
+
+
 class FTPHandler(object):
     def __init__(self, host, user, password, logger):
         """FTP Handler
