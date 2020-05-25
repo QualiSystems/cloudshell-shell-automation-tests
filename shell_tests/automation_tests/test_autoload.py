@@ -16,7 +16,7 @@ class TestAutoloadNetworkDevices(BaseResourceServiceTestCase):
         if resource_info.ChildResources:
             return {
                 resource_info.ResourceFamilyName:
-                    sorted([self._get_structure(child) for child in resource_info.ChildResources])
+                    [self._get_structure(child) for child in resource_info.ChildResources]
             }
 
         else:
@@ -62,3 +62,8 @@ class TestAutoloadVirtualTrafficGeneratorDevices(TestAutoloadNetworkDevices):
         structure = self._get_structure(info)
 
         self.assertIn('CS_VirtualTrafficGeneratorPort', str(structure))
+
+
+class TestAutoloadShellFromTemplate(BaseResourceServiceTestCase):
+    def test_execute_without_error(self):
+        self.target_handler.autoload()

@@ -4,6 +4,7 @@ import click
 
 from shell_tests.configs import MainConfig
 from shell_tests.run_tests import AutomatedTestsRunner
+from shell_tests import oop_shellfoundry
 
 
 @click.group()
@@ -41,9 +42,19 @@ def run_tests(test_conf, env_conf=None):
 
     report = AutomatedTestsRunner(conf, logger).run()
 
-    print '\n\nTest results:\n{}'.format(report)
+    print('\n\nTest results:\n{}'.format(report))
     return report.is_success, report
 
 
+@cli.command('check_shellfoundry_templates')
+@click.argument('template_path')
+@click.argument('test_conf')
+def check_shellfoundry_templates(template_path, test_conf):
+    logger = get_logger()
+
+    oop_shellfoundry.check_shellfoundry_templates(logger, template_path, test_conf)
+
+
 if __name__ == '__main__':
-    cli()
+    import sys
+    cli(sys.argv[1:])

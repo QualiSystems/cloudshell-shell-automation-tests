@@ -1,6 +1,19 @@
 import ftplib
+from io import StringIO
 
-import StringIO
+
+class FtpError(Exception):
+    """Base Error"""
+
+
+class FtpFileNotFoundError(FtpError):
+    """File not found"""
+
+    def __init__(self, file_name):
+        self.file_name = file_name
+
+    def __str__(self):
+        return 'File not found - {}'.format(self.file_name)
 
 
 class FtpError(Exception):
@@ -56,7 +69,7 @@ class FTPHandler(object):
         return self._session
 
     def get_file(self, file_name):
-        s_io = StringIO.StringIO()
+        s_io = StringIO()
 
         self.logger.info('Reading file {} from FTP'.format(file_name))
 

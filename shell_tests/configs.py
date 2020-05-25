@@ -206,6 +206,34 @@ class FTPConfig(object):
             )
 
 
+class SCPConfig(object):
+    def __init__(self, host, user, password):
+        self.host = host
+        self.user = user
+        self.password = password
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Host'],
+                config.get('User'),
+                config.get('Password'),
+            )
+
+
+class TFTPConfig(object):
+    def __init__(self, host):
+        self.host = host
+
+    @classmethod
+    def from_dict(cls, config):
+        if config:
+            return cls(
+                config['Host'],
+            )
+
+
 class TestsConfig(object):
     def __init__(self, expected_failures, params, run_tests=True):
         """Tests config.
@@ -339,7 +367,7 @@ class VcenterConfig(object):
 
 class MainConfig(object):
     def __init__(self, do_conf, cs_conf, shells_conf, resources_conf, deployment_resource_conf,
-                 services_conf, sandboxes_conf, ftp_conf, blueprints_conf, vcenter_conf):
+                 services_conf, sandboxes_conf, ftp_conf, scp_conf, tftp_conf, blueprints_conf, vcenter_conf):
         """Main config.
 
         :type do_conf: DoConfig
@@ -350,6 +378,8 @@ class MainConfig(object):
         :type services_conf: OrderedDict[str, ServiceConfig]
         :type sandboxes_conf: OrderedDict[str, SandboxConfig]
         :type ftp_conf: FTPConfig
+        :type scp_conf: SCPConfig
+        :type tftp_conf: TFTPConfig
         :type blueprints_conf: OrderedDict[str, BlueprintConfig]
         :type vcenter_conf: VcenterConfig
         """
@@ -361,6 +391,8 @@ class MainConfig(object):
         self.services_conf = services_conf
         self.sandboxes_conf = sandboxes_conf
         self.ftp_conf = ftp_conf
+        self.scp_conf = scp_conf
+        self.tftp_conf = tftp_conf
         self.blueprints_conf = blueprints_conf
         self.vcenter_conf = vcenter_conf
 
@@ -405,6 +437,16 @@ class MainConfig(object):
             (blueprint_conf['Name'], BlueprintConfig.from_dict(blueprint_conf))
             for blueprint_conf in config.get('Blueprints', [])
         )
+        scp_conf = SCPConfig.from_dict(config.get('SCP'))
+        blueprints_conf = OrderedDict(
+            (blueprint_conf['Name'], BlueprintConfig.from_dict(blueprint_conf))
+            for blueprint_conf in config.get('Blueprints', [])
+        )
+        tftp_conf = TFTPConfig.from_dict(config.get('TFTP'))
+        blueprints_conf = OrderedDict(
+            (blueprint_conf['Name'], BlueprintConfig.from_dict(blueprint_conf))
+            for blueprint_conf in config.get('Blueprints', [])
+        )
         vcenter_conf = VcenterConfig.from_dict(config.get('vCenter'))
 
         return cls(
@@ -416,6 +458,8 @@ class MainConfig(object):
             services_conf,
             sandboxes_conf,
             ftp_conf,
+            scp_conf,
+            tftp_conf,
             blueprints_conf,
             vcenter_conf,
         )
