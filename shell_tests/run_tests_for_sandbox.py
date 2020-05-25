@@ -43,8 +43,8 @@ TEST_CASES_FIREWALL = {
         'autoload': TestAutoloadNetworkDevices,
         'run_custom_command': TestRunCustomCommand,
         'run_custom_config_command': TestRunCustomCommand,
-        'save': TestSaveConfigFromScp,  # todo
-        'orchestration_save': TestSaveConfigFromScp,
+        'save': TestSaveConfig,
+        'orchestration_save': TestSaveConfig,
         'restore': TestRestoreConfig,
         'orchestration_restore': TestRestoreConfig,
     },
