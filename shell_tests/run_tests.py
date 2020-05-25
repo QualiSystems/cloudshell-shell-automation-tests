@@ -253,5 +253,5 @@ class RunTestsInCloudShell(object):
         with enter_stacks(stacks):
             self.run_tests_for_sandboxes()
 
-        # self.cs_handler.download_logs()
+        self.cs_handler.download_logs()
         return self.reporting
