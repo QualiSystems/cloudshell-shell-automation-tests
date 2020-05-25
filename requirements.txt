@@ -1,7 +1,7 @@
 click>=7,<8
 cloudshell-automation-api>=2020.1.0.177394
 cloudshell-rest-api>=8.2,<9
-cryptography>=2.6,<2.7
+cryptography~=2.9
 pysmb>=1.1,<2
 pyvmomi>=6.7,<7
 PyYAML>=5.1,<6
