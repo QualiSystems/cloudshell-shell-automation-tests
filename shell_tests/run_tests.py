@@ -1,257 +1,88 @@
-import time
-from collections import OrderedDict
-from itertools import chain
+from functools import cached_property
+from pathlib import Path
+from typing import Optional
 
-from shell_tests.blueprint_handler import BlueprintHandler
-from shell_tests.configs import CloudShellConfig
-from shell_tests.cs_handler import CloudShellHandler
-from shell_tests.do_handler import DoHandler
-from shell_tests.errors import ResourceIsNotAliveError, CSIsNotAliveError
-from shell_tests.ftp_handler import FTPHandler
-from shell_tests.scp_handler import SCPHandler
-from shell_tests.tftp_handler import TFTPHandler
-from shell_tests.helpers import is_host_alive, enter_stacks, wait_for_end_threads
+from shell_tests.configs import MainConfig
+from shell_tests.errors import CSIsNotAliveError
+from shell_tests.handlers.cs_handler import CloudShellHandler
+from shell_tests.handlers.sandbox_handler import SandboxHandler
+from shell_tests.helpers.do_helpers import (
+    check_all_resources_is_alive,
+    get_cs_config,
+    start_cs_sandbox,
+)
+from shell_tests.helpers.handler_storage import HandlerStorage
+from shell_tests.helpers.logger import logger
+from shell_tests.helpers.threads_helper import wait_for_end_threads
 from shell_tests.report_result import Reporting
-from shell_tests.resource_handler import ResourceHandler, ServiceHandler, DeploymentResourceHandler
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
-from shell_tests.sandbox_handler import SandboxHandler
-from shell_tests.shell_handler import ShellHandler
-from shell_tests.vcenter_handler import VcenterHandler
 
 
-class AutomatedTestsRunner(object):
-
-    def __init__(self, conf, logger):
-        """Create CloudShell on Do and run tests.
-
-        :type conf: shell_tests.configs.MainConfig
-        :param logger: logging.Logger
-        """
+class AutomatedTestsRunner:
+    def __init__(self, conf: MainConfig):
+        """Create CloudShell on Do and run tests."""
         self.conf = conf
-        self.logger = logger
+        self._do_sandbox_handler: Optional[SandboxHandler] = None
 
-        self._do_handler = None
-
-    @property
+    @cached_property
     def do_handler(self):
-        if self._do_handler is None and self.conf.do_conf:
-            cs_handler = CloudShellHandler.from_conf(self.conf.do_conf, self.logger)
-            self._do_handler = DoHandler(cs_handler, self.logger)
-        return self._do_handler
+        return CloudShellHandler(self.conf.do_conf)
 
-    def create_cloudshell_on_do(self):
-        """Create CloudShell instance on Do.
-
-        :rtype: CloudShellConfig
-        """
-        cs_config = CloudShellConfig(
-            *self.do_handler.get_new_cloudshell(
-                self.conf.do_conf.cs_version, self.conf.do_conf.cs_specific_version)
-        )
-        return cs_config
-
-    def get_run_tests_in_cloudshell(self):
-        if not self.conf.do_conf:
-            return RunTestsInCloudShell(self.conf, self.logger)
-
-        error = None
-        attempts = 5
-
-        while attempts:
-            attempts -= 1
-
+    def _create_cloudshell_on_do(self) -> CloudShellHandler:
+        for _ in range(5):
+            self._do_sandbox_handler = start_cs_sandbox(
+                self.do_handler, self.conf.do_conf
+            )
             try:
-                self.conf.cs_conf = self.create_cloudshell_on_do()
-                run_tests_inst = RunTestsInCloudShell(self.conf, self.logger)
-            except CSIsNotAliveError as error:
-                pass  # try to recreate CS
+                conf = get_cs_config(
+                    self._do_sandbox_handler, self.conf.do_conf.cs_version
+                )
+                self.conf.cs_conf = conf
+                cs_handler = CloudShellHandler(conf)
+                cs_handler.wait_for_cs_is_started()
+            except CSIsNotAliveError:
+                logger.exception("The CS is not started")
+                self._do_sandbox_handler.end_reservation()
+            except Exception as e:
+                self._do_sandbox_handler.end_reservation()
+                raise e
             else:
-                error = None
-                return run_tests_inst
-            finally:
-                if error:
-                    self.do_handler.end_reservation()
+                return cs_handler
+        else:
+            raise CSIsNotAliveError("All 5 CloudShells are not started")
 
-        if not attempts and error:
-            raise error
-
-    def run(self):
-        """Create CloudShell, prepare, and run tests for all resources.
-
-        :rtype: Reporting"""
-        self.check_all_resources_is_alive()
-
-        run_tests_inst = self.get_run_tests_in_cloudshell()
-        try:
-            return run_tests_inst.run()
-        finally:
-            if self.conf.do_conf and self.conf.do_conf.delete_cs:
-                self.do_handler.end_reservation()
-
-    def check_all_resources_is_alive(self):
-        resources_to_check = {
-            resource.name: resource.device_ip
-            for resource in self.conf.resources_conf.values()
-            if resource.device_ip
-        }
-        if self.conf.ftp_conf:
-            resources_to_check['FTP'] = self.conf.ftp_conf.host
+    def run(self) -> Reporting:
+        """Create CloudShell, prepare, and run tests for all resources."""
+        check_all_resources_is_alive(self.conf)
         if self.conf.do_conf:
-            resources_to_check['Do'] = self.conf.do_conf.host
+            cs_handler = self._create_cloudshell_on_do()
         else:
-            resources_to_check['CloudShell'] = self.conf.cs_conf.host
-
-        for name, host in resources_to_check.items():
-            if not is_host_alive(host):
-                raise ResourceIsNotAliveError('{} ({}) is not alive, check it'.format(name, host))
-
-
-class RunTestsInCloudShell(object):
-    def __init__(self, main_conf, logger):
-        """Run tests in CloudShell based on config.
-
-        :type main_conf: shell_tests.configs.MainConfig
-        :type logger: logging.Logger
-        """
-
-        self.main_conf = main_conf
-        self.logger = logger
-
-        self.cs_handler = CloudShellHandler.from_conf(main_conf.cs_conf, logger)
-        # check CS is alive
-        self._wait_for_cs_is_started()
-
-        self.reporting = Reporting()
-        self.ftp_handler = FTPHandler.from_conf(self.main_conf.ftp_conf, logger)  # todo
-        self.scp_handler = SCPHandler.from_conf(self.main_conf.scp_conf, logger)  # todo
-        self.tftp_handler = TFTPHandler.from_conf(self.main_conf.tftp_conf, logger)
-
-        if self.main_conf.vcenter_conf:
-            self.vcenter_handler = VcenterHandler.from_config(self.main_conf.vcenter_conf)
-        else:
-            self.vcenter_handler = None
-
-        self.shell_handlers = OrderedDict(
-            (shell_conf.name, ShellHandler.from_conf(shell_conf, self.cs_handler, self.logger))
-            for shell_conf in self.main_conf.shells_conf.values()
-        )
-        self.blueprint_handlers = OrderedDict(
-            (conf.name, BlueprintHandler.from_conf(conf, self.cs_handler, self.logger))
-            for conf in self.main_conf.blueprints_conf.values()
-        )
-        self.resource_handlers = OrderedDict(
-            (
-                conf.name,
-                ResourceHandler.from_conf(
-                    conf,
-                    self.cs_handler,
-                    self.shell_handlers.get(conf.shell_name),
-                    logger,
-                ),
-            )
-            for conf in self.main_conf.resources_conf.values()
-        )
-        self.deployment_resource_handlers = OrderedDict(
-            (
-                conf.name,
-                DeploymentResourceHandler.from_conf(
-                    conf,
-                    self.cs_handler,
-                    self.shell_handlers.get(conf.shell_name),
-                    logger,
-                ),
-            )
-            for conf in self.main_conf.deployment_resources_conf.values()
-        )
-        self.service_handlers = OrderedDict(
-            (
-                conf.name,
-                ServiceHandler.from_conf(
-                    conf,
-                    self.cs_handler,
-                    self.shell_handlers.get(conf.shell_name),
-                    logger,
-                ),
-            )
-            for conf in self.main_conf.services_conf.values()
-        )
-
-    def _wait_for_cs_is_started(self):
-        attempts = 10
-        while attempts:
-            attempts -= 1
-            try:
-                self.cs_handler.api
-            except IOError:
-                time.sleep(10)  # wait CS is started
-            else:
-                break
-        else:
-            self._smb_handler = None
-            self.logger.warning('CloudShell {} is not alive'.format(self.cs_handler.host))
-            raise CSIsNotAliveError
-
-    def run_tests_for_sandboxes(self):
-        """Run tests for sandboxes."""
-        threads = [
-            RunTestsForSandbox(
-                self._create_sandbox_handler(sandbox_conf),
-                self.logger,
-                self.reporting,
-            )
-            for sandbox_conf in self.main_conf.sandboxes_conf.values()
-        ]
-
-        for thread in threads:
-            thread.start()
+            cs_handler = CloudShellHandler(self.conf.cs_conf)
 
         try:
+            return self._run_cs_tests(cs_handler)
+        finally:
+            if self._do_sandbox_handler and self.conf.do_conf.delete_cs:
+                logger.info("Deleting CS on Do")
+                self._do_sandbox_handler.end_reservation()
+
+    def _run_cs_tests(self, cs_handler: CloudShellHandler) -> Reporting:
+        report = Reporting()
+        handler_storage = HandlerStorage(cs_handler, self.conf)
+        threads = [
+            RunTestsForSandbox(sandbox_handler, handler_storage, report)
+            for sandbox_handler in handler_storage.sandbox_handlers
+        ]
+        try:
+            for thread in threads:
+                thread.start()
             wait_for_end_threads(threads)
         except KeyboardInterrupt:
             for thread in threads:
                 thread.stop()
             wait_for_end_threads(threads)
             raise
-
-    def _create_sandbox_handler(self, sandbox_conf):
-        """Create the Sandbox Handler.
-
-        :type sandbox_conf: shell_tests.configs.SandboxConfig
-        """
-        resource_handlers = list(map(self.resource_handlers.get, sandbox_conf.resource_names))
-        deployment_resource_handlers = list(map(
-            self.deployment_resource_handlers.get,
-            sandbox_conf.deployment_resource_names,
-        ))
-        service_handlers = list(map(self.service_handlers.get, sandbox_conf.service_names))
-        return SandboxHandler.from_conf(
-            sandbox_conf,
-            resource_handlers,
-            deployment_resource_handlers,
-            service_handlers,
-            self.cs_handler,
-            self.shell_handlers,
-            self.ftp_handler,
-            self.scp_handler,
-            self.tftp_handler,
-            self.vcenter_handler,
-            self.blueprint_handlers.get(sandbox_conf.blueprint_name),
-            self.logger,
-        )
-
-    def run(self):
-        """Install Shells and run tests for sandboxes.
-
-        :rtype: Reporting
-        """
-        stacks = chain(
-            self.shell_handlers.values(),
-            self.resource_handlers.values(),
-            self.blueprint_handlers.values(),
-            self.service_handlers.values(),
-        )
-        with enter_stacks(stacks):
-            self.run_tests_for_sandboxes()
-
-        self.cs_handler.download_logs()
-        return self.reporting
+        finally:
+            handler_storage.cs_smb_handler.download_logs(Path("cs_logs"))
+            handler_storage.finish()
+        return report
