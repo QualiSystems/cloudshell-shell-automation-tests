@@ -4,39 +4,20 @@ from shell_tests.automation_tests.base import BaseResourceServiceTestCase
 
 
 class TestRunCustomCommand(BaseResourceServiceTestCase):
-
     def test_run_custom_command(self):
-        output = self.target_handler.run_custom_command('show version')
-
+        output = self.handler.run_custom_command("show version")
         self.assertTrue(output)
 
     def test_run_custom_config_command(self):
-        output = self.target_handler.run_custom_config_command('show version')
-
+        output = self.handler.run_custom_config_command("show version")
         self.assertTrue(output)
 
 
 class TestRunCustomCommandWithoutDevice(BaseResourceServiceTestCase):
-
     def test_run_custom_command(self):
-        self.assertRaisesRegexp(
-            CloudShellAPIError,
-            r'SessionManagerException',
-            self.target_handler.run_custom_command,
-            'show version',
-        )
+        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+            self.handler.run_custom_command("show version")
 
     def test_run_custom_config_command(self):
-        self.assertRaisesRegexp(
-            CloudShellAPIError,
-            r'SessionManagerException',
-            self.target_handler.run_custom_config_command,
-            'show version',
-        )
-
-class TestRunCustomCommandShellFromTemplate(BaseResourceServiceTestCase):
-    def test_run_custom_config_command(self):
-        self.target_handler.run_custom_config_command('show version')
-
-    def test_run_custom_command(self):
-        self.target_handler.run_custom_command('show version')
+        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+            self.handler.run_custom_config_command("show version")

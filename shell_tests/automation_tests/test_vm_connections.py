@@ -2,7 +2,6 @@ import re
 
 from shell_tests.automation_tests.base import BaseSandboxTestCase
 from shell_tests.errors import BaseAutomationException
-from shell_tests.helpers import get_str_connections_form_blueprint, parse_connections
 
 
 class AppNetworkInfo(object):
@@ -24,11 +23,13 @@ class PortInfo(object):
         if not isinstance(other, type(self)):
             raise ValueError
 
-        return all((
-            self.mac == other.mac,
-            self.adapter_name == other.adapter_name,
-            self.port_group_name == other.port_group_name,
-        ))
+        return all(
+            (
+                self.mac == other.mac,
+                self.adapter_name == other.adapter_name,
+                self.port_group_name == other.port_group_name,
+            )
+        )
 
     def __str__(self):
         return 'PortInfo(mac="{0.mac}", adapter_name="{0.adapter_name}", port_group_name="{0.port_group_name}")'.format(
@@ -42,15 +43,15 @@ class TestVMConnections(BaseSandboxTestCase):
         attrs = {attr.Name: attr.Value for attr in network_data.AdditionalData}
         try:
             port_info = PortInfo(
-                attrs['mac address'],
-                attrs['network adapter'],
-                attrs['port group name'],
+                attrs["mac address"],
+                attrs["network adapter"],
+                attrs["port group name"],
             )
         except KeyError:
             raise BaseAutomationException(
-                'Cannot get all needed information about port from cs. '
+                "Cannot get all needed information about port from cs. "
                 'We need: "mac address", "network adapter", "port group name". '
-                'We have: {}'.format(attrs)
+                "We have: {}".format(attrs)
             )
 
         return port_info
@@ -63,24 +64,22 @@ class TestVMConnections(BaseSandboxTestCase):
                 break
         else:
             raise BaseAutomationException(
-                'Cannot find adapter {} on vCenter'.format(adapter_name),
+                "Cannot find adapter {} on vCenter".format(adapter_name),
             )
 
         port_group_key = device.backing.port.portgroupKey
 
         for network in vm.network:
-            if getattr(network, 'key', '') == port_group_key:
+            if getattr(network, "key", "") == port_group_key:
                 break
         else:
             raise BaseAutomationException(
-                'Cannot find network on the vCenter by portgroupKey "{}"'.format(port_group_key),
+                'Cannot find network on the vCenter by portgroupKey "{}"'.format(
+                    port_group_key
+                ),
             )
 
-        return PortInfo(
-            device.macAddress,
-            adapter_name,
-            network.name,
-        )
+        return PortInfo(device.macAddress, adapter_name, network.name,)
 
     def test_vm_connections(self):
         apps_info = {}
@@ -88,35 +87,33 @@ class TestVMConnections(BaseSandboxTestCase):
         for handler in self.sandbox_handler.deployment_resource_handlers:
             vm_details = handler.get_details().VmDetails
             app_info = AppNetworkInfo(
-                handler.vm_name,
-                handler.name,
-                handler._blueprint_name,
-                vm_details.UID,
+                handler.vm_name, handler.name, handler._blueprint_name, vm_details.UID,
             )
             apps_info[app_info.blueprint_name] = app_info
 
             for network_data in vm_details.NetworkData:
-                cs_port_info = self._get_port_info_from_vm_details_network_data(network_data)
+                cs_port_info = self._get_port_info_from_vm_details_network_data(
+                    network_data
+                )
                 vm_port_info = self._get_port_info_from_vcenter(
-                    app_info.vm_uuid,
-                    cs_port_info.adapter_name,
+                    app_info.vm_uuid, cs_port_info.adapter_name,
                 )
                 self.assertEqual(
                     cs_port_info,
                     vm_port_info,
-                    'Information about the port from CloudShell and from vCenter is different.\n'
-                    'CS port info: {}\n'
-                    'vCenter port info: {}'.format(cs_port_info, vm_port_info),
+                    "Information about the port from CloudShell and from vCenter is different.\n"
+                    "CS port info: {}\n"
+                    "vCenter port info: {}".format(cs_port_info, vm_port_info),
                 )
                 app_info.ports[vm_port_info.adapter_name] = vm_port_info
 
         self._test_correct_port_group_from_blueprint(apps_info)
 
     def _find_port_in_app_info_with_conn_name(self, app_info, conn_name):
-        if conn_name == 'any':
+        if conn_name == "any":
             return None
 
-        port_regex = re.compile(r'\W{}$'.format(conn_name))
+        port_regex = re.compile(r"\W{}$".format(conn_name))
         for port_name, port_info in app_info.ports.items():
             if port_regex.search(port_name):
                 break
@@ -129,7 +126,9 @@ class TestVMConnections(BaseSandboxTestCase):
 
         return port_info
 
-    def _test_connection_with_one_specified_port(self, specified_port_info, other_app_info):
+    def _test_connection_with_one_specified_port(
+        self, specified_port_info, other_app_info
+    ):
         self.assertIn(
             specified_port_info.port_group_name,
             [port_info.port_group_name for port_info in other_app_info.ports.values()],
@@ -143,20 +142,27 @@ class TestVMConnections(BaseSandboxTestCase):
             )
         )
 
-        for (source_name, source_conn_name), target_conns in connections_from_blueprint.items():
+        for (
+            (source_name, source_conn_name),
+            target_conns,
+        ) in connections_from_blueprint.items():
             for target_name, target_conn_name in target_conns:
                 source_app_info = apps_info[source_name]
                 target_app_info = apps_info[target_name]
 
-                source_port_info = self._find_port_in_app_info_with_conn_name(source_app_info, source_conn_name)
-                target_port_info = self._find_port_in_app_info_with_conn_name(target_app_info, target_conn_name)
+                source_port_info = self._find_port_in_app_info_with_conn_name(
+                    source_app_info, source_conn_name
+                )
+                target_port_info = self._find_port_in_app_info_with_conn_name(
+                    target_app_info, target_conn_name
+                )
 
                 if source_port_info and target_port_info:
                     self.assertEqual(
                         source_port_info.port_group_name,
                         target_port_info.port_group_name,
-                        'Should be the same port group of the source port {} and target port {} '
-                        'but it\'s different'.format(source_port_info, target_port_info),
+                        "Should be the same port group of the source port {} and target port {} "
+                        "but it's different".format(source_port_info, target_port_info),
                     )
                 elif source_port_info is target_port_info is None:
                     # we didn't specify ports in blueprint
@@ -171,6 +177,10 @@ class TestVMConnections(BaseSandboxTestCase):
                 else:
                     # we specified a port only from one side
                     if source_port_info:
-                        self._test_connection_with_one_specified_port(source_port_info, target_app_info)
+                        self._test_connection_with_one_specified_port(
+                            source_port_info, target_app_info
+                        )
                     else:
-                        self._test_connection_with_one_specified_port(target_port_info, source_app_info)
+                        self._test_connection_with_one_specified_port(
+                            target_port_info, source_app_info
+                        )
