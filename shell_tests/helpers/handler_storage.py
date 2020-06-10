@@ -5,8 +5,10 @@ from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.ftp_handler import FTPHandler
 from shell_tests.handlers.resource_handler import ResourceHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
+from shell_tests.handlers.scp_handler import SCPHandler
 from shell_tests.handlers.shell_handler import ShellHandler
 from shell_tests.handlers.smb_handler import CloudShellSmbHandler
+from shell_tests.handlers.tftp_handler import TFTPHandler
 from shell_tests.handlers.vcenter_handler import VcenterHandler
 
 Handler = TypeVar("Handler")
@@ -25,6 +27,8 @@ class HandlerStorage:
 
         self._cs_smb_handler = None
         self._ftp_handler = None
+        self._scp_handler = None
+        self._tftp_handler = None
         self._vcenter_handler = None
         self._shell_handlers = None
         self._resource_handlers = None
@@ -45,6 +49,18 @@ class HandlerStorage:
         if self._ftp_handler is None and self.conf.ftp_conf:
             self._ftp_handler = FTPHandler(self.conf.ftp_conf)
         return self._ftp_handler
+
+    @property
+    def scp_handler(self) -> Optional[SCPHandler]:
+        if self._scp_handler is None and self.conf.scp_conf:
+            self._scp_handler = SCPHandler(self.conf.scp_conf)
+        return self._scp_handler
+
+    @property
+    def tftp_handler(self) -> Optional[TFTPHandler]:
+        if self._tftp_handler is None and self.conf.tftp_conf:
+            self._tftp_handler = TFTPHandler(self.conf.tftp_conf)
+        return self._tftp_handler
 
     @property
     def vcenter_handler(self) -> Optional[VcenterHandler]:

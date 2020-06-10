@@ -1,7 +1,7 @@
 click~=7.0
 cloudshell-automation-api~=2020.1.0
 cloudshell-rest-api~=8.2
-cryptography~=2.6
+cryptography~=2.9
 pysmb~=1.1
 pyvmomi~=6.7
 PyYAML~=5.1
@@ -10,3 +10,5 @@ teamcity-messages~=1.21
 xmltodict~=0.12.0
 setuptools~=46.4.0
 pydantic~=1.5.0
+paramiko~=2.7
+tftpy~=0.8

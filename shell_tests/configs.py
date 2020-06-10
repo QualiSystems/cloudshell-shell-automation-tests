@@ -74,6 +74,16 @@ class FTPConfig(BaseModel):
     password: Optional[str] = Field(None, alias="Password")
 
 
+class SCPConfig(BaseModel):
+    host: str = Field(..., alias="Host")
+    user: Optional[str] = Field(None, alias="User")
+    password: Optional[str] = Field(None, alias="Password")
+
+
+class TFTPConfig(BaseModel):
+    host: str = Field(..., alias="Host")
+
+
 class ShellConfig(BaseModel):
     name: str = Field(..., alias="Name")
     path: Path = Field(..., alias="Path")
@@ -123,6 +133,8 @@ class MainConfig(BaseModel):
     )
     services_conf: List[ServiceConfig] = Field([], alias="Services")
     ftp_conf: FTPConfig = Field(..., alias="FTP")
+    scp_conf: Optional[SCPConfig] = Field(None, alias="SCP")
+    tftp_conf: Optional[TFTPConfig] = Field(None, alias="TFTP")
     sandboxes_conf: List[SandboxConfig] = Field(..., alias="Sandboxes")
     blueprints_conf: List[BlueprintConfig] = Field([], alias="Blueprints")
     vcenter_conf: Optional[VcenterConfig] = Field(None, alias="vCenter")

@@ -17,6 +17,7 @@ class DeviceType(Enum):
     REAL_DEVICE = "Real device"
     SIMULATOR = "Simulator"
     WITHOUT_DEVICE = "Without device"
+    SHELL_FROM_TEMPLATE = "Shell from template"
 
 
 class ResourceHandler:
@@ -65,7 +66,9 @@ class ResourceHandler:
 
     @property
     def device_type(self) -> DeviceType:
-        if not self.conf.device_ip:
+        if "SHELL_FROM_TEMPLATE" in self.name:
+            return DeviceType.SHELL_FROM_TEMPLATE
+        elif not self.conf.device_ip:
             return DeviceType.WITHOUT_DEVICE
         elif self.conf.attributes.get("User"):
             return DeviceType.REAL_DEVICE

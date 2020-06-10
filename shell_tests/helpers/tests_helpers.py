@@ -7,6 +7,7 @@ from teamcity.unittestpy import TeamcityTestRunner
 
 from shell_tests.automation_tests.test_autoload import (
     TestAutoloadNetworkDevices,
+    TestAutoloadShellFromTemplate,
     TestAutoloadTrafficGeneratorDevices,
     TestAutoloadVirtualTrafficGeneratorDevices,
     TestAutoloadWithoutDevice,
@@ -15,14 +16,17 @@ from shell_tests.automation_tests.test_autoload import (
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import (
     TestRestoreConfig,
+    TestRestoreConfigFromTemplate,
     TestRestoreConfigWithoutDevice,
 )
 from shell_tests.automation_tests.test_run_custom_command import (
     TestRunCustomCommand,
+    TestRunCustomCommandShellFromTemplate,
     TestRunCustomCommandWithoutDevice,
 )
 from shell_tests.automation_tests.test_save_config import (
     TestSaveConfig,
+    TestSaveConfigFromTemplate,
     TestSaveConfigWithoutDevice,
 )
 from shell_tests.automation_tests.test_traffic_generator_controller import (
@@ -61,6 +65,13 @@ TEST_CASES_FIREWALL = {
         "restore": TestRestoreConfig,
         "orchestration_restore": TestRestoreConfig,
     },
+    DeviceType.SHELL_FROM_TEMPLATE: {
+        "autoload": TestAutoloadShellFromTemplate,
+        "run_custom_command": TestRunCustomCommandShellFromTemplate,
+        "run_custom_config_command": TestRunCustomCommandShellFromTemplate,
+        "save": TestSaveConfigFromTemplate,
+        "restore": TestRestoreConfigFromTemplate,
+    },
 }
 TEST_CASES_ROUTER = TEST_CASES_FIREWALL
 TEST_CASES_ROUTER[DeviceType.REAL_DEVICE]["applyconnectivitychanges"] = TestConnectivity
@@ -93,6 +104,15 @@ TEST_CASES_GENERIC_APP_FAMILY = {
     DeviceType.REAL_DEVICE: {"autoload": TestAutoloadWithoutPorts},
     DeviceType.WITHOUT_DEVICE: {"autoload": TestAutoloadWithoutDevice},
 }
+TEST_CASES_GENERIC_RESOURCE = {
+    DeviceType.SHELL_FROM_TEMPLATE: {
+        "autoload": TestAutoloadShellFromTemplate,
+        "run_custom_command": TestRunCustomCommandShellFromTemplate,
+        "run_custom_config_command": TestRunCustomCommandShellFromTemplate,
+        "save": TestSaveConfigFromTemplate,
+        "restore": TestRestoreConfigFromTemplate,
+    }
+}
 
 TEST_CASES_MAP = {
     "CS_Firewall": TEST_CASES_FIREWALL,
@@ -102,6 +122,7 @@ TEST_CASES_MAP = {
     "CS_VirtualTrafficGeneratorChassis": TEST_CASES_VIRTUAL_TRAFFIC_GENERATOR_CHASSIS,
     "CS_TrafficGeneratorController": TEST_CASES_TRAFFIC_GENERATOR_CONTROLLER,
     "CS_GenericAppFamily": TEST_CASES_GENERIC_APP_FAMILY,
+    "CS_GenericResource": TEST_CASES_GENERIC_RESOURCE,
 }
 AUTOLOAD_TEST_FOR_FAMILIES = {
     "CS_Router",
@@ -110,6 +131,7 @@ AUTOLOAD_TEST_FOR_FAMILIES = {
     "CS_TrafficGeneratorChassis",
     "CS_VirtualTrafficGeneratorChassis",
     "CS_GenericAppFamily",
+    "CS_GenericResource",
 }
 
 

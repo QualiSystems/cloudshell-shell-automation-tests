@@ -21,6 +21,7 @@ class AutomatedTestsRunner:
     def run(self) -> Reporting:
         """Create CloudShell, prepare, and run tests for all resources."""
         check_all_resources_is_alive(self.conf)
+        do = None
         if self.conf.do_conf:
             do = CSCreator(self.conf)
             cs_handler = do.create_cloudshell()
@@ -30,7 +31,7 @@ class AutomatedTestsRunner:
         try:
             return self._run_cs_tests(cs_handler)
         finally:
-            if self.conf.do_conf and self.conf.do_conf.delete_cs:
+            if do and self.conf.do_conf and self.conf.do_conf.delete_cs:
                 do.finish()
 
     def _run_cs_tests(self, cs_handler: CloudShellHandler) -> Reporting:
