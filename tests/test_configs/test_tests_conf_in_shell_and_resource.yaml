@@ -1,0 +1,39 @@
+Do:
+  Host: 192.168.1.3
+  User: do_admin
+  Password: do_password
+  Domain: do_domain
+  CS Version: CloudShell 9.3 GA IL
+CloudShell:
+  Host: 192.168.1.1
+  User: admin
+  Password: admin
+  OS User: admin
+  OS Password: admin
+FTP:
+  Host: 192.168.1.2
+  User: admin
+  Password: admin
+Shells:
+  - Name: &cs-sh Cisco
+    Path: /tmp/cisco.zip
+    Tests:
+      Run Tests: False
+      Expected failures:
+        TestSaveConfig.test_save_running_config: exception msg 1
+        TestRestoreConfig.test_orchestration_restore: exception msg 2
+Resources:
+  - Name: &cs-r Cisco
+    Shell Name: *cs-sh
+    Tests:
+      Run Tests: True
+      Expected failures:
+        TestRestoreConfig.test_orchestration_restore: exception msg 4
+        TestRestoreConfig.test_restore_startup_config_append: exception msg 3
+  - Name: &cs-r2 Cisco2
+    Shell Name: *cs-sh
+Sandboxes:
+  - Name: First
+    Resources:
+      - *cs-r
+      - *cs-r2
