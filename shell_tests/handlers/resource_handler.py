@@ -5,12 +5,7 @@ from typing import Dict, List, Optional
 from cloudshell.api.cloudshell_api import ResourceInfo
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.configs import (
-    DeploymentResourceConfig,
-    ResourceConfig,
-    ServiceConfig,
-    TestsConfig,
-)
+from shell_tests.configs import DeploymentResourceConfig, ResourceConfig, ServiceConfig
 from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler

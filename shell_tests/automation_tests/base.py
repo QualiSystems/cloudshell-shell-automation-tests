@@ -23,7 +23,7 @@ class BaseTestCase(unittest.TestCase):
 
         return wrapped
 
-    def id(self):
+    def id(self):  # noqa: A003
         raise NotImplementedError("You have to create unique id for the test")
 
 
@@ -40,7 +40,7 @@ class BaseResourceServiceTestCase(BaseTestCase):
         self.handler_storage = handler_storage
         self._add_decorator_for_expect_failed_func(method_name, handler.conf.tests_conf)
 
-    def id(self):
+    def id(self):  # noqa: A003
         id_ = unittest.TestCase.id(self)
         return f"{id_}-{self.handler.name}"
 
@@ -54,6 +54,6 @@ class BaseSandboxTestCase(BaseTestCase):
             method_name, sandbox_handler.tests_conf
         )
 
-    def id(self):
+    def id(self):  # noqa: A003
         id_ = unittest.TestCase.id(self)
         return f"{id_}-{self.sandbox_handler.name}"

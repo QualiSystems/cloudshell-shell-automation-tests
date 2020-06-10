@@ -3,12 +3,12 @@ from shell_tests.errors import BaseAutomationException
 
 
 def find_port_name(resource_info, excluded=None):
-    """
+    """Find port name.
+
     :param cloudshell.api.cloudshell_api.ResourceInfo resource_info:
     :param set excluded:
     :return: port name
     """
-
     if excluded is None:
         excluded = set()
 
@@ -27,7 +27,8 @@ def find_port_name(resource_info, excluded=None):
 class TestConnectivity(BaseResourceServiceTestCase):
     def get_other_device_for_connectivity(self):
         sandbox_resources_handlers = [
-            handler for handler in self.handler_storage.resource_handlers
+            handler
+            for handler in self.handler_storage.resource_handlers
             if handler.conf.name in self.handler.sandbox_handler.conf.resource_names
         ]
         for resource_handler in sandbox_resources_handlers:

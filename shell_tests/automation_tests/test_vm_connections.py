@@ -2,6 +2,10 @@ import re
 
 from shell_tests.automation_tests.base import BaseSandboxTestCase
 from shell_tests.errors import BaseAutomationException
+from shell_tests.helpers.vm_helpers import (
+    get_str_connections_form_blueprint,
+    parse_connections,
+)
 
 
 class AppNetworkInfo(object):
@@ -32,8 +36,10 @@ class PortInfo(object):
         )
 
     def __str__(self):
-        return 'PortInfo(mac="{0.mac}", adapter_name="{0.adapter_name}", port_group_name="{0.port_group_name}")'.format(
-            self,
+        return (
+            f'PortInfo(mac="{self.mac}", '
+            f'adapter_name="{self.adapter_name}", '
+            f'port_group_name="{self.port_group_name}")'
         )
 
 
@@ -101,9 +107,9 @@ class TestVMConnections(BaseSandboxTestCase):
                 self.assertEqual(
                     cs_port_info,
                     vm_port_info,
-                    "Information about the port from CloudShell and from vCenter is different.\n"
-                    "CS port info: {}\n"
-                    "vCenter port info: {}".format(cs_port_info, vm_port_info),
+                    f"Information about the port from CloudShell and from vCenter is "
+                    f"different.\nCS port info: {cs_port_info}\n"
+                    f"vCenter port info: {vm_port_info}",
                 )
                 app_info.ports[vm_port_info.adapter_name] = vm_port_info
 
@@ -119,9 +125,8 @@ class TestVMConnections(BaseSandboxTestCase):
                 break
         else:
             self.fail(
-                'Cannot find the port in ports: {}\n by using connection name: "{}"'.format(
-                    app_info.ports.values(), conn_name,
-                )
+                f"Cannot find the port in ports: {app_info.ports.values()}\n "
+                f'by using connection name: "{conn_name}"'
             )
 
         return port_info
@@ -161,8 +166,9 @@ class TestVMConnections(BaseSandboxTestCase):
                     self.assertEqual(
                         source_port_info.port_group_name,
                         target_port_info.port_group_name,
-                        "Should be the same port group of the source port {} and target port {} "
-                        "but it's different".format(source_port_info, target_port_info),
+                        f"Should be the same port group of the source port "
+                        f"{source_app_info} and target port {target_port_info} "
+                        f"but it's different",
                     )
                 elif source_port_info is target_port_info is None:
                     # we didn't specify ports in blueprint

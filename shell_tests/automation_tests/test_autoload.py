@@ -8,7 +8,10 @@ class TestAutoloadNetworkDevices(BaseResourceServiceTestCase):
     def _get_structure(self, resource_info: ResourceInfo):
         """Get nested resource structure.
 
-        :return: {'CS_Router': [{'CS_Chassis': ['CS_Port', 'CS_Port', ...], 'CS_PortChannel', ...]}
+        :return: {
+            'CS_Router':
+                [{'CS_Chassis': ['CS_Port', 'CS_Port', ...], 'CS_PortChannel', ...]
+        }
         """
         if resource_info.ChildResources:
             return {

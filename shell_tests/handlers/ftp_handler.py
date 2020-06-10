@@ -1,18 +1,17 @@
 import ftplib
 from functools import cached_property
 from io import BytesIO
-from typing import Optional
 
 from shell_tests.configs import FTPConfig
 from shell_tests.helpers.logger import logger
 
 
 class FtpError(Exception):
-    """Base Error"""
+    """Base Error."""
 
 
 class FtpFileNotFoundError(FtpError):
-    """File not found"""
+    """File not found."""
 
     def __init__(self, file_name):
         self.file_name = file_name

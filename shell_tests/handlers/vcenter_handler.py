@@ -9,7 +9,7 @@ from shell_tests.errors import BaseAutomationException
 
 
 class VcenterError(BaseAutomationException):
-    """Base vCenter Error"""
+    """Base vCenter Error."""
 
 
 class VcenterHandler:
