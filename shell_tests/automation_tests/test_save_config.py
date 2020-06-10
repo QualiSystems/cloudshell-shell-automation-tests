@@ -3,236 +3,175 @@ import json
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
 from shell_tests.automation_tests.base import BaseResourceServiceTestCase
-from shell_tests.helpers import get_file_name_from_url
+from shell_tests.helpers.download_files_helper import get_file_name
 
 
 class TestSaveConfig(BaseResourceServiceTestCase):
-
     @property
     def ftp_path(self):
-        return 'ftp://{0.user}:{0.password}@{0.host}'.format(self.sandbox_handler.ftp_handler)
+        ftp = self.handler_storage.conf.ftp_conf
+        return f"ftp://{ftp.user}:{ftp.password}@{ftp.host}"
 
     def test_save_running_config(self):
-        file_name = self.target_handler.save(self.ftp_path, 'running')
-        self.assertTrue(
-            self.sandbox_handler.ftp_handler.get_file(file_name),
-        )
-        self.sandbox_handler.ftp_handler.delete_file(file_name)
+        file_name = self.handler.save(self.ftp_path, "running")
+        self.assertTrue(self.handler_storage.ftp_handler.read_file(file_name))
+        self.handler_storage.ftp_handler.delete_file(file_name)
 
     def test_save_startup_config(self):
-        file_name = self.target_handler.save(self.ftp_path, 'startup')
-        self.assertTrue(
-            self.sandbox_handler.ftp_handler.get_file(file_name),
-        )
-        self.sandbox_handler.ftp_handler.delete_file(file_name)
+        file_name = self.handler.save(self.ftp_path, "startup")
+        self.assertTrue(self.handler_storage.ftp_handler.read_file(file_name))
+        self.handler_storage.ftp_handler.delete_file(file_name)
 
     def test_orchestration_save_shallow(self):
-        custom_params = {
-            'custom_params': {
-                'folder_path': self.ftp_path,
-            }
-        }
-
-        saved_artifact_info = self.target_handler.orchestration_save(
-            'shallow', json.dumps(custom_params))
-
+        custom_params = {"custom_params": {"folder_path": self.ftp_path}}
+        saved_artifact_info = self.handler.orchestration_save(
+            "shallow", json.dumps(custom_params)
+        )
         self.assertTrue(saved_artifact_info)
-        path = json.loads(saved_artifact_info)['saved_artifacts_info'][
-            'saved_artifact']['identifier']
-        file_name = get_file_name_from_url(path)
-
-        self.assertTrue(self.sandbox_handler.ftp_handler.get_file(file_name))
-        self.sandbox_handler.ftp_handler.delete_file(file_name)
+        path = json.loads(saved_artifact_info)["saved_artifacts_info"][
+            "saved_artifact"
+        ]["identifier"]
+        file_name = get_file_name(path)
+        self.assertTrue(self.handler_storage.ftp_handler.read_file(file_name))
+        self.handler_storage.ftp_handler.delete_file(file_name)
 
     def test_orchestration_save_deep(self):
-        custom_params = {
-            'custom_params': {
-                'folder_path': self.ftp_path,
-            }
-        }
-
-        saved_artifact_info = self.target_handler.orchestration_save(
-            'deep', json.dumps(custom_params))
-
+        custom_params = {"custom_params": {"folder_path": self.ftp_path}}
+        saved_artifact_info = self.handler.orchestration_save(
+            "deep", json.dumps(custom_params)
+        )
         self.assertTrue(saved_artifact_info)
-        path = json.loads(saved_artifact_info)['saved_artifacts_info'][
-            'saved_artifact']['identifier']
-        file_name = get_file_name_from_url(path)
+        path = json.loads(saved_artifact_info)["saved_artifacts_info"][
+            "saved_artifact"
+        ]["identifier"]
+        file_name = get_file_name(path)
+        self.assertTrue(self.handler_storage.ftp_handler.read_file(file_name))
+        self.handler_storage.ftp_handler.delete_file(file_name)
 
-        self.assertTrue(self.sandbox_handler.ftp_handler.get_file(file_name))
-        self.sandbox_handler.ftp_handler.delete_file(file_name)
 
 class TestSaveConfigFromScp(BaseResourceServiceTestCase):
-
     @property
     def scp_path(self):
-        debug_link = 'scp://{0.user}:{0.password}@{0.host}'.format(self.sandbox_handler.scp_handler)
-        return 'scp://{0.user}:{0.password}@{0.host}'.format(self.sandbox_handler.scp_handler)
+        scp = self.handler_storage.conf.scp_conf
+        return f"scp://{scp.user}:{scp.password}@{scp.host}"
 
     def test_save_running_config(self):
-        file_name = self.target_handler.save(self.scp_path, 'running')
-        self.assertTrue(
-            self.sandbox_handler.scp_handler.get_file(file_name),
-        )
-        self.sandbox_handler.scp_handler.delete_file(file_name)
+        file_name = self.handler.save(self.scp_path, "running")
+        self.assertTrue(self.handler_storage.scp_handler.read_file(file_name))
+        self.handler_storage.scp_handler.delete_file(file_name)
 
     def test_save_startup_config(self):
-        file_name = self.target_handler.save(self.scp_path, 'startup')
-        self.assertTrue(
-            self.sandbox_handler.scp_handler.get_file(file_name),
-        )
-        self.sandbox_handler.scp_handler.delete_file(file_name)
+        file_name = self.handler.save(self.scp_path, "startup")
+        self.assertTrue(self.handler_storage.scp_handler.read_file(file_name))
+        self.handler_storage.scp_handler.delete_file(file_name)
 
     def test_orchestration_save_shallow(self):
-        custom_params = {
-            'custom_params': {
-                'folder_path': self.scp_path,
-            }
-        }
+        custom_params = {"custom_params": {"folder_path": self.scp_path}}
 
-        saved_artifact_info = self.target_handler.orchestration_save(
-            'shallow', json.dumps(custom_params))
+        saved_artifact_info = self.handler.orchestration_save(
+            "shallow", json.dumps(custom_params)
+        )
 
         self.assertTrue(saved_artifact_info)
-        path = json.loads(saved_artifact_info)['saved_artifacts_info'][
-            'saved_artifact']['identifier']
-        file_name = get_file_name_from_url(path)
+        path = json.loads(saved_artifact_info)["saved_artifacts_info"][
+            "saved_artifact"
+        ]["identifier"]
+        file_name = get_file_name(path)
 
-        self.assertTrue(self.sandbox_handler.scp_handler.get_file(file_name))
-        self.sandbox_handler.scp_handler.delete_file(file_name)
+        self.assertTrue(self.handler_storage.scp_handler.read_file(file_name))
+        self.handler_storage.scp_handler.delete_file(file_name)
 
     def test_orchestration_save_deep(self):
-        custom_params = {
-            'custom_params': {
-                'folder_path': self.scp_path,
-            }
-        }
+        custom_params = {"custom_params": {"folder_path": self.scp_path}}
 
-        saved_artifact_info = self.target_handler.orchestration_save(
-            'deep', json.dumps(custom_params))
+        saved_artifact_info = self.handler.orchestration_save(
+            "deep", json.dumps(custom_params)
+        )
 
         self.assertTrue(saved_artifact_info)
-        path = json.loads(saved_artifact_info)['saved_artifacts_info'][
-            'saved_artifact']['identifier']
-        file_name = get_file_name_from_url(path)
+        path = json.loads(saved_artifact_info)["saved_artifacts_info"][
+            "saved_artifact"
+        ]["identifier"]
+        file_name = get_file_name(path)
 
-        self.assertTrue(self.sandbox_handler.scp_handler.get_file(file_name))
-        self.sandbox_handler.scp_handler.delete_file(file_name)
+        self.assertTrue(self.handler_storage.scp_handler.read_file(file_name))
+        self.handler_storage.scp_handler.delete_file(file_name)
 
 
 class TestSaveConfigFromTftp(BaseResourceServiceTestCase):
-
     @property
     def tftp_path(self):
-        debug_link = 'tftp://{0.host}'.format(self.sandbox_handler.tftp_handler)
-        return 'tftp://{0.host}'.format(self.sandbox_handler.tftp_handler)
+        return f"tftp://{self.handler_storage.conf.tftp_conf.host}"
 
     def test_save_running_config(self):
-        file_name = self.target_handler.save(self.tftp_path, 'running')
-        self.assertTrue(
-            self.sandbox_handler.tftp_handler.get_file(file_name),
-        )
-        self.sandbox_handler.tftp_handler.delete_file(file_name)
+        file_name = self.handler.save(self.tftp_path, "running")
+        self.assertTrue(self.handler_storage.tftp_handler.read_file(file_name))
+        self.handler_storage.tftp_handler.delete_file(file_name)
 
     def test_save_startup_config(self):
-        file_name = self.target_handler.save(self.tftp_path, 'startup')
-        self.assertTrue(
-            self.sandbox_handler.tftp_handler.get_file(file_name),
-        )
-        self.sandbox_handler.tftp_handler.delete_file(file_name)
+        file_name = self.handler.save(self.tftp_path, "startup")
+        self.assertTrue(self.handler_storage.tftp_handler.read_file(file_name))
+        self.handler_storage.tftp_handler.delete_file(file_name)
 
     def test_orchestration_save_shallow(self):
-        custom_params = {
-            'custom_params': {
-                'folder_path': self.tftp_path,
-            }
-        }
+        custom_params = {"custom_params": {"folder_path": self.tftp_path}}
 
-        saved_artifact_info = self.target_handler.orchestration_save(
-            'shallow', json.dumps(custom_params))
+        saved_artifact_info = self.handler.orchestration_save(
+            "shallow", json.dumps(custom_params)
+        )
 
         self.assertTrue(saved_artifact_info)
-        path = json.loads(saved_artifact_info)['saved_artifacts_info'][
-            'saved_artifact']['identifier']
-        file_name = get_file_name_from_url(path)
+        path = json.loads(saved_artifact_info)["saved_artifacts_info"][
+            "saved_artifact"
+        ]["identifier"]
+        file_name = get_file_name(path)
 
-        self.assertTrue(self.sandbox_handler.tftp_handler.get_file(file_name))
-        self.sandbox_handler.tftp_handler.delete_file(file_name)
+        self.assertTrue(self.handler_storage.tftp_handler.read_file(file_name))
+        self.handler_storage.tftp_handler.delete_file(file_name)
 
     def test_orchestration_save_deep(self):
-        custom_params = {
-            'custom_params': {
-                'folder_path': self.tftp_path,
-            }
-        }
+        custom_params = {"custom_params": {"folder_path": self.tftp_path}}
 
-        saved_artifact_info = self.target_handler.orchestration_save(
-            'deep', json.dumps(custom_params))
+        saved_artifact_info = self.handler.orchestration_save(
+            "deep", json.dumps(custom_params)
+        )
 
         self.assertTrue(saved_artifact_info)
-        path = json.loads(saved_artifact_info)['saved_artifacts_info'][
-            'saved_artifact']['identifier']
-        file_name = get_file_name_from_url(path)
+        path = json.loads(saved_artifact_info)["saved_artifacts_info"][
+            "saved_artifact"
+        ]["identifier"]
+        file_name = get_file_name(path)
 
-        self.assertTrue(self.sandbox_handler.tftp_handler.get_file(file_name))
-        self.sandbox_handler.tftp_handler.delete_file(file_name)
+        self.assertTrue(self.handler_storage.tftp_handler.read_file(file_name))
+        self.handler_storage.tftp_handler.delete_file(file_name)
 
 
 class TestSaveConfigWithoutDevice(TestSaveConfig):
     def test_save_running_config(self):
-        self.assertRaisesRegexp(
-            CloudShellAPIError,
-            r'SessionManagerException',
-            self.target_handler.save,
-            self.ftp_path,
-            'running',
-        )
+        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+            self.handler.save(self.ftp_path, "running")
 
     def test_save_startup_config(self):
-        self.assertRaisesRegexp(
-            CloudShellAPIError,
-            r'SessionManagerException',
-            self.target_handler.save,
-            self.ftp_path,
-            'startup',
-        )
+        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+            self.handler.save(self.ftp_path, "startup")
 
     def test_orchestration_save_shallow(self):
-        self.assertRaisesRegexp(
-            CloudShellAPIError,
-            r'SessionManagerException',
-            self.target_handler.orchestration_save,
-            'shallow',
-        )
+        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+            self.handler.orchestration_save("shallow")
 
     def test_orchestration_save_deep(self):
-        self.assertRaisesRegexp(
-            CloudShellAPIError,
-            r'SessionManagerException',
-            self.target_handler.orchestration_save,
-            'deep',
-        )
+        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+            self.handler.orchestration_save("deep")
+
 
 class TestSaveConfigFromTemplate(BaseResourceServiceTestCase):
     def test_save_running_config(self):
-        self.target_handler.save('ftp://', 'running')
+        self.handler.save("ftp://", "running")
 
     def test_orchestration_save_deep(self):
-        custom_params = {
-            'custom_params': {
-                'folder_path': 'ftp://',
-            }
-        }
-
-        self.target_handler.orchestration_save(
-            'deep', json.dumps(custom_params))
+        custom_params = {"custom_params": {"folder_path": "ftp://"}}
+        self.handler.orchestration_save("deep", json.dumps(custom_params))
 
     def test_orchestration_save_shallow(self):
-        custom_params = {
-            'custom_params': {
-                'folder_path': 'ftp://',
-            }
-        }
-
-        self.target_handler.orchestration_save(
-            'shallow', json.dumps(custom_params))
+        custom_params = {"custom_params": {"folder_path": "ftp://"}}
+        self.handler.orchestration_save("shallow", json.dumps(custom_params))

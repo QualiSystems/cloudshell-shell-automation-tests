@@ -1,50 +1,59 @@
 from itertools import chain
+from typing import List
+
+from shell_tests.handlers.resource_handler import DeviceType
 
 
-class SandboxReport(object):
-    def __init__(self, sandbox_name, is_success, test_result):
+class SandboxReport:
+    def __init__(self, sandbox_name: str, is_success: bool, test_result: str):
         self.name = sandbox_name
         self.sandbox_is_success = is_success
         self.test_result = test_result
-        self.resources_reports = []  # type: list[ResourceReport]
-        self.deployment_resources_reports = []  # type: list[DeploymentResourceReport]
-        self.services_reports = []  # type: list[ServiceReport]
+        self.resources_reports: List[ResourceReport] = []
+        self.deployment_resources_reports: List[DeploymentResourceReport] = []
+        self.services_reports: List[ServiceReport] = []
 
     @property
-    def is_success(self):
+    def is_success(self) -> bool:
         children_success = all(
-            r.is_success for r in chain(self.resources_reports, self.services_reports))
-
+            r.is_success for r in chain(self.resources_reports, self.services_reports)
+        )
         return children_success and self.sandbox_is_success
 
     def __str__(self):
-        sandbox_tests_result = ''
+        sandbox_tests_result = ""
         if self.test_result:
-            success_str = 'successful' if self.sandbox_is_success else 'unsuccessful'
-            sandbox_tests_result = ('Sandbox name: {0.name}\nTests for sandbox was {1}\n'
-                                    '{0.test_result}\n\n'.format(self, success_str))
+            sandbox_tests_result = (
+                f"Sandbox name: {self.name}\nTests for sandbox was "
+                f"{success_str(self.is_success)}\n{self.test_result}\n\n"
+            )
 
-        resources_tests_result = '\n\n'.join(map(str, self.resources_reports))
-        deployment_resources_tests_result = '\n\n'.join(map(str, self.deployment_resources_reports))
-        services_tests_result = '\n\n'.join(map(str, self.services_reports))
+        resources_tests_result = "\n\n".join(map(str, self.resources_reports))
+        deployment_resources_tests_result = "\n\n".join(
+            map(str, self.deployment_resources_reports)
+        )
+        services_tests_result = "\n\n".join(map(str, self.services_reports))
 
-        success_str = 'successful' if self.is_success else 'unsuccessful'
         result = (
-            'Sandbox name: {}\n'
-            'Tests for sandbox, resources and services was {}\n\n{}{}{}{}'.format(
-                self.name,
-                success_str,
-                sandbox_tests_result,
-                resources_tests_result,
-                deployment_resources_tests_result,
-                services_tests_result,
-            ))
-
+            f"Sandbox name: {self.name}\n"
+            f"Tests for sandbox, resources and services was "
+            f"{success_str(self.is_success)}\n\n"
+            f"{sandbox_tests_result}{resources_tests_result}"
+            f"{deployment_resources_tests_result}{services_tests_result}"
+        )
         return result
 
 
-class ResourceReport(object):
-    def __init__(self, resource_name, device_ip, device_type, family, is_success, test_result):
+class ResourceReport:
+    def __init__(
+        self,
+        resource_name: str,
+        device_ip: str,
+        device_type: DeviceType,
+        family: str,
+        is_success: bool,
+        test_result: str,
+    ):
         self.name = resource_name
         self.ip = device_ip
         self.device_type = device_type
@@ -53,23 +62,30 @@ class ResourceReport(object):
         self.test_result = test_result
 
     def __str__(self):
-        success_str = 'successful' if self.is_success else 'unsuccessful'
-        result = ('Resource name: {0.name}, IP: {0.ip}, Type: {0.device_type}, Family: {0.family}\n'
-                  'Test for the device was {1}\n'
-                  '{0.test_result}'.format(self, success_str))
-
+        result = (
+            f"Resource name: {self.name}, IP: {self.ip}, Type: {self.device_type}, "
+            f"Family: {self.family}\nTest for the device was "
+            f"{success_str(self.is_success)}\n{self.test_result}"
+        )
         return result
 
 
 class DeploymentResourceReport(ResourceReport):
     def __str__(self):
-        result = super(DeploymentResourceReport, self).__str__()
-        result = result.replace('Resource name', 'Deployment Resource name')
+        result = super().__str__()
+        result = result.replace("Resource name", "Deployment Resource name")
         return result
 
 
-class ServiceReport(object):
-    def __init__(self, service_name, device_type, family, is_success, test_result):
+class ServiceReport:
+    def __init__(
+        self,
+        service_name: str,
+        device_type: str,
+        family: str,
+        is_success: bool,
+        test_result: str,
+    ):
         self.name = service_name
         self.device_type = device_type
         self.family = family
@@ -77,27 +93,27 @@ class ServiceReport(object):
         self.test_result = test_result
 
     def __str__(self):
-        success_str = 'successful' if self.is_success else 'unsuccessful'
-        result = ('Service name: {0.name}, Type: {0.device_type}, Family: {0.family}\n'
-                  'Test for the service was {1}\n'
-                  '{0.test_result}'.format(self, success_str))
-
+        result = (
+            f"Service name: {self.name}, Type: {self.device_type}, "
+            f"Family: {self.family}\nTest for the service was "
+            f"{success_str(self.is_success)}\n{self.test_result}"
+        )
         return result
 
 
-class Reporting(object):
+class Reporting:
     def __init__(self):
-        self.sandboxes_reports = []  # type: list[SandboxReport]
+        self.sandboxes_reports: List[SandboxReport] = []
 
     @property
-    def is_success(self):
+    def is_success(self) -> bool:
         return all(sandbox.is_success for sandbox in self.sandboxes_reports)
 
     def __str__(self):
-        join_str = '\n\n{}\n\n'.format('-' * 100)
+        join_str = f"\n\n{'-' * 100}\n\n"
         sandboxes_tests_result = join_str.join(map(str, self.sandboxes_reports))
+        return f"Tests was {success_str(self.is_success)}\n\n{sandboxes_tests_result}"
 
-        success_str = 'successful' if self.is_success else 'unsuccessful'
-        result = 'Tests was {}\n\n{}'.format(success_str, sandboxes_tests_result)
 
-        return result
+def success_str(is_success: bool) -> str:
+    return "successful" if is_success else "unsuccessful"
