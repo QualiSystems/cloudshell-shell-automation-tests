@@ -5,6 +5,7 @@ from unittest import TestLoader, TestSuite, TextTestRunner
 from teamcity import is_running_under_teamcity
 from teamcity.unittestpy import TeamcityTestRunner
 
+from shell_tests.automation_tests.base import OptionalTestCase
 from shell_tests.automation_tests.test_autoload import (
     TestAutoloadNetworkDevices,
     TestAutoloadShellFromTemplate,
@@ -15,7 +16,9 @@ from shell_tests.automation_tests.test_autoload import (
 )
 from shell_tests.automation_tests.test_connectivity import TestConnectivity
 from shell_tests.automation_tests.test_restore_config import (
-    TestRestoreConfig,
+    OptionalTestRestoreFtpConfig,
+    OptionalTestRestoreScpConfig,
+    OptionalTestRestoreTftpConfig,
     TestRestoreConfigFromTemplate,
     TestRestoreConfigWithoutDevice,
 )
@@ -25,7 +28,9 @@ from shell_tests.automation_tests.test_run_custom_command import (
     TestRunCustomCommandWithoutDevice,
 )
 from shell_tests.automation_tests.test_save_config import (
-    TestSaveConfig,
+    OptionalTestSaveFtpConfig,
+    OptionalTestSaveScpConfig,
+    OptionalTestSaveTftpConfig,
     TestSaveConfigFromTemplate,
     TestSaveConfigWithoutDevice,
 )
@@ -45,6 +50,17 @@ from shell_tests.handlers.resource_handler import DeviceType, ResourceHandler
 from shell_tests.helpers.handler_storage import HandlerStorage
 from shell_tests.helpers.logger import logger
 
+SAVE_TEST_CASES = (
+    OptionalTestSaveFtpConfig,
+    OptionalTestSaveScpConfig,
+    OptionalTestSaveTftpConfig,
+)
+RESTORE_TEST_CASES = (
+    OptionalTestRestoreFtpConfig,
+    OptionalTestRestoreScpConfig,
+    OptionalTestRestoreTftpConfig,
+)
+
 TEST_CASES_FIREWALL = {
     DeviceType.SIMULATOR: {"autoload": TestAutoloadNetworkDevices},
     DeviceType.WITHOUT_DEVICE: {
@@ -60,10 +76,10 @@ TEST_CASES_FIREWALL = {
         "autoload": TestAutoloadNetworkDevices,
         "run_custom_command": TestRunCustomCommand,
         "run_custom_config_command": TestRunCustomCommand,
-        "save": TestSaveConfig,
-        "orchestration_save": TestSaveConfig,
-        "restore": TestRestoreConfig,
-        "orchestration_restore": TestRestoreConfig,
+        "save": SAVE_TEST_CASES,
+        "orchestration_save": SAVE_TEST_CASES,
+        "restore": RESTORE_TEST_CASES,
+        "orchestration_restore": RESTORE_TEST_CASES,
     },
     DeviceType.SHELL_FROM_TEMPLATE: {
         "autoload": TestAutoloadShellFromTemplate,
@@ -176,7 +192,12 @@ def get_test_suite(
 
     for command in handler.get_commands():
         test_case = test_cases_map.get(command.lower())
-        if test_case and test_case not in test_cases:
+        if isinstance(test_case, tuple):
+            for optional_test_case in test_case:
+                assert isinstance(optional_test_case, OptionalTestCase)
+                if optional_test_case.is_suitable(handler, handler_storage):
+                    test_cases.append(optional_test_case)
+        elif test_case and test_case not in test_cases:
             test_cases.append(test_case)
 
     for test_case in test_cases:

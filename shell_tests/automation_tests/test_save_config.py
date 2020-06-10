@@ -1,9 +1,14 @@
 import json
+from typing import Type
 
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.automation_tests.base import BaseResourceServiceTestCase
+from shell_tests.automation_tests.base import (
+    BaseResourceServiceTestCase,
+    OptionalTestCase,
+)
 from shell_tests.helpers.download_files_helper import get_file_name
+from shell_tests.helpers.handler_storage import HandlerStorage
 
 
 class TestSaveConfig(BaseResourceServiceTestCase):
@@ -47,6 +52,15 @@ class TestSaveConfig(BaseResourceServiceTestCase):
         file_name = get_file_name(path)
         self.assertTrue(self.handler_storage.ftp_handler.read_file(file_name))
         self.handler_storage.ftp_handler.delete_file(file_name)
+
+
+class OptionalTestSaveFtpConfig(OptionalTestCase):
+    @property
+    def test_case(self) -> Type[BaseResourceServiceTestCase]:
+        return TestSaveConfig
+
+    def is_suitable(self, handler, handler_storage: HandlerStorage) -> bool:
+        return handler_storage.conf.ftp_conf is not None
 
 
 class TestSaveConfigFromScp(BaseResourceServiceTestCase):
@@ -98,6 +112,15 @@ class TestSaveConfigFromScp(BaseResourceServiceTestCase):
         self.handler_storage.scp_handler.delete_file(file_name)
 
 
+class OptionalTestSaveScpConfig(OptionalTestCase):
+    @property
+    def test_case(self) -> Type[BaseResourceServiceTestCase]:
+        return TestSaveConfigFromScp
+
+    def is_suitable(self, handler, handler_storage: HandlerStorage) -> bool:
+        return handler_storage.conf.scp_conf is not None
+
+
 class TestSaveConfigFromTftp(BaseResourceServiceTestCase):
     @property
     def tftp_path(self):
@@ -144,6 +167,15 @@ class TestSaveConfigFromTftp(BaseResourceServiceTestCase):
 
         self.assertTrue(self.handler_storage.tftp_handler.read_file(file_name))
         self.handler_storage.tftp_handler.delete_file(file_name)
+
+
+class OptionalTestSaveTftpConfig(OptionalTestCase):
+    @property
+    def test_case(self) -> Type[BaseResourceServiceTestCase]:
+        return TestSaveConfigFromTftp
+
+    def is_suitable(self, handler, handler_storage: HandlerStorage) -> bool:
+        return handler_storage.conf.tftp_conf is not None
 
 
 class TestSaveConfigWithoutDevice(TestSaveConfig):
