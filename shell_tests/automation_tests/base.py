@@ -1,4 +1,6 @@
 import unittest
+from abc import abstractmethod
+from typing import Type
 
 from shell_tests.configs import TestsConfig
 from shell_tests.handlers.resource_handler import ResourceHandler
@@ -57,3 +59,14 @@ class BaseSandboxTestCase(BaseTestCase):
     def id(self):  # noqa: A003
         id_ = unittest.TestCase.id(self)
         return f"{id_}-{self.sandbox_handler.name}"
+
+
+class OptionalTestCase:
+    @abstractmethod
+    @property
+    def test_case(self) -> Type[BaseResourceServiceTestCase]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def is_suitable(self, handler, handler_storage: HandlerStorage) -> bool:
+        raise NotImplementedError

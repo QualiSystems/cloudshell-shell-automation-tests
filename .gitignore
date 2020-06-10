@@ -9,3 +9,5 @@ shell_tests.egg-info/
 shell-tests.log
 *.egg-info
 .tox/
+/.coverage
+tmp-shells/
