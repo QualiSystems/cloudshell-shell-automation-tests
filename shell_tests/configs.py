@@ -1,9 +1,8 @@
-from operator import itemgetter
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, validator
 
 from shell_tests.helpers.download_files_helper import DownloadFile
 
@@ -26,12 +25,16 @@ class DoConfig(CloudShellConfig):
 class TestsConfig(BaseModel):
     expected_failures: Dict[str, str] = Field({}, alias="Expected failures")
     run_tests: bool = Field(True, alias="Run Tests")
+    original_run_tests: Optional[bool] = Field(None, alias="Run Tests")
 
     def __iadd__(self, other: "TestsConfig"):
         if not isinstance(other, TestsConfig):
             raise NotImplementedError("You can add only TestsConfig")
         self.expected_failures = {**other.expected_failures, **self.expected_failures}
-        self.run_tests = other.run_tests
+        if self.original_run_tests is not None:
+            self.run_tests = self.original_run_tests
+        elif other.original_run_tests is not None:
+            self.run_tests = other.original_run_tests
         return self
 
 
@@ -93,17 +96,6 @@ class SandboxConfig(BaseModel):
     blueprint_name: Optional[str] = Field(None, alias="Blueprint Name")
     specific_version: Optional[str] = Field(None, alias="Specific Version")
     tests_conf: TestsConfig = Field(TestsConfig, alias="Tests")
-
-    @root_validator
-    def _resource_or_service_included(cls, values):
-        names = itemgetter(
-            "resource_names", "deployment_resource_names", "services_names"
-        )
-        if not any(map(names, values)):
-            raise ValueError(
-                "You should provide Resources or Deployment Resources or Services"
-            )
-        return values
 
 
 class BlueprintConfig(BaseModel):

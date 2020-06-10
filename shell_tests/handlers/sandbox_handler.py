@@ -31,7 +31,7 @@ class SandboxHandler:
             rid = cs_handler.create_reservation(conf.name, duration)
         try:
             cs_handler.wait_reservation_is_started(rid)
-        except ConnectionResetError as e:
+        except BaseException as e:
             cs_handler.end_reservation(rid, wait=False)
             raise e
         return cls(conf, rid, cs_handler)
@@ -53,9 +53,9 @@ class SandboxHandler:
         )
         service_handler.sandbox_handler = self
 
-    def end_reservation(self):
+    def end_reservation(self, wait: bool = True):
         """End the reservation."""
-        return self._cs_handler.end_reservation(self.reservation_id)
+        return self._cs_handler.end_reservation(self.reservation_id, wait)
 
     def delete_reservation(self):
         """Delete the reservation."""
