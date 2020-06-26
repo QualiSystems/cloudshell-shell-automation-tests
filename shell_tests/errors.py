@@ -1,13 +1,13 @@
 class BaseAutomationException(Exception):
-    """Base Exception"""
+    """Base Exception."""
 
 
 class ResourceIsNotAliveError(BaseAutomationException):
-    """Resource that needed for tests is not alive"""
+    """Resource that needed for tests is not alive."""
 
 
 class CSIsNotAliveError(ResourceIsNotAliveError):
-    """Can't connect to CS"""
+    """Can't connect to CS."""
 
 
 class DeploymentResourceNotFoundError(BaseAutomationException):
@@ -15,4 +15,4 @@ class DeploymentResourceNotFoundError(BaseAutomationException):
 
 
 class CreationReservationError(BaseAutomationException):
-    """Error with creating a reservation"""
+    """Error with creating a reservation."""
