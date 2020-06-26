@@ -16,10 +16,16 @@ class CloudShellConfig(BaseModel):
     domain: str = Field("Global", alias="Domain")
 
 
+class NetworkingAppConf(BaseModel):
+    name: str = Field(..., alias="Name")
+    blueprint_name: str = Field(..., alias="Blueprint Name")
+
+
 class DoConfig(CloudShellConfig):
     cs_version: str = Field("CloudShell 9.3 GA - IL", alias="CS Version")
     delete_cs: bool = Field(True, alias="Delete CS")
     cs_specific_version: str = Field("", alias="CS Specific Version")
+    networking_apps: List[NetworkingAppConf] = Field([], alias="Networking Apps")
 
 
 class TestsConfig(BaseModel):
@@ -38,6 +44,10 @@ class TestsConfig(BaseModel):
         return self
 
 
+class AdditionalPort(BaseModel):
+    name: str = Field(..., alias="Name")
+
+
 class ResourceConfig(BaseModel):
     name: str = Field(..., alias="Name")
     shell_name: str = Field(..., alias="Shell Name")
@@ -48,6 +58,8 @@ class ResourceConfig(BaseModel):
     )
     tests_conf: TestsConfig = Field(TestsConfig(), alias="Tests")
     is_first_gen: bool = Field(False, alias="First Gen")
+    networking_app_name: Optional[str] = Field(None, alias="Networking App")
+    additional_ports: List[AdditionalPort] = Field([], alias="Additional Ports")
 
 
 class DeploymentResourceConfig(BaseModel):

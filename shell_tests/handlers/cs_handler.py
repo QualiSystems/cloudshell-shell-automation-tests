@@ -13,10 +13,12 @@ from cloudshell.api.cloudshell_api import (
     ResourceAttributesUpdateRequest,
     ResourceInfo,
     SetConnectorRequest,
+    TopologyInfo,
     UpdateTopologyGlobalInputsRequest,
 )
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
+from urllib3.exceptions import MaxRetryError
 
 from shell_tests.configs import CloudShellConfig
 from shell_tests.errors import (
@@ -57,7 +59,7 @@ class CloudShellHandler:
         for _ in range(10):
             try:
                 _ = self._api
-            except OSError:
+            except (OSError, MaxRetryError):
                 time.sleep(10)
             else:
                 break
@@ -161,14 +163,21 @@ class CloudShellHandler:
         return list(errors)
 
     def create_resource(
-        self, name: str, model: str, address: str, family: str = ""
+        self,
+        name: str,
+        model: str,
+        address: str,
+        family: str = "",
+        parent_path: str = "",
     ) -> str:
         """Create resource, can be generated new name if current is exists."""
         logger.info(f"Creating the resource {name}")
-        logger.debug(f"Name: {name}, model: {model}, address: {address}")
+        logger.debug(f"{name=}, {model=}, {address=}, {family=}, {parent_path=}")
         while True:
             try:
-                self._api.CreateResource(family, model, name, address)
+                self._api.CreateResource(
+                    family, model, name, address, parentResourceFullPath=parent_path
+                )
             except CloudShellAPIError as e:
                 if str(e.code) != "114":
                     raise
@@ -336,7 +345,12 @@ class CloudShellHandler:
         """Get available topology names by category name."""
         logger.info(f"Getting topologies for a category {category_name}")
         output = self._api.GetTopologiesByCategory(category_name).Topologies
-        logger.debug("Got topologies {}".format(sorted(output)))
+        logger.debug(f"Got topologies {sorted(output)}")
+        return output
+
+    def get_topology_details(self, topology_name: str) -> TopologyInfo:
+        logger.info(f"Getting details for the topology {topology_name}")
+        output = self._api.GetTopologyDetails(topology_name)
         return output
 
     def get_reservation_details(
