@@ -11,6 +11,8 @@ from cloudshell.api.cloudshell_api import (
     ResourceDiagramLayoutInfo,
     ResourceInfo,
     TopologiesByCategoryInfo,
+    TopologyAppResourceInfo,
+    TopologyInfo,
 )
 
 from shell_tests.configs import MainConfig
@@ -40,6 +42,10 @@ _DO_TOPOLOGIES_INFO: TopologiesByCategoryInfo = create_autospec(
         "Environments/CloudShell 7.0 GA P11  - IL",
         "Environments/CloudShell 8.0 GA P8 - IL",
     ],
+)
+_DO_CS_TOPOLOGY_INFO: TopologyInfo = create_autospec(
+    TopologyInfo,
+    Apps=[create_autospec(TopologyAppResourceInfo, Name="CloudShell 9.3 GA")],
 )
 _RESERVATION_ID = "f91adb5c-3a5e-4689-98e3-c28be8d4b307"
 _CREATE_RESERVATION_INFO: CreateReservationResponseInfo = create_autospec(
@@ -161,10 +167,12 @@ def test_cs_is_not_installed_properly_on_do(
     api_mock.GetTopologiesByCategory.return_value = _DO_TOPOLOGIES_INFO
     api_mock.CreateImmediateTopologyReservation.return_value = _CREATE_RESERVATION_INFO
     api_mock.GetReservationStatus.return_value = _RESERVATION_STATUS_INFO_READY
+    api_mock.GetTopologyDetails.return_value = _DO_CS_TOPOLOGY_INFO
     api_mock.GetReservationResourcesPositions.return_value = (
         do_reservation_resources_info
     )
     api_mock.GetResourceDetails.return_value = _CS_RESOURCE_INFO
+    topology_full_name = f"Environments/{conf.do_conf.cs_version}"
 
     # run
     do = CSCreator(conf)
@@ -178,10 +186,11 @@ def test_cs_is_not_installed_properly_on_do(
             "auto tests",
             conf.do_conf.user,
             120,
-            topologyFullPath=f"Environments/{conf.do_conf.cs_version}",
+            topologyFullPath=topology_full_name,
             globalInputs=[],
         ),
         call.GetReservationStatus(_RESERVATION_ID),
+        call.GetTopologyDetails(topology_full_name),
         call.GetReservationResourcesPositions(_RESERVATION_ID),
         call.GetResourceDetails(resource_name_in_do_reservation),
         call.EndReservation(_RESERVATION_ID),
@@ -204,10 +213,12 @@ def test_cs_is_started(
     api_mock.GetTopologiesByCategory.return_value = _DO_TOPOLOGIES_INFO
     api_mock.CreateImmediateTopologyReservation.return_value = _CREATE_RESERVATION_INFO
     api_mock.GetReservationStatus.return_value = _RESERVATION_STATUS_INFO_READY
+    api_mock.GetTopologyDetails.return_value = _DO_CS_TOPOLOGY_INFO
     api_mock.GetReservationResourcesPositions.return_value = (
         do_reservation_resources_info
     )
     api_mock.GetResourceDetails.return_value = _CS_RESOURCE_INFO
+    topology_full_name = f"Environments/{conf.do_conf.cs_version}"
 
     # run
     do = CSCreator(conf)
@@ -221,10 +232,11 @@ def test_cs_is_started(
             "auto tests",
             conf.do_conf.user,
             120,
-            topologyFullPath=f"Environments/{conf.do_conf.cs_version}",
+            topologyFullPath=topology_full_name,
             globalInputs=[],
         ),
         call.GetReservationStatus(_RESERVATION_ID),
+        call.GetTopologyDetails(topology_full_name),
         call.GetReservationResourcesPositions(_RESERVATION_ID),
         call.GetResourceDetails(resource_name_in_do_reservation),
     ]

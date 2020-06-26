@@ -95,22 +95,26 @@ class SandboxHandler:
         """Remove the connector between the ports."""
         self._cs_handler.remove_connector(self.reservation_id, port_name1, port_name2)
 
-    def get_deployment_resource_name(self, blueprint_name: str) -> str:
-        checked_name = blueprint_name[0:10]
-        found_names = []
+    def get_deployment_resource_name(self) -> str:
+        info = self._cs_handler.get_topology_details(self.conf.blueprint_name)
+        assert len(info.Apps) == 1, "Supported only 1 app in the reservation"
+        app_name = info.Apps[0].Name
         names = self._cs_handler.get_resources_names_in_reservation(self.reservation_id)
+        found_names = []
         for resource_name in names:
-            if resource_name.startswith(checked_name):
+            if resource_name.startswith(app_name) or resource_name.startswith(
+                app_name.replace(" ", "-")
+            ):
                 found_names.append(resource_name)
         if len(found_names) > 1:
             raise DeploymentResourceNotFoundError(
                 f"There are more than one suitable resource for the name "
-                f"{checked_name} in the reservation {self.reservation_id}. "
+                f"{app_name} in the reservation {self.reservation_id}. "
                 f"Available resources are {names}"
             )
         elif not found_names:
             raise DeploymentResourceNotFoundError(
-                f"Could not find the deployment resource with prefix {checked_name} in "
+                f"Could not find the deployment resource with prefix {app_name} in "
                 f"the reservation {self.reservation_id}. "
                 f"Available resources are {names}"
             )

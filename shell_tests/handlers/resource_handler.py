@@ -5,7 +5,12 @@ from typing import Dict, List, Optional
 from cloudshell.api.cloudshell_api import ResourceInfo
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
-from shell_tests.configs import DeploymentResourceConfig, ResourceConfig, ServiceConfig
+from shell_tests.configs import (
+    AdditionalPort,
+    DeploymentResourceConfig,
+    ResourceConfig,
+    ServiceConfig,
+)
 from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
@@ -30,7 +35,7 @@ class ResourceHandler:
         self.conf = conf
         self.name = conf.name
         self.attributes = {}
-        self.children_attributes = conf.children_attributes
+        self.children_attributes = {}
         self._cs_handler = cs_handler
         self._shell_handler = shell_handler
 
@@ -122,9 +127,11 @@ class ResourceHandler:
             self._cs_handler.update_driver_for_the_resource(self.name, self.model)
             self._cs_handler.resource_autoload(self.name)
 
+        if self.conf.additional_ports:
+            self._add_additional_ports(self.conf.additional_ports)
+        if self.conf.children_attributes:
+            self.set_children_attributes(self.conf.children_attributes)
         self.is_autoload_finished = True
-        if self.children_attributes:
-            self.set_children_attributes(self.children_attributes)
 
     def get_details(self) -> ResourceInfo:
         """Get resource details."""
@@ -231,6 +238,31 @@ class ResourceHandler:
         """Rename the resource."""
         self.name = self._cs_handler.rename_resource(self.name, new_name)
 
+    def _add_additional_ports(self, additional_port_configs: List[AdditionalPort]):
+        info = self.get_details()
+        for child_res in info.ChildResources:
+            if child_res.ResourceFamilyName == "CS_Chassis":
+                chassis_name = child_res.Name
+                break
+        else:
+            _name = self._cs_handler.create_resource(
+                name="Chassis 1",
+                model=f"{info.ResourceModelName}.GenericChassis",
+                address="CH1",
+                family="CS_Chassis",
+                parent_path=info.Name,
+            )
+            chassis_name = f"{info.Name}/{_name}"
+
+        for i, port_conf in enumerate(additional_port_configs, 1):
+            self._cs_handler.create_resource(
+                name=port_conf.name,
+                model=f"{info.ResourceModelName}.GenericPort",
+                address=f"P{i}",
+                family="CS_Port",
+                parent_path=chassis_name,
+            )
+
     def finish(self):
         self._cs_handler.delete_resource(self.name)
 
@@ -296,58 +328,28 @@ class ServiceHandler:
 class DeploymentResourceHandler:
     def __init__(
         self,
-        name: str,
-        is_first_gen: bool,
-        attributes: Dict[str, str],
-        children_attributes: Dict[str, Dict[str, str]],
+        conf: DeploymentResourceConfig,
         vm_name: str,
         sandbox_handler: SandboxHandler,
     ):
-        self.name = name
-        self.is_first_gen = is_first_gen
-        self.attributes = attributes
-        self.children_attributes = children_attributes
+        self.conf = conf
+        self.name = vm_name
         self.vm_name = vm_name
-        self.sandbox_handler = sandbox_handler
+        self.attributes = {}
+        self._sandbox_handler = sandbox_handler
         self._cs_handler = sandbox_handler._cs_handler
 
     @classmethod
     def create_resource(
-        cls,
-        name: str,
-        is_first_gen: bool,
-        attributes: Dict[str, str],
-        children_attributes: Dict[str, Dict[str, str]],
-        blueprint_name: str,
-        sandbox_handler: SandboxHandler,
-    ) -> "DeploymentResourceHandler":
-        logger.info(f"Start preparing the resource {name}")
-        vm_name = name = sandbox_handler.get_deployment_resource_name(blueprint_name)
-        resource = cls(
-            name,
-            is_first_gen,
-            attributes,
-            children_attributes,
-            vm_name,
-            sandbox_handler,
-        )
-        if attributes:
-            resource.set_attributes(attributes)
-        logger.info(f"The resource {resource.name} prepared")
-        return resource
-
-    @classmethod
-    def create_from_conf(
         cls, conf: DeploymentResourceConfig, sandbox_handler: SandboxHandler,
     ) -> "DeploymentResourceHandler":
-        return cls.create_resource(
-            conf.name,
-            conf.is_first_gen,
-            conf.attributes,
-            conf.children_attributes,
-            conf.blueprint_name,
-            sandbox_handler,
-        )
+        logger.info(f"Start preparing the resource {conf.name}")
+        vm_name = sandbox_handler.get_deployment_resource_name()
+        resource = cls(conf, vm_name, sandbox_handler,)
+        if conf.attributes:
+            resource.set_attributes(conf.attributes)
+        logger.info(f"The resource {resource.name} prepared")
+        return resource
 
     @property
     def device_type(self):
@@ -366,7 +368,7 @@ class DeploymentResourceHandler:
 
     def set_attributes(self, attributes: Dict[str, str]):
         """Set attributes for the resource and update internal dict."""
-        namespace = self.model if not self.is_first_gen else ""
+        namespace = self.model if not self.conf.is_first_gen else ""
         self._cs_handler.set_resource_attributes(self.name, namespace, attributes)
         self.attributes.update(attributes)
 
@@ -376,4 +378,4 @@ class DeploymentResourceHandler:
 
     def refresh_vm_details(self):
         """Refresh VM Details for the App."""
-        self.sandbox_handler.refresh_vm_details([self.name])
+        self._sandbox_handler.refresh_vm_details([self.name])
