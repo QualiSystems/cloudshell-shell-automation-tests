@@ -55,11 +55,12 @@ class TestSaveConfig(BaseResourceServiceTestCase):
 
 
 class OptionalTestSaveFtpConfig(OptionalTestCase):
-    @property
-    def test_case(self) -> Type[BaseResourceServiceTestCase]:
+    @staticmethod
+    def test_case() -> Type[BaseResourceServiceTestCase]:
         return TestSaveConfig
 
-    def is_suitable(self, handler, handler_storage: HandlerStorage) -> bool:
+    @staticmethod
+    def is_suitable(handler, handler_storage: HandlerStorage) -> bool:
         return handler_storage.conf.ftp_conf is not None
 
 
@@ -113,11 +114,12 @@ class TestSaveConfigFromScp(BaseResourceServiceTestCase):
 
 
 class OptionalTestSaveScpConfig(OptionalTestCase):
-    @property
-    def test_case(self) -> Type[BaseResourceServiceTestCase]:
+    @staticmethod
+    def test_case() -> Type[BaseResourceServiceTestCase]:
         return TestSaveConfigFromScp
 
-    def is_suitable(self, handler, handler_storage: HandlerStorage) -> bool:
+    @staticmethod
+    def is_suitable(handler, handler_storage: HandlerStorage) -> bool:
         return handler_storage.conf.scp_conf is not None
 
 
@@ -170,11 +172,12 @@ class TestSaveConfigFromTftp(BaseResourceServiceTestCase):
 
 
 class OptionalTestSaveTftpConfig(OptionalTestCase):
-    @property
-    def test_case(self) -> Type[BaseResourceServiceTestCase]:
+    @staticmethod
+    def test_case() -> Type[BaseResourceServiceTestCase]:
         return TestSaveConfigFromTftp
 
-    def is_suitable(self, handler, handler_storage: HandlerStorage) -> bool:
+    @staticmethod
+    def is_suitable(handler, handler_storage: HandlerStorage) -> bool:
         return handler_storage.conf.tftp_conf is not None
 
 

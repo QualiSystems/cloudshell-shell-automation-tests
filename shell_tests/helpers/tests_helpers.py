@@ -194,9 +194,9 @@ def get_test_suite(
         test_case = test_cases_map.get(command.lower())
         if isinstance(test_case, tuple):
             for optional_test_case in test_case:
-                assert isinstance(optional_test_case, OptionalTestCase)
+                assert issubclass(optional_test_case, OptionalTestCase)
                 if optional_test_case.is_suitable(handler, handler_storage):
-                    test_cases.append(optional_test_case)
+                    test_cases.append(optional_test_case.test_case())
         elif test_case and test_case not in test_cases:
             test_cases.append(test_case)
 

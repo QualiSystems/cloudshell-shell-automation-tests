@@ -62,11 +62,12 @@ class BaseSandboxTestCase(BaseTestCase):
 
 
 class OptionalTestCase:
-    @property
+    @staticmethod
     @abstractmethod
-    def test_case(self) -> Type[BaseResourceServiceTestCase]:
+    def test_case() -> Type[BaseResourceServiceTestCase]:
         raise NotImplementedError
 
+    @staticmethod
     @abstractmethod
-    def is_suitable(self, handler, handler_storage: HandlerStorage) -> bool:
+    def is_suitable(handler, handler_storage: HandlerStorage) -> bool:
         raise NotImplementedError

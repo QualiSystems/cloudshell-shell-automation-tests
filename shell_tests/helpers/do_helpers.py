@@ -65,6 +65,7 @@ class CSCreator:
             "OS User": attrs["OS Login"],
             "OS Password": attrs["OS Password"],
         }
+        logger.info(f"CloudShell created IP: {info.Address}")
         return CloudShellConfig(**data)
 
     def create_cloudshell(self) -> CloudShellHandler:

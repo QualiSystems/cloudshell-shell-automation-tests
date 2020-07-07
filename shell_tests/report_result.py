@@ -18,6 +18,8 @@ class SandboxReport:
         children_success = all(
             r.is_success for r in chain(self.resources_reports, self.services_reports)
         )
+        if len(self.resources_reports) == 0 and len(self.services_reports) == 0:
+            return False
         return children_success and self.sandbox_is_success
 
     def __str__(self):
