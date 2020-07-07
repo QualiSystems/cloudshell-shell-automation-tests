@@ -62,8 +62,8 @@ class BaseSandboxTestCase(BaseTestCase):
 
 
 class OptionalTestCase:
-    @abstractmethod
     @property
+    @abstractmethod
     def test_case(self) -> Type[BaseResourceServiceTestCase]:
         raise NotImplementedError
 
