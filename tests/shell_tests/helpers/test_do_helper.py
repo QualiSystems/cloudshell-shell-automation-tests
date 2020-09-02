@@ -133,7 +133,7 @@ def test_do_reservation_is_not_started_in_time(conf, api_mock, sleepless, monkey
 
     # check
     expected_calls = [
-        call.GetTopologiesByCategory("CloudShell"),
+        call.GetTopologiesByCategory("CloudShell - Latest build"),
         call.CreateImmediateTopologyReservation(
             "auto tests",
             conf.do_conf.user,
@@ -181,7 +181,7 @@ def test_cs_is_not_installed_properly_on_do(
 
     # check
     expected_calls = [
-        call.GetTopologiesByCategory("CloudShell"),
+        call.GetTopologiesByCategory("CloudShell - Latest build"),
         call.CreateImmediateTopologyReservation(
             "auto tests",
             conf.do_conf.user,
@@ -227,7 +227,7 @@ def test_cs_is_started(
     # check
     assert isinstance(cs, CloudShellHandler)
     expected_calls = [
-        call.GetTopologiesByCategory("CloudShell"),
+        call.GetTopologiesByCategory("CloudShell - Latest build"),
         call.CreateImmediateTopologyReservation(
             "auto tests",
             conf.do_conf.user,
