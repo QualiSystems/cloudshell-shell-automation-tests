@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import yaml
 from pydantic import BaseModel, Field, validator
@@ -60,6 +60,8 @@ class ResourceConfig(BaseModel):
     is_first_gen: bool = Field(False, alias="First Gen")
     networking_app_name: Optional[str] = Field(None, alias="Networking App")
     additional_ports: List[AdditionalPort] = Field([], alias="Additional Ports")
+    setup_commands: List[Union[str, Dict[str, str]]] = Field([], alias="Setup Commands")
+    teardown_commands: List[Union[str, Dict[str, str]]] = Field([], alias="Teardown Commands")
 
 
 class DeploymentResourceConfig(BaseModel):
