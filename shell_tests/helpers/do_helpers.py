@@ -23,7 +23,9 @@ class CSCreator:
 
     def _find_topology_name_for_cloudshell(self) -> str:
         # todo ability to chose topologies by category
-        cs_names = sorted(self._do_handler.get_topologies_by_category("CloudShell - Latest build"))
+        cs_names = sorted(
+            self._do_handler.get_topologies_by_category("CloudShell - Latest build")
+        )
         for topology_name in cs_names:
             # 'Environments/CloudShell - Latest 8.3'
             if topology_name.split("/", 1)[-1] == self._conf.do_conf.cs_version:
