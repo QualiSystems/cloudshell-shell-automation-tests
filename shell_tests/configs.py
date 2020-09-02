@@ -61,7 +61,9 @@ class ResourceConfig(BaseModel):
     networking_app_name: Optional[str] = Field(None, alias="Networking App")
     additional_ports: List[AdditionalPort] = Field([], alias="Additional Ports")
     setup_commands: List[Union[str, Dict[str, str]]] = Field([], alias="Setup Commands")
-    teardown_commands: List[Union[str, Dict[str, str]]] = Field([], alias="Teardown Commands")
+    teardown_commands: List[Union[str, Dict[str, str]]] = Field(
+        [], alias="Teardown Commands"
+    )
 
 
 class DeploymentResourceConfig(BaseModel):
