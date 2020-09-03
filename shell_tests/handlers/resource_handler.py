@@ -72,7 +72,7 @@ class ResourceHandler:
 
     @property
     def device_type(self) -> DeviceType:
-        if "SHELL_FROM_TEMPLATE" in self.name:
+        if "SHELL_FROM_TEMPLATE" in self.conf.name:
             return DeviceType.SHELL_FROM_TEMPLATE
         elif not self.conf.device_ip:
             return DeviceType.WITHOUT_DEVICE
