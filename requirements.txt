@@ -9,6 +9,6 @@ requests~=2.20
 teamcity-messages~=1.21
 xmltodict~=0.12.0
 setuptools~=46.4.0
-pydantic~=1.5.0
+pydantic~=1.6.0
 paramiko~=2.7
 tftpy~=0.8

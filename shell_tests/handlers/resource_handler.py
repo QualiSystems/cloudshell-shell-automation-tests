@@ -8,6 +8,7 @@ from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from shell_tests.configs import (
     AdditionalPort,
     DeploymentResourceConfig,
+    ResourceCommand,
     ResourceConfig,
     ServiceConfig,
 )
@@ -168,6 +169,13 @@ class ResourceHandler:
         )
         logger.debug(f"Run custom config command output: {output}")
         return output
+
+    def run_resource_commands(self, commands: List[ResourceCommand]):
+        for command in commands:
+            if command.mode is command.mode.CONFIG:
+                self.run_custom_command(command.command)
+            else:
+                self.run_custom_config_command(command.command)
 
     def save(self, path_to_save: str, configuration_type: str) -> str:
         """Execute save command on the resource."""
