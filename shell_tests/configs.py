@@ -1,5 +1,6 @@
+from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel, Field, validator
@@ -48,6 +49,16 @@ class AdditionalPort(BaseModel):
     name: str = Field(..., alias="Name")
 
 
+class ResourceCommandMode(Enum):
+    ENABLE = "ENABLE"
+    CONFIG = "CONFIG"
+
+
+class ResourceCommand(BaseModel):
+    command: str
+    mode: ResourceCommandMode
+
+
 class ResourceConfig(BaseModel):
     name: str = Field(..., alias="Name")
     shell_name: str = Field(..., alias="Shell Name")
@@ -60,10 +71,20 @@ class ResourceConfig(BaseModel):
     is_first_gen: bool = Field(False, alias="First Gen")
     networking_app_name: Optional[str] = Field(None, alias="Networking App")
     additional_ports: List[AdditionalPort] = Field([], alias="Additional Ports")
-    setup_commands: List[Union[str, Dict[str, str]]] = Field([], alias="Setup Commands")
-    teardown_commands: List[Union[str, Dict[str, str]]] = Field(
-        [], alias="Teardown Commands"
-    )
+    setup_commands: List[ResourceCommand] = Field([], alias="Setup Commands")
+    teardown_commands: List[ResourceCommand] = Field([], alias="Teardown Commands")
+
+    @validator("setup_commands", "teardown_commands", each_item=True, pre=True)
+    def _parse_commands(cls, v):
+        if isinstance(v, dict):
+            if len(v) != 1:
+                raise ValueError(f"Expect CONFIG: command or ENABLE: command, got {v}")
+            mode = next(iter(v))
+            command = v[mode]
+        else:
+            mode = ResourceCommandMode.ENABLE.value
+            command = v
+        return {"mode": mode, "command": command}
 
 
 class DeploymentResourceConfig(BaseModel):

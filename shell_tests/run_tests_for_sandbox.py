@@ -1,6 +1,6 @@
 import threading
 from functools import cached_property
-from typing import Dict, List, Union
+from typing import List
 
 from shell_tests.handlers.resource_handler import ResourceHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
@@ -55,27 +55,16 @@ class RunTestsForSandbox(threading.Thread):
         sandbox_report = self._run_sandbox_tests()
 
         for resource_handler in self.resource_handlers:
-            self._run_commands(resource_handler.conf.setup_commands, resource_handler)
+            resource_handler.run_resource_commands(resource_handler.conf.setup_commands)
             if resource_handler.conf.tests_conf.run_tests:
                 resource_report = self._run_resource_tests(resource_handler)
                 sandbox_report.resources_reports.append(resource_report)
-                self._run_commands(
-                    resource_handler.conf.teardown_commands, resource_handler
+                resource_handler.run_resource_commands(
+                    resource_handler.conf.teardown_commands
                 )
 
         with self.REPORT_LOCK:
             self.reporting.sandboxes_reports.append(sandbox_report)
-
-    @staticmethod
-    def _run_commands(
-        commands: List[Union[str, Dict[str, str]]], resource_handler: ResourceHandler
-    ):
-        for command in commands:
-            if isinstance(command, dict):
-                command = command["CONFIG"]
-                resource_handler.run_custom_config_command(command)
-            else:
-                resource_handler.run_custom_command(command)
 
     def _run_sandbox_tests(self) -> SandboxReport:
         return SandboxReport(self.sandbox_handler.conf.name, True, "")
