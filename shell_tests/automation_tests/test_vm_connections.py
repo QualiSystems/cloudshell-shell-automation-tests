@@ -1,4 +1,5 @@
 import re
+from typing import Dict
 
 from shell_tests.automation_tests.base import BaseSandboxTestCase
 from shell_tests.errors import BaseAutomationException
@@ -14,7 +15,7 @@ class AppNetworkInfo(object):
         self.cs_name = cs_name
         self.blueprint_name = blueprint_name
         self.vm_uuid = vm_uuid
-        self.ports = {}  # type: dict[str, PortInfo]
+        self.ports: Dict[str, PortInfo] = {}
 
 
 class PortInfo(object):
@@ -85,7 +86,7 @@ class TestVMConnections(BaseSandboxTestCase):
                 ),
             )
 
-        return PortInfo(device.macAddress, adapter_name, network.name,)
+        return PortInfo(device.macAddress, adapter_name, network.name)
 
     def test_vm_connections(self):
         apps_info = {}
@@ -93,7 +94,7 @@ class TestVMConnections(BaseSandboxTestCase):
         for handler in self.sandbox_handler.deployment_resource_handlers:
             vm_details = handler.get_details().VmDetails
             app_info = AppNetworkInfo(
-                handler.vm_name, handler.name, handler._blueprint_name, vm_details.UID,
+                handler.vm_name, handler.name, handler._blueprint_name, vm_details.UID
             )
             apps_info[app_info.blueprint_name] = app_info
 
@@ -102,7 +103,7 @@ class TestVMConnections(BaseSandboxTestCase):
                     network_data
                 )
                 vm_port_info = self._get_port_info_from_vcenter(
-                    app_info.vm_uuid, cs_port_info.adapter_name,
+                    app_info.vm_uuid, cs_port_info.adapter_name
                 )
                 self.assertEqual(
                     cs_port_info,

@@ -30,7 +30,7 @@ class ShellHandler:
         cs_handler: CloudShellHandler,
         cs_smb_handler: Optional[CloudShellSmbHandler] = None,
     ) -> "ShellHandler":
-        handler = cls(conf, cs_handler, cs_smb_handler,)
+        handler = cls(conf, cs_handler, cs_smb_handler)
         handler.prepare()
         return handler
 

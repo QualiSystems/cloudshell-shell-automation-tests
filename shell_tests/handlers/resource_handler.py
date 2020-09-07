@@ -51,7 +51,7 @@ class ResourceHandler:
         shell_handler: ShellHandler,
     ) -> "ResourceHandler":
         logger.info(f"Start preparing the resource {conf.name}")
-        resource = cls(conf, cs_handler, shell_handler,)
+        resource = cls(conf, cs_handler, shell_handler)
         resource._create_resource()
         logger.info(f"The resource {resource.name} prepared")
         return resource
@@ -107,7 +107,7 @@ class ResourceHandler:
                 self._set_child_attribute(child_info, attribute_name, attribute_value)
 
     def _set_child_attribute(
-        self, child_info: ResourceInfo, attribute_name: str, attribute_value: str,
+        self, child_info: ResourceInfo, attribute_name: str, attribute_value: str
     ):
         namespace = child_info.ResourceModelName
         for attribute_info in child_info.ResourceAttributes:
@@ -196,7 +196,7 @@ class ResourceHandler:
         logger.info('Start a "orchestration save" command')
         logger.debug(f"Mode: {mode}, custom params: {custom_params}")
         output = self.execute_command(
-            "orchestration_save", {"mode": mode, "custom_params": custom_params},
+            "orchestration_save", {"mode": mode, "custom_params": custom_params}
         )
         logger.debug(f"Orchestration save command output: {output}")
         return output
@@ -276,9 +276,7 @@ class ResourceHandler:
 
 
 class ServiceHandler:
-    def __init__(
-        self, name: str, attributes: Dict[str, str], model: str,
-    ):
+    def __init__(self, name: str, attributes: Dict[str, str], model: str):
         self.name = name
         self.model = model
         self.family = None
@@ -288,7 +286,7 @@ class ServiceHandler:
 
     @classmethod
     def from_conf(cls, conf: ServiceConfig) -> "ServiceHandler":
-        return cls(conf.name, conf.attributes, conf.model,)
+        return cls(conf.name, conf.attributes, conf.model)
 
     @property
     def sandbox_handler(self) -> SandboxHandler:
@@ -349,11 +347,11 @@ class DeploymentResourceHandler:
 
     @classmethod
     def create_resource(
-        cls, conf: DeploymentResourceConfig, sandbox_handler: SandboxHandler,
+        cls, conf: DeploymentResourceConfig, sandbox_handler: SandboxHandler
     ) -> "DeploymentResourceHandler":
         logger.info(f"Start preparing the resource {conf.name}")
         vm_name = sandbox_handler.get_deployment_resource_name()
-        resource = cls(conf, vm_name, sandbox_handler,)
+        resource = cls(conf, vm_name, sandbox_handler)
         if conf.attributes:
             resource.set_attributes(conf.attributes)
         logger.info(f"The resource {resource.name} prepared")

@@ -21,7 +21,7 @@ class SandboxHandler:
 
     @classmethod
     def create(
-        cls, conf: SandboxConfig, cs_handler: CloudShellHandler, duration: int = 2 * 60,
+        cls, conf: SandboxConfig, cs_handler: CloudShellHandler, duration: int = 2 * 60
     ) -> "SandboxHandler":
         if conf.blueprint_name:
             rid = cs_handler.create_topology_reservation(

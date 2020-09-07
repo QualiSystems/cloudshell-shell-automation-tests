@@ -61,19 +61,13 @@ class TestConnectivity(BaseResourceServiceTestCase):
         dut_port2 = find_port_name(dut_info, {dut_port1})
 
         # adding physical connections
-        self.handler.sandbox_handler.add_physical_connection(
-            res_port1, dut_port1,
-        )
-        self.handler.sandbox_handler.add_physical_connection(
-            res_port2, dut_port2,
-        )
+        self.handler.sandbox_handler.add_physical_connection(res_port1, dut_port1)
+        self.handler.sandbox_handler.add_physical_connection(res_port2, dut_port2)
 
         # add VLAN
         self.handler.sandbox_handler.connect_ports_with_connector(
-            dut_port1, dut_port2, "connector",
+            dut_port1, dut_port2, "connector"
         )
 
         # remove VLAN
-        self.handler.sandbox_handler.remove_connector(
-            dut_port1, dut_port2,
-        )
+        self.handler.sandbox_handler.remove_connector(dut_port1, dut_port2)

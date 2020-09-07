@@ -55,9 +55,7 @@ class TestRestoreConfig(BaseResourceServiceTestCase):
             "shallow", json.dumps(custom_params)
         )
         try:
-            self.handler.orchestration_restore(
-                saved_artifact_info, "",
-            )
+            self.handler.orchestration_restore(saved_artifact_info, "")
         finally:
             path = json.loads(saved_artifact_info)["saved_artifacts_info"][
                 "saved_artifact"
@@ -120,9 +118,7 @@ class TestRestoreConfigFromScp(BaseResourceServiceTestCase):
             "shallow", json.dumps(custom_params)
         )
         try:
-            self.handler.orchestration_restore(
-                saved_artifact_info, "",
-            )
+            self.handler.orchestration_restore(saved_artifact_info, "")
         finally:
             path = json.loads(saved_artifact_info)["saved_artifacts_info"][
                 "saved_artifact"
@@ -184,9 +180,7 @@ class TestRestoreConfigFromTftp(BaseResourceServiceTestCase):
             "shallow", json.dumps(custom_params)
         )
         try:
-            self.handler.orchestration_restore(
-                saved_artifact_info, "",
-            )
+            self.handler.orchestration_restore(saved_artifact_info, "")
         finally:
             path = json.loads(saved_artifact_info)["saved_artifacts_info"][
                 "saved_artifact"

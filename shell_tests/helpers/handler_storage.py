@@ -19,9 +19,7 @@ def _get_handlers_dict(handlers_lst: List[Handler]) -> Dict[str, Handler]:
 
 
 class HandlerStorage:
-    def __init__(
-        self, cs_handler: CloudShellHandler, conf: MainConfig,
-    ):
+    def __init__(self, cs_handler: CloudShellHandler, conf: MainConfig):
         self.cs_handler = cs_handler
         self.conf = conf
 
