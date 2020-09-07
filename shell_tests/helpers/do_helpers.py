@@ -22,17 +22,13 @@ class CSCreator:
         self._networking_apps_handler = NetworkingAppsHandler(self._do_handler, conf)
 
     def _find_topology_name_for_cloudshell(self) -> str:
-        # todo ability to chose topologies by category
-        cs_names = sorted(
-            self._do_handler.get_topologies_by_category("CloudShell - Latest build")
-        )
+        cs_names = sorted(self._do_handler.get_topologies_by_category(""))
         for topology_name in cs_names:
             # 'Environments/CloudShell - Latest 8.3'
             if topology_name.split("/", 1)[-1] == self._conf.do_conf.cs_version:
                 return topology_name
-        raise BaseAutomationException(
-            f"CloudShell version {self._conf.do_conf.cs_version} isn't exists"
-        )
+        emsg = f"CloudShell version {self._conf.do_conf.cs_version} isn't exists"
+        raise BaseAutomationException(emsg)
 
     def _start_cs_sandbox(self) -> SandboxHandler:
         topology_name = self._find_topology_name_for_cloudshell()
