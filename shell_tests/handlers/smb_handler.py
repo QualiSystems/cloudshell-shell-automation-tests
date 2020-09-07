@@ -43,7 +43,7 @@ class SmbHandler:
             logger.debug(f"Creating SMB session to {self._server_ip}")
             try:
                 self._session = SMBConnection(
-                    self._username, self._password, self._client, self._server_name,
+                    self._username, self._password, self._client, self._server_name
                 )
                 self._session.connect(self._server_ip)
             except NotConnectedError:
@@ -125,15 +125,12 @@ class SmbHandler:
         l_dir_path = Path(l_dir_path)
         for smb_file in self.ls(r_dir_path):
             new_l_file_path = l_dir_path / smb_file.filename
+            r_file_path = os.path.join(r_dir_path, smb_file.filename)
             if smb_file.isDirectory:
                 new_l_file_path.mkdir()
-                self.download_r_dir(
-                    os.path.join(r_dir_path, smb_file.filename), new_l_file_path,
-                )
+                self.download_r_dir(r_file_path, new_l_file_path)
             else:
-                self.download_r_file(
-                    os.path.join(r_dir_path, smb_file.filename), new_l_file_path,
-                )
+                self.download_r_file(r_file_path, new_l_file_path)
 
 
 class CloudShellSmbHandler:

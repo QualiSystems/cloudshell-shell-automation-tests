@@ -49,7 +49,7 @@ _DO_CS_TOPOLOGY_INFO: TopologyInfo = create_autospec(
 )
 _RESERVATION_ID = "f91adb5c-3a5e-4689-98e3-c28be8d4b307"
 _CREATE_RESERVATION_INFO: CreateReservationResponseInfo = create_autospec(
-    CreateReservationResponseInfo, Reservation=Mock(Id=_RESERVATION_ID),
+    CreateReservationResponseInfo, Reservation=Mock(Id=_RESERVATION_ID)
 )
 _RESERVATION_STATUS_INFO_SETUP: ReservationSlimStatusInfo = create_autospec(
     ReservationSlimStatusInfo,
@@ -110,7 +110,7 @@ def do_reservation_resources_info(resource_name_in_do_reservation):
         ReservationDiagramLayoutResponseInfo,
         ResourceDiagramLayouts=[
             create_autospec(
-                ResourceDiagramLayoutInfo, ResourceName=resource_name_in_do_reservation,
+                ResourceDiagramLayoutInfo, ResourceName=resource_name_in_do_reservation
             )
         ],
     )

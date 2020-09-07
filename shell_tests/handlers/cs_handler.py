@@ -80,7 +80,7 @@ class CloudShellHandler:
                 raise e
 
             shell_name = re.search(
-                "named '(?P<name>.+)' already exists", err_msg,
+                "named '(?P<name>.+)' already exists", err_msg
             ).group("name")
 
             self._rest_api.update_shell(shell_path, shell_name)
