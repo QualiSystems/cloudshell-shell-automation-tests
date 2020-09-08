@@ -173,9 +173,9 @@ class ResourceHandler:
     def run_resource_commands(self, commands: List[ResourceCommand]):
         for command in commands:
             if command.mode is command.mode.CONFIG:
-                self.run_custom_command(command.command)
-            else:
                 self.run_custom_config_command(command.command)
+            else:
+                self.run_custom_command(command.command)
 
     def save(self, path_to_save: str, configuration_type: str) -> str:
         """Execute save command on the resource."""
