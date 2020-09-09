@@ -2,6 +2,7 @@ from functools import cached_property
 from io import BytesIO
 
 import tftpy
+from retrying import retry
 
 from shell_tests.configs import TFTPConfig
 from shell_tests.helpers.logger import logger
@@ -21,6 +22,10 @@ class TftpFileNotFoundError(TftpError):
         return f"File not found - {self.file_name}"
 
 
+def _retry_on_file_not_found(exception: Exception) -> bool:
+    return isinstance(exception, TftpFileNotFoundError)
+
+
 class TFTPHandler:
     def __init__(self, conf: TFTPConfig):
         self.conf = conf
@@ -30,6 +35,11 @@ class TFTPHandler:
         logger.info("Connecting to TFTP")
         return tftpy.TftpClient(self.conf.host)
 
+    @retry(
+        stop_max_attempt_number=10,
+        wait_fixed=3000,
+        retry_on_exception=_retry_on_file_not_found,
+    )
     def read_file(self, file_name: str) -> bytes:
         logger.info(f"Reading file {file_name} from TFTP")
         bio = BytesIO()
