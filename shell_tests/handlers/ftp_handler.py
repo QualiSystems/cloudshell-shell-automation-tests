@@ -2,6 +2,8 @@ import ftplib
 from functools import cached_property
 from io import BytesIO
 
+from retrying import retry
+
 from shell_tests.configs import FTPConfig
 from shell_tests.helpers.logger import logger
 
@@ -20,6 +22,10 @@ class FtpFileNotFoundError(FtpError):
         return f"File not found - {self.file_name}"
 
 
+def _retry_on_file_not_found(exception: Exception) -> bool:
+    return isinstance(exception, FtpFileNotFoundError)
+
+
 class FTPHandler:
     def __init__(self, conf: FTPConfig):
         self.conf = conf
@@ -32,6 +38,11 @@ class FTPHandler:
             session.login(self.conf.user, self.conf.password)
         return session
 
+    @retry(
+        stop_max_attempt_number=10,
+        wait_fixed=3000,
+        retry_on_exception=_retry_on_file_not_found,
+    )
     def read_file(self, file_name: str) -> bytes:
         logger.info(f"Reading file {file_name} from FTP")
         b_io = BytesIO()
@@ -43,6 +54,11 @@ class FTPHandler:
             raise e
         return b_io.getvalue()
 
+    @retry(
+        stop_max_attempt_number=10,
+        wait_fixed=3000,
+        retry_on_exception=_retry_on_file_not_found,
+    )
     def delete_file(self, file_name: str):
         logger.info(f"Deleting file {file_name}")
         try:

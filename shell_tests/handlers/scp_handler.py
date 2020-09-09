@@ -1,6 +1,7 @@
 from functools import cached_property
 
 import paramiko
+from retrying import retry
 
 from shell_tests.configs import SCPConfig
 from shell_tests.helpers.logger import logger
@@ -20,6 +21,10 @@ class ScpFileNotFoundError(ScpError):
         return f"File not found - {self.file_name}"
 
 
+def _retry_on_file_not_found(exception: Exception) -> bool:
+    return isinstance(exception, ScpFileNotFoundError)
+
+
 class SCPHandler:
     def __init__(self, conf: SCPConfig):
         self.conf = conf
@@ -31,6 +36,11 @@ class SCPHandler:
         transport.connect(None, self.conf.user, self.conf.password)
         return paramiko.SFTPClient.from_transport(transport)
 
+    @retry(
+        stop_max_attempt_number=10,
+        wait_fixed=3000,
+        retry_on_exception=_retry_on_file_not_found,
+    )
     def read_file(self, file_name: str) -> bytes:
         logger.info(f"Reading file {file_name} from SCP")
         try:
@@ -42,6 +52,11 @@ class SCPHandler:
             raise e
         return data
 
+    @retry(
+        stop_max_attempt_number=10,
+        wait_fixed=3000,
+        retry_on_exception=_retry_on_file_not_found,
+    )
     def delete_file(self, file_name: str):
         logger.info(f"Deleting file {file_name}")
         try:
