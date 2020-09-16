@@ -18,6 +18,7 @@ from cloudshell.api.cloudshell_api import (
 )
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 from cloudshell.rest.api import PackagingRestApiClient
+from retrying import retry
 from urllib3.exceptions import MaxRetryError
 
 from shell_tests.configs import CloudShellConfig
@@ -31,6 +32,10 @@ from shell_tests.helpers.cs_http import get_reservation_errors
 from shell_tests.helpers.logger import logger
 
 ReservationId = TypeVar("ReservationId", bound=str)
+
+
+def _retry_on_invalid_driver(exception: Exception) -> bool:
+    return "invalid driver" in str(exception).lower()
 
 
 class CloudShellHandler:
@@ -67,6 +72,11 @@ class CloudShellHandler:
             logger.warning(f"CloudShell {self.conf.host} is not alive")
             raise CSIsNotAliveError
 
+    @retry(
+        wait_exponential_multiplier=1000,
+        stop_max_attempt_number=7,
+        retry_on_exception=_retry_on_invalid_driver,
+    )
     def install_shell(self, shell_path: Path):
         shell_name = shell_path.name
         shell_path = str(shell_path)
