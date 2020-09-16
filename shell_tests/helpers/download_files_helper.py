@@ -44,4 +44,7 @@ class DownloadFile:
     def remove_downloaded_files(cls):
         logger.info("Deleting downloaded files")
         for path in cls._downloaded_files:
-            path.path.unlink(missing_ok=True)
+            try:
+                path.path.unlink(missing_ok=True)
+            except PermissionError:
+                pass  # ignore if can't delete
