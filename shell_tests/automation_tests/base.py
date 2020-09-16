@@ -44,7 +44,7 @@ class BaseResourceServiceTestCase(BaseTestCase):
 
     def id(self):  # noqa: A003
         id_ = unittest.TestCase.id(self)
-        return f"{id_}-{self.handler.name}-{type(self)}"
+        return f"{id_}-{self.handler.name}"
 
 
 class BaseSandboxTestCase(BaseTestCase):
