@@ -186,9 +186,9 @@ def get_test_suite(
     test_cases_map = TEST_CASES_MAP[handler.family][handler.device_type]
 
     if handler.family in AUTOLOAD_TEST_FOR_FAMILIES:
-        test_cases = [test_cases_map.get("autoload")]
+        test_cases = {test_cases_map.get("autoload")}
     else:
-        test_cases = []
+        test_cases = set()
 
     for command in handler.get_commands():
         test_case = test_cases_map.get(command.lower())
@@ -196,9 +196,9 @@ def get_test_suite(
             for optional_test_case in test_case:
                 assert issubclass(optional_test_case, OptionalTestCase)
                 if optional_test_case.is_suitable(handler, handler_storage):
-                    test_cases.append(optional_test_case.test_case())
+                    test_cases.add(optional_test_case.test_case())
         elif test_case and test_case not in test_cases:
-            test_cases.append(test_case)
+            test_cases.add(test_case)
 
     for test_case in test_cases:
         for test_name in TestLoader().getTestCaseNames(test_case):
