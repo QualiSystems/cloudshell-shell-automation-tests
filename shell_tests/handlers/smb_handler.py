@@ -207,17 +207,20 @@ class CloudShellSmbHandler:
 
     def download_logs(self, path_to_save: Path):
         logger.info("Downloading CS logs")
-        if path_to_save.exists():
-            shutil.rmtree(path_to_save)
-        path_to_save.mkdir()
+        try:
+            if path_to_save.exists():
+                shutil.rmtree(path_to_save)
+            path_to_save.mkdir()
 
-        shell_logs_path = path_to_save / "shell_logs"
-        installation_logs_path = path_to_save / "installation_logs"
-        shell_logs_path.mkdir()
-        installation_logs_path.mkdir()
+            shell_logs_path = path_to_save / "shell_logs"
+            installation_logs_path = path_to_save / "installation_logs"
+            shell_logs_path.mkdir()
+            installation_logs_path.mkdir()
 
-        self._smb_handler.download_r_dir(self._CS_LOGS_SHELL_DIR, shell_logs_path)
-        self._smb_handler.download_r_dir(
-            self._CS_LOGS_INSTALLATION_DIR, installation_logs_path
-        )
+            self._smb_handler.download_r_dir(
+                self._CS_LOGS_INSTALLATION_DIR, installation_logs_path
+            )
+            self._smb_handler.download_r_dir(self._CS_LOGS_SHELL_DIR, shell_logs_path)
+        except Exception as e:
+            logger.warning(f"Cannot download logs, error: {e}")
         logger.debug("CS logs downloaded")
