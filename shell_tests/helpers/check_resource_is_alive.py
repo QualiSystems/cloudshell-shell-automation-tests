@@ -23,6 +23,10 @@ def check_all_resources_is_alive(conf: MainConfig):
     }
     if conf.ftp_conf:
         resources_to_check["FTP"] = conf.ftp_conf.host
+    if conf.scp_conf:
+        resources_to_check["SCP"] = conf.scp_conf.host
+    if conf.tftp_conf:
+        resources_to_check["TFTP"] = conf.tftp_conf.host
     if conf.do_conf:
         resources_to_check["Do"] = conf.do_conf.host
     else:
