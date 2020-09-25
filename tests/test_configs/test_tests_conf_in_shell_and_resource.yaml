@@ -3,7 +3,8 @@ Do:
   User: do_admin
   Password: do_password
   Domain: do_domain
-  CS Version: CloudShell 9.3 GA IL
+  CloudShell:
+    CS Version: CloudShell 9.3 GA IL
 CloudShell:
   Host: 192.168.1.1
   User: admin
