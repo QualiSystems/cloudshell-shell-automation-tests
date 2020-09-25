@@ -19,7 +19,7 @@ from shell_tests.configs import MainConfig
 from shell_tests.errors import CreationReservationError, CSIsNotAliveError
 from shell_tests.handlers import cs_handler
 from shell_tests.handlers.cs_handler import CloudShellHandler
-from shell_tests.helpers.do_helpers import CSCreator
+from shell_tests.handlers.do_handler import DoHandler
 
 from tests.base import CONFIGS_DIR
 
@@ -101,7 +101,7 @@ def api_mock(conf: MainConfig):
 
 @pytest.fixture
 def resource_name_in_do_reservation(conf: MainConfig):
-    return f"{conf.do_conf.cs_version}_cf83-daf3"
+    return f"{conf.do_conf.cs_on_do_conf.cs_version}_cf83-daf3"
 
 
 @pytest.fixture
@@ -125,11 +125,11 @@ def test_do_reservation_is_not_started_in_time(conf, api_mock, sleepless, monkey
     api_mock.GetReservationStatus.return_value = _RESERVATION_STATUS_INFO_SETUP
 
     # run
-    do = CSCreator(conf)
+    do = DoHandler(conf)
     with pytest.raises(
         CreationReservationError, match=r"The reservation \S+ doesn't started"
     ):
-        do.create_cloudshell()
+        do.prepare()
 
     # check
     expected_calls = [
@@ -138,7 +138,7 @@ def test_do_reservation_is_not_started_in_time(conf, api_mock, sleepless, monkey
             "auto tests",
             conf.do_conf.user,
             120,
-            topologyFullPath=f"Environments/{conf.do_conf.cs_version}",
+            topologyFullPath=f"Environments/{conf.do_conf.cs_on_do_conf.cs_version}",
             globalInputs=[],
         ),
         *[call.GetReservationStatus(_RESERVATION_ID)] * 60,
@@ -172,12 +172,12 @@ def test_cs_is_not_installed_properly_on_do(
         do_reservation_resources_info
     )
     api_mock.GetResourceDetails.return_value = _CS_RESOURCE_INFO
-    topology_full_name = f"Environments/{conf.do_conf.cs_version}"
+    topology_full_name = f"Environments/{conf.do_conf.cs_on_do_conf.cs_version}"
 
     # run
-    do = CSCreator(conf)
-    with pytest.raises(CSIsNotAliveError, match=r"All 5 CloudShells are not started"):
-        do.create_cloudshell()
+    do = DoHandler(conf)
+    with pytest.raises(CSIsNotAliveError):
+        do.prepare()
 
     # check
     expected_calls = [
@@ -194,8 +194,8 @@ def test_cs_is_not_installed_properly_on_do(
         call.GetReservationResourcesPositions(_RESERVATION_ID),
         call.GetResourceDetails(resource_name_in_do_reservation),
         call.EndReservation(_RESERVATION_ID),
-        call.GetReservationStatus(_RESERVATION_ID),
     ] * 5
+    expected_calls.append(call.EndReservation(_RESERVATION_ID))
     assert api_mock.method_calls == expected_calls
 
 
@@ -218,14 +218,14 @@ def test_cs_is_started(
         do_reservation_resources_info
     )
     api_mock.GetResourceDetails.return_value = _CS_RESOURCE_INFO
-    topology_full_name = f"Environments/{conf.do_conf.cs_version}"
+    topology_full_name = f"Environments/{conf.do_conf.cs_on_do_conf.cs_version}"
 
     # run
-    do = CSCreator(conf)
-    cs = do.create_cloudshell()
+    do = DoHandler(conf)
+    do.prepare()
 
     # check
-    assert isinstance(cs, CloudShellHandler)
+    assert conf.cs_conf.host == _CS_IP
     expected_calls = [
         call.GetTopologiesByCategory(""),
         call.CreateImmediateTopologyReservation(
@@ -244,10 +244,5 @@ def test_cs_is_started(
 
     # finish
     do.finish()
-    expected_calls.extend(
-        [
-            call.EndReservation(_RESERVATION_ID),
-            call.GetReservationStatus(_RESERVATION_ID),
-        ]
-    )
+    expected_calls.extend([call.EndReservation(_RESERVATION_ID)])
     assert api_mock.method_calls == expected_calls

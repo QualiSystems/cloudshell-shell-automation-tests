@@ -142,6 +142,9 @@ class CSCreator:
             conf = self._get_cs_config(self._cs_on_do_sandbox_handler)
             cs_handler = CloudShellHandler(conf)
             cs_handler.wait_for_cs_is_started()
+        except CSIsNotAliveError:
+            self.finish()
+            raise
         except Exception as e:
             logger.exception(f"The CS is not started {e}")
             raise e
@@ -209,6 +212,7 @@ class NetworkingAppsHandler:
         return SandboxHandler.create(conf, self._do_handler)
 
     def finish(self):
-        logger.info("Stopping Networking Apps on Do")
-        for sandbox_handler in self._sandbox_handlers:
-            sandbox_handler.end_reservation(wait=False)
+        if self._sandbox_handlers:
+            logger.info("Stopping Networking Apps on Do")
+            for sandbox_handler in self._sandbox_handlers:
+                sandbox_handler.end_reservation(wait=False)
