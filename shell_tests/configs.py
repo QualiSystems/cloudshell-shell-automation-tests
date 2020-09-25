@@ -22,10 +22,14 @@ class NetworkingAppConf(BaseModel):
     blueprint_name: str = Field(..., alias="Blueprint Name")
 
 
-class DoConfig(CloudShellConfig):
+class CSonDoConfig(BaseModel):
     cs_version: str = Field("CloudShell 9.3 GA - IL", alias="CS Version")
     delete_cs: bool = Field(True, alias="Delete CS")
     cs_specific_version: str = Field("", alias="CS Specific Version")
+
+
+class DoConfig(CloudShellConfig):
+    cs_on_do_conf: Optional[CSonDoConfig] = Field(None, alias="CloudShell")
     networking_apps: List[NetworkingAppConf] = Field([], alias="Networking Apps")
 
 
@@ -178,8 +182,9 @@ class MainConfig(BaseModel):
 
     @validator("cs_conf", pre=True, always=True)
     def _check_cs_conf_or_do(cls, cs_conf, values: dict):
-        if not values.get("do_conf") and not cs_conf:
-            raise ValueError("either Do config or CloudShell config is required")
+        cs_on_do_conf = getattr(values.get("do_conf"), "cs_on_do_conf", None)
+        if not cs_on_do_conf and not cs_conf:
+            raise ValueError("either CS on Do config or CloudShell config is required")
         return cs_conf
 
     @validator(
