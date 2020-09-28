@@ -1,14 +1,16 @@
+from concurrent import futures as ft
 from contextlib import nullcontext
 from pathlib import Path
-from typing import Optional
+from threading import Event
+from typing import Optional, Set
 
 from shell_tests.configs import MainConfig
+from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.do_handler import DoHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
 from shell_tests.helpers.check_resource_is_alive import check_all_resources_is_alive
 from shell_tests.helpers.handler_storage import HandlerStorage
-from shell_tests.helpers.threads_helper import wait_for_end_threads
 from shell_tests.report_result import Reporting
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
 
@@ -30,21 +32,34 @@ class AutomatedTestsRunner:
 
     def _run_cs_tests(self, cs_handler: CloudShellHandler) -> Reporting:
         report = Reporting()
+        stop_flag = Event()
         handler_storage = HandlerStorage(cs_handler, self._conf)
-        threads = [
-            RunTestsForSandbox(sandbox_handler, handler_storage, report)
-            for sandbox_handler in handler_storage.sandbox_handlers
-        ]
-        try:
-            for thread in threads:
-                thread.start()
-            wait_for_end_threads(threads)
-        except KeyboardInterrupt:
-            for thread in threads:
-                thread.stop()
-            wait_for_end_threads(threads)
-            raise
-        finally:
-            handler_storage.cs_smb_handler.download_logs(Path("cs_logs"))
-            handler_storage.finish()
+        run_tests_instances = {
+            RunTestsForSandbox(sh, handler_storage, report, stop_flag)
+            for sh in handler_storage.sandbox_handlers
+        }
+
+        with ft.ThreadPoolExecutor(5, thread_name_prefix="Sandbox-thread") as executor:
+            futures = {executor.submit(rti.run) for rti in run_tests_instances}
+            try:
+                self._wait_for_futures(futures, stop_flag)
+            except KeyboardInterrupt:
+                stop_flag.set()
+                self._wait_for_futures(futures, stop_flag)
+                raise
+            finally:
+                handler_storage.cs_smb_handler.download_logs(Path("cs_logs"))
+                handler_storage.finish()
         return report
+
+    @staticmethod
+    def _wait_for_futures(futures: Set[ft.Future], stop_flag: Event):
+        done, undone = ft.wait(futures, return_when=ft.FIRST_EXCEPTION)
+        for f in done:
+            if f.exception() is not None:
+                stop_flag.set()
+                ft.wait(futures)
+        exceptions = set(filter(None, map(ft.Future.exception, futures)))
+        if exceptions:
+            emsg = f"Sandbox threads finished with exceptions: {exceptions}"
+            raise BaseAutomationException(emsg)

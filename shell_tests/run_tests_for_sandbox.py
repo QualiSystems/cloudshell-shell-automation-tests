@@ -1,5 +1,6 @@
 import threading
 from functools import cached_property
+from threading import Event
 from typing import List
 
 from shell_tests.handlers.resource_handler import ResourceHandler
@@ -10,10 +11,11 @@ from shell_tests.helpers.tests_helpers import (
     get_test_suite,
     run_test_suite,
 )
+from shell_tests.helpers.threads_helper import set_thread_name_with_prefix
 from shell_tests.report_result import Reporting, ResourceReport, SandboxReport
 
 
-class RunTestsForSandbox(threading.Thread):
+class RunTestsForSandbox:
     REPORT_LOCK = threading.Lock()
 
     def __init__(
@@ -21,17 +23,13 @@ class RunTestsForSandbox(threading.Thread):
         sandbox_handler: SandboxHandler,
         handler_storage: HandlerStorage,
         reporting: Reporting,
+        stop_flag: Event,
     ):
         """Run Tests based on the Sandbox."""
-        super().__init__(name=f"Thread-{sandbox_handler.conf.name}")
-
         self.sandbox_handler = sandbox_handler
         self.handler_storage = handler_storage
         self.reporting = reporting
-
-        self._stop_flag = False
-        self._current_test_suite = None
-        self._test_runner = None
+        self._stop_flag = stop_flag
 
     @cached_property
     def resource_handlers(self) -> List[ResourceHandler]:
@@ -43,22 +41,24 @@ class RunTestsForSandbox(threading.Thread):
             self.sandbox_handler.add_resource_to_reservation(handler)
         return handlers
 
-    def stop(self):
-        if self._current_test_suite:
-            self._current_test_suite.stop()
-        self._stop_flag = True
+    def _is_stop_set(self):
+        if self._stop_flag.is_set():
+            raise KeyboardInterrupt
 
     def run(self):
         """Run tests for the Sandbox and resources."""
-        if self._stop_flag:
-            raise KeyboardInterrupt
+        set_thread_name_with_prefix(self.sandbox_handler.conf.name)
+        self._is_stop_set()
         sandbox_report = self._run_sandbox_tests()
 
         for resource_handler in self.resource_handlers:
+            self._is_stop_set()
             resource_handler.run_resource_commands(resource_handler.conf.setup_commands)
+            self._is_stop_set()
             if resource_handler.conf.tests_conf.run_tests:
                 resource_report = self._run_resource_tests(resource_handler)
                 sandbox_report.resources_reports.append(resource_report)
+                self._is_stop_set()
                 resource_handler.run_resource_commands(
                     resource_handler.conf.teardown_commands
                 )
@@ -71,12 +71,11 @@ class RunTestsForSandbox(threading.Thread):
 
     def _run_resource_tests(self, resource_handler: ResourceHandler) -> ResourceReport:
         """Run tests based on the resource type and config."""
-        self._current_test_suite = get_test_suite(
-            resource_handler, self.handler_storage
+        test_suite = get_test_suite(
+            self._stop_flag, resource_handler, self.handler_storage
         )
         test_runner = get_test_runner()
-        is_success, test_result = run_test_suite(test_runner, self._current_test_suite)
-        self._current_test_suite = None
+        is_success, test_result = run_test_suite(test_runner, test_suite)
 
         return ResourceReport(
             resource_handler.name,

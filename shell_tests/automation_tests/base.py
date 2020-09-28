@@ -1,5 +1,6 @@
 import unittest
 from abc import abstractmethod
+from threading import Event
 from typing import Type
 
 from shell_tests.configs import TestsConfig
@@ -8,6 +9,15 @@ from shell_tests.helpers.handler_storage import HandlerStorage
 
 
 class BaseTestCase(unittest.TestCase):
+    def __init__(self, method_name: str, stop_flag: Event):
+        super().__init__(method_name)
+        self._stop_flag = stop_flag
+
+    def _callTestMethod(self, method):
+        if self._stop_flag.is_set():
+            raise KeyboardInterrupt
+        super()._callTestMethod(method)
+
     def _add_decorator_for_expect_failed_func(
         self, method_name: str, tests_conf: TestsConfig
     ):
@@ -33,11 +43,12 @@ class BaseResourceServiceTestCase(BaseTestCase):
     def __init__(
         self,
         method_name: str,
+        stop_flag: Event,
         handler: ResourceHandler,
         handler_storage: HandlerStorage,
     ):
         """Base Resource and Service Test Case."""
-        super().__init__(method_name)
+        super().__init__(method_name, stop_flag)
         self.handler = handler
         self.handler_storage = handler_storage
         self._add_decorator_for_expect_failed_func(method_name, handler.conf.tests_conf)
@@ -48,9 +59,9 @@ class BaseResourceServiceTestCase(BaseTestCase):
 
 
 class BaseSandboxTestCase(BaseTestCase):
-    def __init__(self, method_name, sandbox_handler):
+    def __init__(self, method_name, stop_flag, sandbox_handler):
         """Base Sandbox Test Case."""
-        super().__init__(method_name)
+        super().__init__(method_name, stop_flag)
         self.sandbox_handler = sandbox_handler
         self._add_decorator_for_expect_failed_func(
             method_name, sandbox_handler.tests_conf
