@@ -32,7 +32,7 @@ class SandboxHandler:
         try:
             cs_handler.wait_reservation_is_started(rid)
         except BaseException as e:
-            cs_handler.end_reservation(rid, wait=False)
+            cs_handler.end_reservation(rid, conf.name, wait=False)
             raise e
         return cls(conf, rid, cs_handler)
 
@@ -55,7 +55,9 @@ class SandboxHandler:
 
     def end_reservation(self, wait: bool = True):
         """End the reservation."""
-        return self._cs_handler.end_reservation(self.reservation_id, wait)
+        return self._cs_handler.end_reservation(
+            self.reservation_id, self.conf.name, wait
+        )
 
     def delete_reservation(self):
         """Delete the reservation."""
