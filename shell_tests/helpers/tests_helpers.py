@@ -1,4 +1,5 @@
 from io import StringIO
+from threading import Event
 from typing import Tuple, Type
 from unittest import TestLoader, TestSuite, TextTestRunner
 
@@ -151,29 +152,9 @@ AUTOLOAD_TEST_FOR_FAMILIES = {
 }
 
 
-class PatchedTestSuite(TestSuite):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.result = None
-        self._stop = False
-
-    def run(self, result):
-        if self._stop:
-            result.stop()
-
-        self.result = result
-        super().run(result)
-
-    def stop(self):
-        self._stop = True
-
-        if self.result:
-            self.result.stop()
-
-
 def get_test_suite(
-    handler: ResourceHandler, handler_storage: HandlerStorage
-) -> PatchedTestSuite:
+    stop_flag: Event, handler: ResourceHandler, handler_storage: HandlerStorage
+) -> TestSuite:
     if handler.device_type == DeviceType.WITHOUT_DEVICE:
         logger.warning(
             f'"{handler.name}" is a fake device so test only installing env and trying '
@@ -182,7 +163,7 @@ def get_test_suite(
     elif handler.device_type == DeviceType.SIMULATOR:
         logger.warning(f'"{handler.name}" is a simulator, testing only an Autoload')
 
-    test_suite = PatchedTestSuite()
+    test_suite = TestSuite()
     test_cases_map = TEST_CASES_MAP[handler.family][handler.device_type]
 
     if handler.family in AUTOLOAD_TEST_FOR_FAMILIES:
@@ -205,7 +186,7 @@ def get_test_suite(
 
     for test_case in test_cases:
         for test_name in TestLoader().getTestCaseNames(test_case):
-            test_inst = test_case(test_name, handler, handler_storage)
+            test_inst = test_case(test_name, stop_flag, handler, handler_storage)
             test_suite.addTest(test_inst)
 
     return test_suite
@@ -222,7 +203,7 @@ def get_test_runner() -> Type[TextTestRunner]:
 
 
 def run_test_suite(
-    test_runner: Type[TextTestRunner], test_suite: PatchedTestSuite
+    test_runner: Type[TextTestRunner], test_suite: TestSuite
 ) -> Tuple[bool, str]:
     test_result = StringIO()
     is_success = test_runner(test_result, verbosity=2).run(test_suite).wasSuccessful()
