@@ -1,4 +1,4 @@
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from concurrent import futures as ft
 from typing import Iterable, Optional, Set
 
 from retrying import retry
@@ -28,20 +28,23 @@ class DoHandler:
             self._do_handler, conf.do_conf.networking_apps
         )
 
-    def prepare(self):
-        try:
-            executor = ThreadPoolExecutor(5, thread_name_prefix="Do-reservation")
+    def _prepare(self):
+        with ft.ThreadPoolExecutor(5, thread_name_prefix="Do-reservation") as executor:
             cs_future = None
             if self._conf.do_conf.cs_on_do_conf is not None:
                 cs_future = self._cs_creator.create_cloudshell(executor)
             app_futures = self._networking_apps_handler.create_apps(executor)
 
-            for future in as_completed(app_futures):
+            for future in ft.as_completed(app_futures):
                 handler: DeploymentResourceHandler = future.result()
                 self._update_resource_conf_from_deployment_resource(handler)
             if cs_future is not None:
                 cs_conf = cs_future.result()
                 self._conf.cs_conf = cs_conf
+
+    def prepare(self):
+        try:
+            self._prepare()
         except Exception:
             self.finish()
             raise
@@ -151,7 +154,7 @@ class CSCreator:
         else:
             return conf
 
-    def create_cloudshell(self, executor: ThreadPoolExecutor) -> Future:
+    def create_cloudshell(self, executor: ft.ThreadPoolExecutor) -> ft.Future:
         return executor.submit(self._create_cloudshell)
 
     def finish(self):
@@ -176,7 +179,7 @@ class NetworkingAppsHandler:
         self._sandbox_handlers.add(sandbox_handler)
         return self._get_app_resource(sandbox_handler, app_conf)
 
-    def create_apps(self, executor: ThreadPoolExecutor) -> Set[Future]:
+    def create_apps(self, executor: ft.ThreadPoolExecutor) -> Set[ft.Future]:
         return {
             executor.submit(self._create_app, app_conf)
             for app_conf in self._networking_app_configs
