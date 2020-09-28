@@ -284,9 +284,10 @@ class CloudShellHandler:
         self._api.DeleteReservation(reservation_id)
         logger.debug("Deleted the reservation")
 
-    def end_reservation(self, reservation_id: ReservationId, wait: bool = True):
-        """End the reservation."""
-        logger.info(f"Ending a reservation for {reservation_id}")
+    def end_reservation(
+        self, reservation_id: ReservationId, name: str, wait: bool = True
+    ):
+        logger.info(f"Ending a reservation for {name} {reservation_id}")
         self._api.EndReservation(reservation_id)
         if wait:
             for _ in range(30):
@@ -353,7 +354,10 @@ class CloudShellHandler:
 
     def get_topologies_by_category(self, category_name: str) -> List[str]:
         """Get available topology names by category name."""
-        logger.info(f"Getting topologies for a category {category_name}")
+        if category_name:
+            logger.info(f"Getting topologies for a category {category_name}")
+        else:
+            logger.info("Getting topologies for all categories")
         output = self._api.GetTopologiesByCategory(category_name).Topologies
         logger.debug(f"Got topologies {sorted(output)}")
         return output
