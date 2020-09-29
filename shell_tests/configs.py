@@ -5,7 +5,10 @@ from typing import Dict, List, Optional
 import yaml
 from pydantic import BaseModel, Field, validator
 
+from shell_tests.helpers.config_helpers import str_version_to_tuple
 from shell_tests.helpers.download_files_helper import DownloadFile
+
+MIN_COMPATIBLE_CONF_VERSION = "0.13"
 
 
 class CloudShellConfig(BaseModel):
@@ -165,6 +168,7 @@ class VcenterConfig(BaseModel):
 
 
 class MainConfig(BaseModel):
+    version: str = Field(..., alias="Version")
     do_conf: Optional[DoConfig] = Field(None, alias="Do")
     cs_conf: Optional[CloudShellConfig] = Field(None, alias="CloudShell")
     shells_conf: List[ShellConfig] = Field(..., alias="Shells")
@@ -179,6 +183,13 @@ class MainConfig(BaseModel):
     sandboxes_conf: List[SandboxConfig] = Field(..., alias="Sandboxes")
     blueprints_conf: List[BlueprintConfig] = Field([], alias="Blueprints")
     vcenter_conf: Optional[VcenterConfig] = Field(None, alias="vCenter")
+
+    @validator("version")
+    def _is_compatible_version(cls, v: str):
+        if str_version_to_tuple(v) < str_version_to_tuple(MIN_COMPATIBLE_CONF_VERSION):
+            emsg = f"Minimum compatible config version is {MIN_COMPATIBLE_CONF_VERSION}"
+            raise ValueError(emsg)
+        return v
 
     @validator("cs_conf", pre=True, always=True)
     def _check_cs_conf_or_do(cls, cs_conf, values: dict):
