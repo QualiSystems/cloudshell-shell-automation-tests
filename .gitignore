@@ -11,3 +11,4 @@ shell-tests.log
 .tox/
 /.coverage
 tmp-shells/
+shells/

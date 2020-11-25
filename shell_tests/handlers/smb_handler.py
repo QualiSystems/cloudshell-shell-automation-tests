@@ -222,5 +222,8 @@ class CloudShellSmbHandler:
             )
             self._smb_handler.download_r_dir(self._CS_LOGS_SHELL_DIR, shell_logs_path)
         except Exception as e:
-            logger.warning(f"Cannot download logs, error: {e}")
+            if "path not found" in str(e).lower():
+                logger.info("Cannot find log dir")
+            else:
+                logger.warning(f"Cannot download logs, error: {e}")
         logger.debug("CS logs downloaded")
