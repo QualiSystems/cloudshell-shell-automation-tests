@@ -1,4 +1,5 @@
 import tempfile
+from contextlib import suppress
 from functools import cached_property
 from pathlib import Path
 from typing import List
@@ -44,7 +45,5 @@ class DownloadFile:
     def remove_downloaded_files(cls):
         logger.info("Deleting downloaded files")
         for path in cls._downloaded_files:
-            try:
+            with suppress(PermissionError):
                 path.path.unlink(missing_ok=True)
-            except PermissionError:
-                pass  # ignore if can't delete

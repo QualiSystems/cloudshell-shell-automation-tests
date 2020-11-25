@@ -3,6 +3,7 @@ import re
 import shutil
 import socket
 import zipfile
+from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
 from typing import BinaryIO, Iterator, List, Union
@@ -208,7 +209,7 @@ class CloudShellSmbHandler:
     def download_logs(self, path_to_save: Path):
         logger.info("Downloading CS logs")
         try:
-            if path_to_save.exists():
+            with suppress(FileNotFoundError):
                 shutil.rmtree(path_to_save)
             path_to_save.mkdir()
 
