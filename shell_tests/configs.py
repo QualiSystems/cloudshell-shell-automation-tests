@@ -112,20 +112,22 @@ class ServiceConfig(BaseModel):
     tests_conf: TestsConfig = Field(TestsConfig(), alias="Tests")
 
 
-class FTPConfig(BaseModel):
+class HostConfig(BaseModel):
     host: str = Field(..., alias="Host")
+
+    @property
+    def netloc(self) -> str:
+        return self.host.split("/", 1)[0]
+
+    @property
+    def path(self) -> str:
+        path = self.host.split("/", 1)[-1].removesuffix("/")
+        return f"/{path}"
+
+
+class HostWithUserConfig(HostConfig):
     user: Optional[str] = Field(None, alias="User")
     password: Optional[str] = Field(None, alias="Password")
-
-
-class SCPConfig(BaseModel):
-    host: str = Field(..., alias="Host")
-    user: Optional[str] = Field(None, alias="User")
-    password: Optional[str] = Field(None, alias="Password")
-
-
-class TFTPConfig(BaseModel):
-    host: str = Field(..., alias="Host")
 
 
 class ShellConfig(BaseModel):
@@ -177,9 +179,9 @@ class MainConfig(BaseModel):
         [], alias="Deployment Resources"
     )
     services_conf: List[ServiceConfig] = Field([], alias="Services")
-    ftp_conf: FTPConfig = Field(..., alias="FTP")
-    scp_conf: Optional[SCPConfig] = Field(None, alias="SCP")
-    tftp_conf: Optional[TFTPConfig] = Field(None, alias="TFTP")
+    ftp_conf: HostWithUserConfig = Field(..., alias="FTP")
+    scp_conf: Optional[HostWithUserConfig] = Field(None, alias="SCP")
+    tftp_conf: Optional[HostConfig] = Field(None, alias="TFTP")
     sandboxes_conf: List[SandboxConfig] = Field(..., alias="Sandboxes")
     blueprints_conf: List[BlueprintConfig] = Field([], alias="Blueprints")
     vcenter_conf: Optional[VcenterConfig] = Field(None, alias="vCenter")

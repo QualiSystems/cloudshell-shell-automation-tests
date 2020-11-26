@@ -2,9 +2,8 @@ import ftplib
 from functools import cached_property
 from io import BytesIO
 
-from retrying import retry
-
-from shell_tests.configs import FTPConfig
+from shell_tests.configs import HostWithUserConfig
+from shell_tests.handlers.abc_remote_file_handler import AbcRemoteFileHandler
 from shell_tests.helpers.logger import logger
 
 
@@ -22,12 +21,9 @@ class FtpFileNotFoundError(FtpError):
         return f"File not found - {self.file_name}"
 
 
-def _retry_on_file_not_found(exception: Exception) -> bool:
-    return isinstance(exception, FtpFileNotFoundError)
-
-
-class FTPHandler:
-    def __init__(self, conf: FTPConfig):
+class FTPHandler(AbcRemoteFileHandler):
+    def __init__(self, conf: HostWithUserConfig):
+        super().__init__(conf)
         self.conf = conf
 
     @cached_property
@@ -38,32 +34,25 @@ class FTPHandler:
             session.login(self.conf.user, self.conf.password)
         return session
 
-    @retry(
-        stop_max_attempt_number=10,
-        wait_fixed=3000,
-        retry_on_exception=_retry_on_file_not_found,
-    )
-    def read_file(self, file_name: str) -> bytes:
-        logger.info(f"Reading file {file_name} from FTP")
+    def _retry_on_file_not_found(self, exception: Exception) -> bool:
+        return isinstance(exception, FtpFileNotFoundError)
+
+    def _read_file(self, file_path: str) -> bytes:
+        logger.info(f"Reading file {file_path} from FTP")
         b_io = BytesIO()
         try:
-            self.session.retrbinary(f"RETR {file_name}", b_io.write)
+            self.session.retrbinary(f"RETR {file_path}", b_io.write)
         except ftplib.Error as e:
             if str(e).startswith("550 No such file"):
-                raise FtpFileNotFoundError(file_name)
+                raise FtpFileNotFoundError(file_path)
             raise e
         return b_io.getvalue()
 
-    @retry(
-        stop_max_attempt_number=10,
-        wait_fixed=3000,
-        retry_on_exception=_retry_on_file_not_found,
-    )
-    def delete_file(self, file_name: str):
-        logger.info(f"Deleting file {file_name}")
+    def _delete_file(self, file_path: str):
+        logger.info(f"Deleting file {file_path}")
         try:
-            self.session.delete(file_name)
+            self.session.delete(file_path)
         except ftplib.Error as e:
             if str(e).startswith("550 No such file"):
-                raise FtpFileNotFoundError(file_name)
+                raise FtpFileNotFoundError(file_path)
             raise e
