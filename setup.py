@@ -15,6 +15,7 @@ setup(
     version=get_file_content("version.txt").strip(),
     description="QualiSystems automation tests for Shells",
     include_package_data=True,
+    python_requires="~=3.9",
     entry_points={
         "console_scripts": ["cloudshell-shell-automation-tests = shell_tests.cli:cli"]
     },
