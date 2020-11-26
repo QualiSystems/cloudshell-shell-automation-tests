@@ -22,11 +22,11 @@ def check_all_resources_is_alive(conf: MainConfig):
         if resource.device_ip
     }
     if conf.ftp_conf:
-        resources_to_check["FTP"] = conf.ftp_conf.host
+        resources_to_check["FTP"] = conf.ftp_conf.netloc
     if conf.scp_conf:
-        resources_to_check["SCP"] = conf.scp_conf.host
+        resources_to_check["SCP"] = conf.scp_conf.netloc
     if conf.tftp_conf:
-        resources_to_check["TFTP"] = conf.tftp_conf.host
+        resources_to_check["TFTP"] = conf.tftp_conf.netloc
     if conf.do_conf:
         resources_to_check["Do"] = conf.do_conf.host
     else:
