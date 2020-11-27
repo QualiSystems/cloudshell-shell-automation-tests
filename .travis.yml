@@ -1,12 +1,12 @@
 language: python
-python: 3.8
+python: 3.9
 jobs:
   include:
     - if: branch = master
-      env: TOXENV=py38-master
+      env: TOXENV=py39-master
       after_success: codecov
     - if: branch != master
-      env: TOXENV=py38-dev
+      env: TOXENV=py39-dev
       after_success: codecov
     - env: TOXENV=build
     - env: TOXENV=pre-commit
