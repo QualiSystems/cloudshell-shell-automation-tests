@@ -14,7 +14,7 @@ def cli():
     pass
 
 
-@cli.command("run_tests")
+@cli.command("run-tests")
 @click.argument("test_conf", type=PathPath(exists=True, dir_okay=False))
 def run_tests(test_conf: Path):
     try:

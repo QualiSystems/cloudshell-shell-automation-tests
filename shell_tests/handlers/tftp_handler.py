@@ -2,6 +2,7 @@ from functools import cached_property
 from io import BytesIO
 
 import tftpy
+from retrying import retry
 
 from shell_tests.handlers.abc_remote_file_handler import AbcRemoteFileHandler
 from shell_tests.helpers.logger import logger
@@ -26,14 +27,20 @@ def _retry_on_file_not_found(exception: Exception) -> bool:
 
 
 class TFTPHandler(AbcRemoteFileHandler):
+    RETRY_STOP_MAX_ATTEMPT_NUM = 10
+    RETRY_WAIT_FIXED = 3000
+    IS_RETRY_FUNC = _retry_on_file_not_found
+
     @cached_property
     def session(self):
         logger.info("Connecting to TFTP")
         return tftpy.TftpClient(self.conf.host)
 
-    def _retry_on_file_not_found(self, exception: Exception) -> bool:
-        return isinstance(exception, TftpFileNotFoundError)
-
+    @retry(
+        stop_max_attempt_number=RETRY_STOP_MAX_ATTEMPT_NUM,
+        wait_fixed=RETRY_WAIT_FIXED,
+        retry_on_exception=IS_RETRY_FUNC,
+    )
     def _read_file(self, file_path: str) -> bytes:
         logger.info(f"Reading file {file_path} from TFTP")
         bio = BytesIO()
@@ -45,6 +52,11 @@ class TFTPHandler(AbcRemoteFileHandler):
             raise e
         return bio.getvalue()
 
+    @retry(
+        stop_max_attempt_number=RETRY_STOP_MAX_ATTEMPT_NUM,
+        wait_fixed=RETRY_WAIT_FIXED,
+        retry_on_exception=IS_RETRY_FUNC,
+    )
     def _delete_file(self, file_path: str):
         # todo find ability to delete file after TFTP
         logger.warning("We cannot delete files from TFTP server.")
