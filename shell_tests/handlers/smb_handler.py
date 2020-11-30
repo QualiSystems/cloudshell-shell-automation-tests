@@ -3,7 +3,9 @@ import re
 import shutil
 import socket
 import zipfile
+from collections.abc import Callable
 from contextlib import suppress
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import BinaryIO, Iterator, List, Union
@@ -13,6 +15,10 @@ from smb.SMBConnection import OperationFailure, SMBConnection
 
 from shell_tests.configs import CloudShellConfig
 from shell_tests.helpers.logger import logger
+from shell_tests.helpers.smb_helpers import (
+    FilterByFileNameInIterable,
+    FilterByLastWriteTime,
+)
 
 
 class SmbHandler:
@@ -122,16 +128,22 @@ class SmbHandler:
         with open(l_file_path, "wb") as file_obj:
             file_obj.write(self.get_r_file(r_file_path))
 
-    def download_r_dir(self, r_dir_path: str, l_dir_path: Path):
+    def download_r_dir(
+        self,
+        r_dir_path: str,
+        l_dir_path: Path,
+        filter_fn: Callable[[SharedFile], bool] = None,
+    ):
         l_dir_path = Path(l_dir_path)
         for smb_file in self.ls(r_dir_path):
-            new_l_file_path = l_dir_path / smb_file.filename
-            r_file_path = os.path.join(r_dir_path, smb_file.filename)
-            if smb_file.isDirectory:
-                new_l_file_path.mkdir()
-                self.download_r_dir(r_file_path, new_l_file_path)
-            else:
-                self.download_r_file(r_file_path, new_l_file_path)
+            if not filter_fn or filter_fn(smb_file):
+                new_l_file_path = l_dir_path / smb_file.filename
+                r_file_path = os.path.join(r_dir_path, smb_file.filename)
+                if smb_file.isDirectory:
+                    new_l_file_path.mkdir()
+                    self.download_r_dir(r_file_path, new_l_file_path)
+                else:
+                    self.download_r_file(r_file_path, new_l_file_path)
 
 
 class CloudShellSmbHandler:
@@ -206,7 +218,9 @@ class CloudShellSmbHandler:
             if standard.name not in installed_standards:
                 self._add_cs_standard_file_path(standard)
 
-    def download_logs(self, path_to_save: Path):
+    def download_logs(
+        self, path_to_save: Path, start_time: datetime, reservation_ids: set[str]
+    ):
         logger.info("Downloading CS logs")
         try:
             with suppress(FileNotFoundError):
@@ -219,9 +233,15 @@ class CloudShellSmbHandler:
             installation_logs_path.mkdir()
 
             self._smb_handler.download_r_dir(
-                self._CS_LOGS_INSTALLATION_DIR, installation_logs_path
+                self._CS_LOGS_INSTALLATION_DIR,
+                installation_logs_path,
+                FilterByLastWriteTime(start_time),
             )
-            self._smb_handler.download_r_dir(self._CS_LOGS_SHELL_DIR, shell_logs_path)
+            self._smb_handler.download_r_dir(
+                self._CS_LOGS_SHELL_DIR,
+                shell_logs_path,
+                FilterByFileNameInIterable(reservation_ids),
+            )
         except Exception as e:
             if "path not found" in str(e).lower():
                 logger.info("Cannot find log dir")
