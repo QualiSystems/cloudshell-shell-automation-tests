@@ -121,8 +121,10 @@ class HostConfig(BaseModel):
 
     @property
     def path(self) -> str:
-        path = self.host.split("/", 1)[-1].removesuffix("/")
-        return f"/{path}"
+        path = self.host.removeprefix(self.netloc)
+        if path:
+            path = f"/{path}"
+        return path
 
 
 class HostWithUserConfig(HostConfig):
