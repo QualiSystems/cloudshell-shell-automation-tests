@@ -153,6 +153,7 @@ class CloudShellSmbHandler:
     _CS_PYPI_PATH = fr"{_QS_PATH}CloudShell\\Server\\Config\\Pypi Server Repository\\"
     _CS_STANDARDS_PATH = fr"{_QS_PATH}CloudShell\\Server\\ToscaStandard\\"
     _CS_LOGS_SHELL_DIR = r"ProgramData\\QualiSystems\\logs"
+    _CS_LOGS_AUTOLOAD_DIR = fr"{_CS_LOGS_SHELL_DIR}\\inventory"
     _CS_LOGS_INSTALLATION_DIR = (
         fr"{_QS_PATH}TestShell\\ExecutionServer\\Logs\\QsPythonDriverHost"
     )
@@ -229,8 +230,10 @@ class CloudShellSmbHandler:
 
             shell_logs_path = path_to_save / "shell_logs"
             installation_logs_path = path_to_save / "installation_logs"
+            autoload_logs_path = shell_logs_path / "inventory"
             shell_logs_path.mkdir()
             installation_logs_path.mkdir()
+            autoload_logs_path.mkdir()
 
             self._smb_handler.download_r_dir(
                 self._CS_LOGS_INSTALLATION_DIR,
@@ -241,6 +244,11 @@ class CloudShellSmbHandler:
                 self._CS_LOGS_SHELL_DIR,
                 shell_logs_path,
                 FilterByFileNameInIterable(reservation_ids),
+            )
+            self._smb_handler.download_r_dir(
+                self._CS_LOGS_AUTOLOAD_DIR,
+                autoload_logs_path,
+                FilterByLastWriteTime(start_time),
             )
         except Exception as e:
             if "path not found" in str(e).lower():
