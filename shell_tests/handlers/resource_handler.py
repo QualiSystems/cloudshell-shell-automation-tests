@@ -12,7 +12,7 @@ from shell_tests.configs import (
     ResourceConfig,
     ServiceConfig,
 )
-from shell_tests.errors import BaseAutomationException
+from shell_tests.errors import BaseAutomationException, DependenciesBrokenError
 from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
 from shell_tests.handlers.shell_handler import ShellHandler
@@ -41,6 +41,7 @@ class ResourceHandler:
         self._shell_handler = shell_handler
 
         self.is_autoload_finished = False
+        self.dependencies_are_broken = False
         self._sandbox_handler = None
 
     @classmethod
@@ -118,15 +119,22 @@ class ResourceHandler:
             child_info.Name, namespace, {attribute_name: attribute_value}
         )
 
+    def _autoload(self, name: str):
+        try:
+            return self._cs_handler.resource_autoload(name)
+        except DependenciesBrokenError:
+            self.dependencies_are_broken = True
+            raise
+
     def autoload(self):
         """Run Autoload for the resource."""
         try:
-            self._cs_handler.resource_autoload(self.name)
+            self._autoload(self.name)
         except CloudShellAPIError as e:
             if str(e.code) != "129" and e.message != "no driver associated":
                 raise
             self._cs_handler.update_driver_for_the_resource(self.name, self.model)
-            self._cs_handler.resource_autoload(self.name)
+            self._autoload(self.name)
 
         if self.conf.additional_ports:
             self._add_additional_ports(self.conf.additional_ports)
@@ -143,9 +151,14 @@ class ResourceHandler:
 
     def execute_command(self, command_name: str, command_kwargs: Dict[str, str]) -> str:
         """Execute the command for the resource."""
-        return self.sandbox_handler.execute_resource_command(
-            self.name, command_name, command_kwargs
-        )
+        try:
+            output = self.sandbox_handler.execute_resource_command(
+                self.name, command_name, command_kwargs
+            )
+        except DependenciesBrokenError:
+            self.dependencies_are_broken = True
+            raise
+        return output
 
     def health_check(self) -> str:
         """Run health check command on the resource."""

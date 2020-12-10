@@ -26,6 +26,7 @@ from shell_tests.errors import (
     BaseAutomationException,
     CreationReservationError,
     CSIsNotAliveError,
+    DependenciesBrokenError,
 )
 from shell_tests.helpers.cs_helpers import generate_new_resource_name
 from shell_tests.helpers.cs_http import get_reservation_errors
@@ -234,7 +235,12 @@ class CloudShellHandler:
     def resource_autoload(self, resource_name: str):
         """Start autoload for the resource."""
         logger.info(f"Start Autoload for the {resource_name}")
-        self._api.AutoLoad(resource_name)
+        try:
+            self._api.AutoLoad(resource_name)
+        except CloudShellAPIError as e:
+            if "The PyPi server process might be down or inaccessible" in str(e):
+                raise DependenciesBrokenError() from e
+            raise e
         logger.debug("Finished Autoload")
 
     def update_driver_for_the_resource(self, resource_name: str, driver_name: str):
@@ -315,9 +321,19 @@ class CloudShellHandler:
         command_kwargs = [
             InputNameValue(key, value) for key, value in command_kwargs.items()
         ]
-        resp = self._api.ExecuteCommand(
-            reservation_id, target_name, target_type, command_name, command_kwargs, True
-        )
+        try:
+            resp = self._api.ExecuteCommand(
+                reservation_id,
+                target_name,
+                target_type,
+                command_name,
+                command_kwargs,
+                True,
+            )
+        except CloudShellAPIError as e:
+            if "The PyPi server process might be down or inaccessible" in str(e):
+                raise DependenciesBrokenError() from e
+            raise e
         logger.debug(f"Executed command, output {resp.Output}")
         return resp.Output
 

@@ -57,6 +57,11 @@ class BaseResourceServiceTestCase(BaseTestCase):
         id_ = unittest.TestCase.id(self)
         return f"{id_}-{self.handler.name}-{type(self)}"
 
+    def _callTestMethod(self, method):
+        if self.handler.dependencies_are_broken:
+            self.fail("Dependencies are broken")
+        super()._callTestMethod(method)
+
 
 class BaseSandboxTestCase(BaseTestCase):
     def __init__(self, method_name, stop_flag, sandbox_handler):

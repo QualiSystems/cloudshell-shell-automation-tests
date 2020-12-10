@@ -16,3 +16,7 @@ class DeploymentResourceNotFoundError(BaseAutomationException):
 
 class CreationReservationError(BaseAutomationException):
     """Error with creating a reservation."""
+
+
+class DependenciesBrokenError(BaseAutomationException):
+    """Dependencies are broken."""
