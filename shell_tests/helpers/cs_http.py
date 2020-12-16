@@ -1,5 +1,5 @@
 import base64
-from typing import Generator, Tuple
+from collections import Generator
 
 import requests
 from cryptography.hazmat.backends import default_backend
@@ -11,7 +11,7 @@ from shell_tests.configs import CloudShellConfig
 
 def get_reservation_errors(
     conf: CloudShellConfig, reservation_id: str
-) -> Generator[Tuple[str, str], None, None]:
+) -> Generator[tuple[str, str], None, None]:
     """Get error messages from activity tab in reservation."""
     url = f"http://{conf.host}/"
     workspace_api = f"{url}api/WorkspaceApi/"

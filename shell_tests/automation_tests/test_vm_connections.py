@@ -1,5 +1,4 @@
 import re
-from typing import Dict
 
 from shell_tests.automation_tests.base import BaseSandboxTestCase
 from shell_tests.errors import BaseAutomationException
@@ -15,7 +14,7 @@ class AppNetworkInfo(object):
         self.cs_name = cs_name
         self.blueprint_name = blueprint_name
         self.vm_uuid = vm_uuid
-        self.ports: Dict[str, PortInfo] = {}
+        self.ports: dict[str, PortInfo] = {}
 
 
 class PortInfo(object):

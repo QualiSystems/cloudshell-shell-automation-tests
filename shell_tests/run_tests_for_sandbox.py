@@ -1,7 +1,6 @@
 import threading
 from functools import cached_property
 from threading import Event
-from typing import List
 
 from shell_tests.handlers.resource_handler import ResourceHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
@@ -33,7 +32,7 @@ class RunTestsForSandbox:
         self._stop_flag = stop_flag
 
     @cached_property
-    def resource_handlers(self) -> List[ResourceHandler]:
+    def resource_handlers(self) -> list[ResourceHandler]:
         handlers = [
             self.handler_storage.resource_handlers_dict[name]
             for name in self.sandbox_handler.conf.resource_names
@@ -52,7 +51,7 @@ class RunTestsForSandbox:
         self._is_stop_set()
         sandbox_report = self._run_sandbox_tests()
 
-        for resource_handler in self.resource_handlers:
+        for resource_handler in self.resource_handlers:  # todo do it in threads
             self._is_stop_set()
             resource_handler.run_resource_commands(resource_handler.conf.setup_commands)
             self._is_stop_set()

@@ -1,6 +1,5 @@
 from io import StringIO
 from threading import Event
-from typing import Tuple, Type
 from unittest import TestLoader, TestSuite, TextTestRunner
 
 from teamcity import is_running_under_teamcity
@@ -192,7 +191,7 @@ def get_test_suite(
     return test_suite
 
 
-def get_test_runner() -> Type[TextTestRunner]:
+def get_test_runner() -> type[TextTestRunner]:
     if is_running_under_teamcity():
         logger.debug("Using TeamCity Test Runner")
         test_runner = TeamcityTestRunner
@@ -203,8 +202,8 @@ def get_test_runner() -> Type[TextTestRunner]:
 
 
 def run_test_suite(
-    test_runner: Type[TextTestRunner], test_suite: TestSuite
-) -> Tuple[bool, str]:
+    test_runner: type[TextTestRunner], test_suite: TestSuite
+) -> tuple[bool, str]:
     test_result = StringIO()
     is_success = test_runner(test_result, verbosity=2).run(test_suite).wasSuccessful()
     return is_success, test_result.getvalue()

@@ -2,7 +2,7 @@ import re
 import time
 from functools import cached_property
 from pathlib import Path
-from typing import Dict, List, Tuple, TypeVar
+from typing import TypeVar
 
 from cloudshell.api.cloudshell_api import (
     AttributeNameValue,
@@ -168,7 +168,7 @@ class CloudShellHandler:
 
     def _get_reservation_errors(
         self, reservation_id: ReservationId
-    ) -> List[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """Get error messages from activity tab in reservation."""
         errors = get_reservation_errors(self.conf, reservation_id)
         return list(errors)
@@ -214,7 +214,7 @@ class CloudShellHandler:
         return new_name
 
     def set_resource_attributes(
-        self, resource_name: str, namespace: str, attributes: Dict[str, str]
+        self, resource_name: str, namespace: str, attributes: dict[str, str]
     ):
         """Set attributes for the resource."""
         logger.info(f"Setting attributes for {resource_name}\n{attributes}")
@@ -227,7 +227,7 @@ class CloudShellHandler:
             [ResourceAttributesUpdateRequest(resource_name, attributes)]
         )
 
-    def get_resource_commands(self, resource_name: str) -> List[str]:
+    def get_resource_commands(self, resource_name: str) -> list[str]:
         logger.info(f"Get commands for the resource {resource_name}")
         resp = self._api.GetResourceCommands(resource_name)
         return [command.Name for command in resp.Commands]
@@ -263,7 +263,7 @@ class CloudShellHandler:
         reservation_id: ReservationId,
         service_model: str,
         service_name: str,
-        attributes: Dict[str, str],
+        attributes: dict[str, str],
     ):
         """Add the service to the reservation."""
         logger.info(
@@ -311,7 +311,7 @@ class CloudShellHandler:
         target_name: str,
         target_type: str,  # Service or Resource
         command_name: str,
-        command_kwargs: Dict[str, str],
+        command_kwargs: dict[str, str],
     ) -> str:
         """Execute a command on the target."""
         logger.debug(
@@ -342,7 +342,7 @@ class CloudShellHandler:
         reservation_id: ReservationId,
         resource_name: str,
         command_name: str,
-        command_kwargs: Dict[str, str],
+        command_kwargs: dict[str, str],
     ) -> str:
         """Execute a command on the resource."""
         return self._execute_command(
@@ -354,7 +354,7 @@ class CloudShellHandler:
         reservation_id: ReservationId,
         service_name: str,
         command_name: str,
-        command_kwargs: Dict[str, str],
+        command_kwargs: dict[str, str],
     ) -> str:
         """Execute a command for the service."""
         return self._execute_command(
@@ -368,7 +368,7 @@ class CloudShellHandler:
         logger.debug(f"Got details {output}")
         return output
 
-    def get_topologies_by_category(self, category_name: str) -> List[str]:
+    def get_topologies_by_category(self, category_name: str) -> list[str]:
         """Get available topology names by category name."""
         if category_name:
             logger.info(f"Getting topologies for a category {category_name}")
@@ -431,7 +431,7 @@ class CloudShellHandler:
 
     def get_resources_names_in_reservation(
         self, reservation_id: ReservationId
-    ) -> List[str]:
+    ) -> list[str]:
         """Get resources names in the reservation."""
         logger.info(f"Get resources names in the reservation {reservation_id}")
         resources_info = self._api.GetReservationResourcesPositions(
@@ -441,7 +441,7 @@ class CloudShellHandler:
         logger.info(f"Resources names are: {names}")
         return names
 
-    def refresh_vm_details(self, reservation_id: ReservationId, app_names: List[str]):
+    def refresh_vm_details(self, reservation_id: ReservationId, app_names: list[str]):
         """Refresh VM Details."""
         logger.info(f'Refresh VM Details for the "{app_names}"')
         self._api.RefreshVMDetails(reservation_id, app_names)

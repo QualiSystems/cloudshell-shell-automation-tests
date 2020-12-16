@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING
 
 from shell_tests.configs import SandboxConfig
 from shell_tests.errors import DeploymentResourceNotFoundError
@@ -64,7 +64,7 @@ class SandboxHandler:
         self._cs_handler.delete_reservation(self.reservation_id)
 
     def execute_resource_command(
-        self, resource_name: str, command_name: str, command_kwargs: Dict[str, str]
+        self, resource_name: str, command_name: str, command_kwargs: dict[str, str]
     ) -> str:
         """Execute the command for the resource."""
         return self._cs_handler.execute_command_on_resource(
@@ -72,7 +72,7 @@ class SandboxHandler:
         )
 
     def execute_service_command(
-        self, service_name: str, command_name: str, command_kwargs: Dict[str, str]
+        self, service_name: str, command_name: str, command_kwargs: dict[str, str]
     ) -> str:
         """Execute the command for the service."""
         return self._cs_handler.execute_command_on_service(
@@ -126,7 +126,7 @@ class SandboxHandler:
     def wait_for_started(self):
         self._cs_handler.wait_reservation_is_started(self.reservation_id)
 
-    def refresh_vm_details(self, app_names: List[str]):
+    def refresh_vm_details(self, app_names: list[str]):
         self._cs_handler.refresh_vm_details(self.reservation_id, app_names)
 
     def finish(self):
