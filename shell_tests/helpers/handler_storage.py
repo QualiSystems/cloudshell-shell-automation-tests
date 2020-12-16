@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, TypeVar
+from typing import Optional, TypeVar
 
 from shell_tests.configs import MainConfig
 from shell_tests.handlers.cs_handler import CloudShellHandler
@@ -14,7 +14,7 @@ from shell_tests.handlers.vcenter_handler import VcenterHandler
 Handler = TypeVar("Handler")
 
 
-def _get_handlers_dict(handlers_lst: List[Handler]) -> Dict[str, Handler]:
+def _get_handlers_dict(handlers_lst: list[Handler]) -> dict[str, Handler]:
     return {h.conf.name: h for h in handlers_lst}
 
 
@@ -67,7 +67,7 @@ class HandlerStorage:
         return self._vcenter_handler
 
     @property
-    def shell_handlers(self) -> List[ShellHandler]:
+    def shell_handlers(self) -> list[ShellHandler]:  # todo do it in threads
         if self._shell_handlers is None:
             self._shell_handlers = []
             try:
@@ -82,11 +82,11 @@ class HandlerStorage:
         return self._shell_handlers
 
     @property
-    def shell_handlers_dict(self) -> Dict[str, ShellHandler]:
+    def shell_handlers_dict(self) -> dict[str, ShellHandler]:
         return _get_handlers_dict(self.shell_handlers)
 
     @property
-    def resource_handlers(self) -> List[ResourceHandler]:
+    def resource_handlers(self) -> list[ResourceHandler]:  # todo do it in threads
         if self._resource_handlers is None:
             self._resource_handlers = []
             try:
@@ -100,11 +100,11 @@ class HandlerStorage:
         return self._resource_handlers
 
     @property
-    def resource_handlers_dict(self) -> Dict[str, ResourceHandler]:
+    def resource_handlers_dict(self) -> dict[str, ResourceHandler]:
         return _get_handlers_dict(self.resource_handlers)
 
     @property
-    def sandbox_handlers(self) -> List[SandboxHandler]:
+    def sandbox_handlers(self) -> list[SandboxHandler]:  # todo do it in threads
         if self._sandbox_handlers is None:
             self._sandbox_handlers = []
             try:
@@ -117,7 +117,7 @@ class HandlerStorage:
         return self._sandbox_handlers
 
     @property
-    def sandbox_handler_dict(self) -> Dict[str, SandboxHandler]:
+    def sandbox_handler_dict(self) -> dict[str, SandboxHandler]:
         return _get_handlers_dict(self.sandbox_handlers)
 
     def finish(self):

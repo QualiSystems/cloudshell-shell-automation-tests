@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import yaml
 from pydantic import BaseModel, Field, validator
@@ -33,11 +33,11 @@ class CSonDoConfig(BaseModel):
 
 class DoConfig(CloudShellConfig):
     cs_on_do_conf: Optional[CSonDoConfig] = Field(None, alias="CloudShell")
-    networking_apps: List[NetworkingAppConf] = Field([], alias="Networking Apps")
+    networking_apps: list[NetworkingAppConf] = Field([], alias="Networking Apps")
 
 
 class TestsConfig(BaseModel):
-    expected_failures: Dict[str, str] = Field({}, alias="Expected failures")
+    expected_failures: dict[str, str] = Field({}, alias="Expected failures")
     run_tests: bool = Field(True, alias="Run Tests")
     original_run_tests: Optional[bool] = Field(None, alias="Run Tests")
 
@@ -70,16 +70,16 @@ class ResourceConfig(BaseModel):
     name: str = Field(..., alias="Name")
     shell_name: str = Field(..., alias="Shell Name")
     device_ip: Optional[str] = Field(None, alias="Device IP")
-    attributes: Dict[str, str] = Field({}, alias="Attributes")
-    children_attributes: Dict[str, Dict[str, str]] = Field(
+    attributes: dict[str, str] = Field({}, alias="Attributes")
+    children_attributes: dict[str, dict[str, str]] = Field(
         {}, alias="Children Attributes"
     )
     tests_conf: TestsConfig = Field(TestsConfig(), alias="Tests")
     is_first_gen: bool = Field(False, alias="First Gen")
     networking_app_name: Optional[str] = Field(None, alias="Networking App")
-    additional_ports: List[AdditionalPort] = Field([], alias="Additional Ports")
-    setup_commands: List[ResourceCommand] = Field([], alias="Setup Commands")
-    teardown_commands: List[ResourceCommand] = Field([], alias="Teardown Commands")
+    additional_ports: list[AdditionalPort] = Field([], alias="Additional Ports")
+    setup_commands: list[ResourceCommand] = Field([], alias="Setup Commands")
+    teardown_commands: list[ResourceCommand] = Field([], alias="Teardown Commands")
 
     @validator("setup_commands", "teardown_commands", each_item=True, pre=True)
     def _parse_commands(cls, v):
@@ -97,8 +97,8 @@ class ResourceConfig(BaseModel):
 class DeploymentResourceConfig(BaseModel):
     name: str = Field(..., alias="Name")
     is_first_gen: bool = Field(False, alias="First Gen")
-    attributes: Dict[str, str] = Field({}, alias="Attributes")
-    children_attributes: Dict[str, Dict[str, str]] = Field(
+    attributes: dict[str, str] = Field({}, alias="Attributes")
+    children_attributes: dict[str, dict[str, str]] = Field(
         {}, alias="Children Attributes"
     )
     blueprint_name: str = Field(..., alias="Blueprint Name")
@@ -108,7 +108,7 @@ class DeploymentResourceConfig(BaseModel):
 class ServiceConfig(BaseModel):
     name: str = Field(..., alias="Name")
     shell_name: str = Field(None, alias="Shell Name")
-    attributes: Dict[str, str] = Field({}, alias="Attributes")
+    attributes: dict[str, str] = Field({}, alias="Attributes")
     tests_conf: TestsConfig = Field(TestsConfig(), alias="Tests")
 
 
@@ -136,7 +136,7 @@ class ShellConfig(BaseModel):
     name: str = Field(..., alias="Name")
     path: Path = Field(..., alias="Path")
     dependencies_path: Optional[Path] = Field(None, alias="Dependencies Path")
-    extra_standards_paths: List[Path] = Field([], alias="Extra CS Standards")
+    extra_standards_paths: list[Path] = Field([], alias="Extra CS Standards")
     tests_conf: TestsConfig = Field(TestsConfig(), alias="Tests")
 
     @validator(
@@ -148,9 +148,9 @@ class ShellConfig(BaseModel):
 
 class SandboxConfig(BaseModel):
     name: str = Field(..., alias="Name")
-    resource_names: List[str] = Field(..., alias="Resources")
-    deployment_resource_names: List[str] = Field([], alias="Deployment Resources")
-    service_names: List[str] = Field([], alias="Services")
+    resource_names: list[str] = Field(..., alias="Resources")
+    deployment_resource_names: list[str] = Field([], alias="Deployment Resources")
+    service_names: list[str] = Field([], alias="Services")
     blueprint_name: Optional[str] = Field(None, alias="Blueprint Name")
     specific_version: Optional[str] = Field(None, alias="Specific Version")
     tests_conf: TestsConfig = Field(TestsConfig, alias="Tests")
@@ -175,17 +175,17 @@ class MainConfig(BaseModel):
     version: str = Field(..., alias="Version")
     do_conf: Optional[DoConfig] = Field(None, alias="Do")
     cs_conf: Optional[CloudShellConfig] = Field(None, alias="CloudShell")
-    shells_conf: List[ShellConfig] = Field(..., alias="Shells")
-    resources_conf: List[ResourceConfig] = Field(..., alias="Resources")
-    deployment_resources_conf: List[DeploymentResourceConfig] = Field(
+    shells_conf: list[ShellConfig] = Field(..., alias="Shells")
+    resources_conf: list[ResourceConfig] = Field(..., alias="Resources")
+    deployment_resources_conf: list[DeploymentResourceConfig] = Field(
         [], alias="Deployment Resources"
     )
-    services_conf: List[ServiceConfig] = Field([], alias="Services")
+    services_conf: list[ServiceConfig] = Field([], alias="Services")
     ftp_conf: HostWithUserConfig = Field(..., alias="FTP")
     scp_conf: Optional[HostWithUserConfig] = Field(None, alias="SCP")
     tftp_conf: Optional[HostConfig] = Field(None, alias="TFTP")
-    sandboxes_conf: List[SandboxConfig] = Field(..., alias="Sandboxes")
-    blueprints_conf: List[BlueprintConfig] = Field([], alias="Blueprints")
+    sandboxes_conf: list[SandboxConfig] = Field(..., alias="Sandboxes")
+    blueprints_conf: list[BlueprintConfig] = Field([], alias="Blueprints")
     vcenter_conf: Optional[VcenterConfig] = Field(None, alias="vCenter")
 
     @validator("version")
