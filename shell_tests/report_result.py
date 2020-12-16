@@ -1,5 +1,4 @@
 from itertools import chain
-from typing import List
 
 from shell_tests.handlers.resource_handler import DeviceType
 
@@ -9,9 +8,9 @@ class SandboxReport:
         self.name = sandbox_name
         self.sandbox_is_success = is_success
         self.test_result = test_result
-        self.resources_reports: List[ResourceReport] = []
-        self.deployment_resources_reports: List[DeploymentResourceReport] = []
-        self.services_reports: List[ServiceReport] = []
+        self.resources_reports: list[ResourceReport] = []
+        self.deployment_resources_reports: list[DeploymentResourceReport] = []
+        self.services_reports: list[ServiceReport] = []
 
     @property
     def is_success(self) -> bool:
@@ -105,7 +104,7 @@ class ServiceReport:
 
 class Reporting:
     def __init__(self):
-        self.sandboxes_reports: List[SandboxReport] = []
+        self.sandboxes_reports: list[SandboxReport] = []
 
     @property
     def is_success(self) -> bool:

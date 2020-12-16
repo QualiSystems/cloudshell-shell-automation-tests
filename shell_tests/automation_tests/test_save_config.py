@@ -1,5 +1,4 @@
 import json
-from typing import Type
 
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
 
@@ -56,7 +55,7 @@ class TestSaveConfig(BaseResourceServiceTestCase):
 
 class OptionalTestSaveFtpConfig(OptionalTestCase):
     @staticmethod
-    def test_case() -> Type[BaseResourceServiceTestCase]:
+    def test_case() -> type[BaseResourceServiceTestCase]:
         return TestSaveConfig
 
     @staticmethod
@@ -115,7 +114,7 @@ class TestSaveConfigFromScp(BaseResourceServiceTestCase):
 
 class OptionalTestSaveScpConfig(OptionalTestCase):
     @staticmethod
-    def test_case() -> Type[BaseResourceServiceTestCase]:
+    def test_case() -> type[BaseResourceServiceTestCase]:
         return TestSaveConfigFromScp
 
     @staticmethod
@@ -173,7 +172,7 @@ class TestSaveConfigFromTftp(BaseResourceServiceTestCase):
 
 class OptionalTestSaveTftpConfig(OptionalTestCase):
     @staticmethod
-    def test_case() -> Type[BaseResourceServiceTestCase]:
+    def test_case() -> type[BaseResourceServiceTestCase]:
         return TestSaveConfigFromTftp
 
     @staticmethod

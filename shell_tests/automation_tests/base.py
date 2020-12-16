@@ -1,7 +1,6 @@
 import unittest
 from abc import abstractmethod
 from threading import Event
-from typing import Type
 
 from shell_tests.configs import TestsConfig
 from shell_tests.handlers.resource_handler import ResourceHandler
@@ -80,7 +79,7 @@ class BaseSandboxTestCase(BaseTestCase):
 class OptionalTestCase:
     @staticmethod
     @abstractmethod
-    def test_case() -> Type[BaseResourceServiceTestCase]:
+    def test_case() -> type[BaseResourceServiceTestCase]:
         raise NotImplementedError
 
     @staticmethod

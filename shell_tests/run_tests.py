@@ -3,7 +3,7 @@ from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
 from threading import Event
-from typing import Optional, Set
+from typing import Optional
 
 from shell_tests.configs import MainConfig
 from shell_tests.errors import BaseAutomationException
@@ -59,7 +59,7 @@ class AutomatedTestsRunner:
         return report
 
     @staticmethod
-    def _wait_for_futures(futures: Set[ft.Future], stop_flag: Event):
+    def _wait_for_futures(futures: set[ft.Future], stop_flag: Event):
         done, undone = ft.wait(futures, return_when=ft.FIRST_EXCEPTION)
         for f in done:
             if f.exception() is not None:

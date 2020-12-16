@@ -1,6 +1,6 @@
 from enum import Enum
 from functools import cached_property
-from typing import Dict, List, Optional
+from typing import Optional
 
 from cloudshell.api.cloudshell_api import ResourceInfo
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
@@ -92,13 +92,13 @@ class ResourceHandler:
         if self.conf.attributes:
             self.set_attributes(self.conf.attributes)
 
-    def set_attributes(self, attributes: Dict[str, str]):
+    def set_attributes(self, attributes: dict[str, str]):
         """Set attributes for the resource and update internal dict."""
         namespace = self.model if not self.conf.is_first_gen else ""
         self._cs_handler.set_resource_attributes(self.name, namespace, attributes)
         self.attributes.update(attributes)
 
-    def set_children_attributes(self, children_attributes: Dict[str, Dict[str, str]]):
+    def set_children_attributes(self, children_attributes: dict[str, dict[str, str]]):
         """Set children attributes."""
         for child_name, attributes in children_attributes.items():
             child_name = f"{self.name}/{child_name}"
@@ -146,10 +146,10 @@ class ResourceHandler:
         """Get resource details."""
         return self._cs_handler.get_resource_details(self.name)
 
-    def get_commands(self) -> List[str]:
+    def get_commands(self) -> list[str]:
         return self._cs_handler.get_resource_commands(self.name)
 
-    def execute_command(self, command_name: str, command_kwargs: Dict[str, str]) -> str:
+    def execute_command(self, command_name: str, command_kwargs: dict[str, str]) -> str:
         """Execute the command for the resource."""
         try:
             output = self.sandbox_handler.execute_resource_command(
@@ -183,7 +183,7 @@ class ResourceHandler:
         logger.debug(f"Run custom config command output: {output}")
         return output
 
-    def run_resource_commands(self, commands: List[ResourceCommand]):
+    def run_resource_commands(self, commands: list[ResourceCommand]):
         for command in commands:
             if command.mode is command.mode.CONFIG:
                 self.run_custom_config_command(command.command)
@@ -259,7 +259,7 @@ class ResourceHandler:
         """Rename the resource."""
         self.name = self._cs_handler.rename_resource(self.name, new_name)
 
-    def _add_additional_ports(self, additional_port_configs: List[AdditionalPort]):
+    def _add_additional_ports(self, additional_port_configs: list[AdditionalPort]):
         info = self.get_details()
         for child_res in info.ChildResources:
             if child_res.ResourceFamilyName == "CS_Chassis":
@@ -289,7 +289,7 @@ class ResourceHandler:
 
 
 class ServiceHandler:
-    def __init__(self, name: str, attributes: Dict[str, str], model: str):
+    def __init__(self, name: str, attributes: dict[str, str], model: str):
         self.name = name
         self.model = model
         self.family = None
@@ -315,27 +315,27 @@ class ServiceHandler:
     def device_type(self) -> DeviceType:
         return DeviceType.REAL_DEVICE
 
-    def execute_command(self, command_name: str, command_kwargs: Dict[str, str]) -> str:
+    def execute_command(self, command_name: str, command_kwargs: dict[str, str]) -> str:
         """Execute the command for the service."""
         return self.sandbox_handler.execute_service_command(
             self.name, command_name, command_kwargs
         )
 
-    def load_config(self, config_path: str, extra_kwargs: Optional[Dict] = None) -> str:
+    def load_config(self, config_path: str, extra_kwargs: Optional[dict] = None) -> str:
         """Execute a command load_config for the service."""
         extra_kwargs = extra_kwargs or {}
         extra_kwargs.update({"config_file_location": config_path})
         return self.execute_command("load_config", extra_kwargs)
 
-    def start_traffic(self, extra_kwargs: Optional[Dict] = None) -> str:
+    def start_traffic(self, extra_kwargs: Optional[dict] = None) -> str:
         """Execute a command start traffic for the service."""
         return self.execute_command("start_traffic", extra_kwargs or {})
 
-    def stop_traffic(self, extra_kwargs: Optional[Dict] = None) -> str:
+    def stop_traffic(self, extra_kwargs: Optional[dict] = None) -> str:
         """Execute a command stop traffic for the service."""
         return self.execute_command("stop_traffic", extra_kwargs or {})
 
-    def get_statistics(self, extra_kwargs: Optional[Dict] = None) -> str:
+    def get_statistics(self, extra_kwargs: Optional[dict] = None) -> str:
         """Execute a command get statistics for the service."""
         return self.execute_command("get_statistics", extra_kwargs or {})
 
@@ -385,7 +385,7 @@ class DeploymentResourceHandler:
     def rename(self, new_name: str):
         self.name = self._cs_handler.rename_resource(self.name, new_name)
 
-    def set_attributes(self, attributes: Dict[str, str]):
+    def set_attributes(self, attributes: dict[str, str]):
         """Set attributes for the resource and update internal dict."""
         namespace = self.model if not self.conf.is_first_gen else ""
         self._cs_handler.set_resource_attributes(self.name, namespace, attributes)

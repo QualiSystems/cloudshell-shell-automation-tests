@@ -1,5 +1,5 @@
+from collections import Iterable
 from datetime import datetime, timedelta
-from typing import Iterable
 
 from smb.base import SharedFile
 

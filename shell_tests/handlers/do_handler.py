@@ -1,5 +1,6 @@
+from collections import Iterable
 from concurrent import futures as ft
-from typing import Iterable, Optional, Set
+from typing import Optional
 
 from retrying import retry
 
@@ -171,7 +172,7 @@ class NetworkingAppsHandler:
     ):
         self._do_handler = do_handler
         self._networking_app_configs = networking_app_configs
-        self._sandbox_handlers: Set[SandboxHandler] = set()
+        self._sandbox_handlers: set[SandboxHandler] = set()
 
     def _create_app(self, app_conf: NetworkingAppConf) -> DeploymentResourceHandler:
         set_thread_name_with_prefix(f"Networking-App-{app_conf.name}")
@@ -179,7 +180,7 @@ class NetworkingAppsHandler:
         self._sandbox_handlers.add(sandbox_handler)
         return self._get_app_resource(sandbox_handler, app_conf)
 
-    def create_apps(self, executor: ft.ThreadPoolExecutor) -> Set[ft.Future]:
+    def create_apps(self, executor: ft.ThreadPoolExecutor) -> set[ft.Future]:
         return {
             executor.submit(self._create_app, app_conf)
             for app_conf in self._networking_app_configs

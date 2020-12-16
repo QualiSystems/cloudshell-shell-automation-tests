@@ -3,12 +3,13 @@ import re
 import shutil
 import socket
 import zipfile
+from collections import Iterator
 from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import BinaryIO, Iterator, List, Union
+from typing import BinaryIO, Union
 
 from smb.base import NotConnectedError, SharedFile
 from smb.SMBConnection import OperationFailure, SMBConnection
@@ -180,7 +181,7 @@ class CloudShellSmbHandler:
                 package_name = file_obj.name
                 self.add_file_obj_to_offline_pypi(file_obj, package_name)
 
-    def get_file_names_from_offline_pypi(self) -> List[str]:
+    def get_file_names_from_offline_pypi(self) -> list[str]:
         logger.debug("Getting packages names from offline PyPI")
         excluded = (".", "..", "PlaceHolder.txt")
         names = [
@@ -205,7 +206,7 @@ class CloudShellSmbHandler:
         logger.warning(f"Adding a tosca standard {standard_path.name} to the CS")
         self._smb_handler.put_file_path(r_file_path, standard_path)
 
-    def get_tosca_standards_file_names(self) -> List[str]:
+    def get_tosca_standards_file_names(self) -> list[str]:
         names = [
             standard.filename
             for standard in self._smb_handler.ls(self._CS_STANDARDS_PATH)
@@ -213,7 +214,7 @@ class CloudShellSmbHandler:
         logger.debug(f"Installed tosca standards: {names}")
         return names
 
-    def add_extra_standards(self, extra_standards: List[Path]):
+    def add_extra_standards(self, extra_standards: list[Path]):
         installed_standards = self.get_tosca_standards_file_names()
         for standard in extra_standards:
             if standard.name not in installed_standards:

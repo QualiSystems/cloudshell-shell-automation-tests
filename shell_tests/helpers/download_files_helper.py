@@ -2,7 +2,6 @@ import tempfile
 from contextlib import suppress
 from functools import cached_property
 from pathlib import Path
-from typing import List
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
@@ -14,7 +13,7 @@ def get_file_name(url: str) -> str:
 
 
 class DownloadFile:
-    _downloaded_files: List["DownloadFile"] = []
+    _downloaded_files: list["DownloadFile"] = []
 
     def __init__(self, path_str: str):
         self.original_path = path_str
