@@ -51,7 +51,7 @@ class RunTestsForSandbox:
         self._is_stop_set()
         sandbox_report = self._run_sandbox_tests()
 
-        for resource_handler in self.resource_handlers:  # todo do it in threads
+        for resource_handler in self.resource_handlers:
             self._is_stop_set()
             resource_handler.run_resource_commands(resource_handler.conf.setup_commands)
             self._is_stop_set()
