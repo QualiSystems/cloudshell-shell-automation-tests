@@ -1,3 +1,4 @@
+from concurrent import futures as ft
 from typing import Optional, TypeVar
 
 from shell_tests.configs import MainConfig
@@ -67,18 +68,30 @@ class HandlerStorage:
         return self._vcenter_handler
 
     @property
-    def shell_handlers(self) -> list[ShellHandler]:  # todo do it in threads
+    def shell_handlers(self) -> list[ShellHandler]:
         if self._shell_handlers is None:
             self._shell_handlers = []
-            try:
-                for conf in self.conf.shells_conf:
-                    shell = ShellHandler.create(
-                        conf, self.cs_handler, self.cs_smb_handler
+            exception = None
+
+            with ft.ThreadPoolExecutor(5) as executor:
+                futures = {
+                    executor.submit(
+                        ShellHandler.create, conf, self.cs_handler, self.cs_smb_handler
                     )
-                    self._shell_handlers.append(shell)
-            except BaseException as e:
+                    for conf in self.conf.shells_conf
+                }
+
+                for future in futures:
+                    try:
+                        shell = future.result()
+                    except BaseException as e:
+                        exception = e
+                    else:
+                        self._shell_handlers.append(shell)
+
+            if exception:
                 self.finish()
-                raise e
+                raise exception
         return self._shell_handlers
 
     @property
@@ -86,17 +99,33 @@ class HandlerStorage:
         return _get_handlers_dict(self.shell_handlers)
 
     @property
-    def resource_handlers(self) -> list[ResourceHandler]:  # todo do it in threads
+    def resource_handlers(self) -> list[ResourceHandler]:
         if self._resource_handlers is None:
             self._resource_handlers = []
-            try:
-                for conf in self.conf.resources_conf:
-                    shell = self.shell_handlers_dict[conf.shell_name]
-                    resource = ResourceHandler.create(conf, self.cs_handler, shell)
-                    self._resource_handlers.append(resource)
-            except BaseException as e:
+            exception = None
+
+            with ft.ThreadPoolExecutor(5) as executor:
+                futures = {
+                    executor.submit(
+                        ResourceHandler.create,
+                        conf,
+                        self.cs_handler,
+                        self.shell_handlers_dict[conf.shell_name],
+                    )
+                    for conf in self.conf.resources_conf
+                }
+
+                for future in futures:
+                    try:
+                        resource = future.result()
+                    except BaseException as e:
+                        exception = e
+                    else:
+                        self._resource_handlers.append(resource)
+
+            if exception:
                 self.finish()
-                raise e
+                raise exception
         return self._resource_handlers
 
     @property
@@ -104,16 +133,28 @@ class HandlerStorage:
         return _get_handlers_dict(self.resource_handlers)
 
     @property
-    def sandbox_handlers(self) -> list[SandboxHandler]:  # todo do it in threads
+    def sandbox_handlers(self) -> list[SandboxHandler]:
         if self._sandbox_handlers is None:
             self._sandbox_handlers = []
-            try:
-                for conf in self.conf.sandboxes_conf:
-                    sandbox = SandboxHandler.create(conf, self.cs_handler)
-                    self._sandbox_handlers.append(sandbox)
-            except BaseException as e:
+            exception = None
+
+            with ft.ThreadPoolExecutor(5) as executor:
+                futures = {
+                    executor.submit(SandboxHandler.create, conf, self.cs_handler)
+                    for conf in self.conf.sandboxes_conf
+                }
+
+                for future in futures:
+                    try:
+                        sandbox = future.result()
+                    except BaseException as e:
+                        exception = e
+                    else:
+                        self._sandbox_handlers.append(sandbox)
+
+            if exception:
                 self.finish()
-                raise e
+                raise exception
         return self._sandbox_handlers
 
     @property
