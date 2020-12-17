@@ -78,7 +78,7 @@ def _run_tests(test_conf: Path):
         report = AutomatedTestsRunner(conf).run()
     finally:
         DownloadFile.remove_downloaded_files()
-    print("\n\nTest results:\n{}".format(report))  # noqa: T001
+    logger.info(f"\n\nTest results:\n{report}")
     return report.is_success
 
 
