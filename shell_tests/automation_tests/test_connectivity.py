@@ -34,7 +34,6 @@ class TestConnectivity(BaseResourceServiceTestCase):
         for resource_handler in sandbox_resources_handlers:
             if self.handler != resource_handler:
                 other_resource = resource_handler
-                other_resource.autoload()
                 return other_resource
 
         raise BaseAutomationException(
