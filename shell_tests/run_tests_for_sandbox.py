@@ -1,4 +1,5 @@
 import threading
+from concurrent import futures as ft
 from functools import cached_property
 from threading import Event
 
@@ -51,30 +52,42 @@ class RunTestsForSandbox:
         self._is_stop_set()
         sandbox_report = self._run_sandbox_tests()
 
-        for resource_handler in self.resource_handlers:
-            self._is_stop_set()
-            resource_handler.run_resource_commands(resource_handler.conf.setup_commands)
-            self._is_stop_set()
-            if resource_handler.conf.tests_conf.run_tests:
-                resource_report = self._run_resource_tests(resource_handler)
-                sandbox_report.resources_reports.append(resource_report)
-                self._is_stop_set()
-                resource_handler.run_resource_commands(
-                    resource_handler.conf.teardown_commands
-                )
-            else:
-                if not resource_handler.is_autoload_finished:
-                    try:
-                        resource_handler.autoload()
-                    except Exception as e:
-                        emsg = f"Cannot autoload {resource_handler.conf.name}\n{e}"
-                        logger.exception(emsg)
+        with ft.ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(self._execute_resource_tests, rh, sandbox_report)
+                for rh in self.resource_handlers
+            }
+            ft.wait(futures)
+            for future in futures:
+                future.result()
 
         with self.REPORT_LOCK:
             self.reporting.sandboxes_reports.append(sandbox_report)
 
     def _run_sandbox_tests(self) -> SandboxReport:
         return SandboxReport(self.sandbox_handler.conf.name, True, "")
+
+    def _execute_resource_tests(
+        self, resource_handler: ResourceHandler, sandbox_report: SandboxReport
+    ):
+        self._is_stop_set()
+        resource_handler.run_resource_commands(resource_handler.conf.setup_commands)
+        self._is_stop_set()
+        if resource_handler.conf.tests_conf.run_tests:
+            resource_report = self._run_resource_tests(resource_handler)
+            with self.REPORT_LOCK:
+                sandbox_report.resources_reports.append(resource_report)
+            self._is_stop_set()
+            resource_handler.run_resource_commands(
+                resource_handler.conf.teardown_commands
+            )
+        else:
+            if not resource_handler.is_autoload_finished:
+                try:
+                    resource_handler.autoload()
+                except Exception as e:
+                    emsg = f"Cannot autoload {resource_handler.conf.name}\n{e}"
+                    logger.exception(emsg)
 
     def _run_resource_tests(self, resource_handler: ResourceHandler) -> ResourceReport:
         """Run tests based on the resource type and config."""
