@@ -72,7 +72,7 @@ class TestLoadConfigWithoutDevice(TestLoadConfig):
     def test_load_config(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
-            super(TestLoadConfigWithoutDevice, self).test_load_config()
+            super().test_load_config()
 
 
 class TestStartTrafficWithoutDevice(TestStartTraffic):
@@ -81,7 +81,7 @@ class TestStartTrafficWithoutDevice(TestStartTraffic):
     def test_start_traffic(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
-            super(TestStartTrafficWithoutDevice, self).test_start_traffic()
+            super().test_start_traffic()
 
 
 class TestStopTrafficWithoutDevice(TestStopTraffic):
@@ -90,7 +90,7 @@ class TestStopTrafficWithoutDevice(TestStopTraffic):
     def test_stop_traffic(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
-            super(TestStopTrafficWithoutDevice, self).test_stop_traffic()
+            super().test_stop_traffic()
 
 
 class TestGetStatisticsWithoutDevice(TestGetStatistics):
@@ -99,7 +99,7 @@ class TestGetStatisticsWithoutDevice(TestGetStatistics):
     def test_get_statistics(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
-            super(TestGetStatisticsWithoutDevice, self).test_get_statistics()
+            super().test_get_statistics()
 
 
 class TestGetTestFileWithoutDevice(TestGetTestFile):
@@ -108,4 +108,4 @@ class TestGetTestFileWithoutDevice(TestGetTestFile):
     def test_get_test_file(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
         with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
-            super(TestGetTestFileWithoutDevice, self).test_get_test_file()
+            super().test_get_test_file()

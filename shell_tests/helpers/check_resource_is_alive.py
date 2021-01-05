@@ -7,7 +7,7 @@ from shell_tests.errors import ResourceIsNotAliveError
 
 def _is_host_alive(host: str) -> bool:
     ping_count_str = "n" if platform.system().lower() == "windows" else "c"
-    cmd = "ping -{} 1 {}".format(ping_count_str, host)
+    cmd = f"ping -{ping_count_str} 1 {host}"
     try:
         _ = subprocess.check_output(cmd, shell=True)
     except subprocess.CalledProcessError:
