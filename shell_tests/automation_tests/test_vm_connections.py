@@ -8,7 +8,7 @@ from shell_tests.helpers.vm_helpers import (
 )
 
 
-class AppNetworkInfo(object):
+class AppNetworkInfo:
     def __init__(self, vm_name, cs_name, blueprint_name, vm_uuid):
         self.vm_name = vm_name
         self.cs_name = cs_name
@@ -17,7 +17,7 @@ class AppNetworkInfo(object):
         self.ports: dict[str, PortInfo] = {}
 
 
-class PortInfo(object):
+class PortInfo:
     def __init__(self, mac, adapter_name, port_group_name):
         self.mac = mac
         self.adapter_name = adapter_name
@@ -70,7 +70,7 @@ class TestVMConnections(BaseSandboxTestCase):
                 break
         else:
             raise BaseAutomationException(
-                "Cannot find adapter {} on vCenter".format(adapter_name),
+                f"Cannot find adapter {adapter_name} on vCenter",
             )
 
         port_group_key = device.backing.port.portgroupKey
@@ -119,7 +119,7 @@ class TestVMConnections(BaseSandboxTestCase):
         if conn_name == "any":
             return None
 
-        port_regex = re.compile(r"\W{}$".format(conn_name))
+        port_regex = re.compile(fr"\W{conn_name}$")
         for port_name, port_info in app_info.ports.items():
             if port_regex.search(port_name):
                 break

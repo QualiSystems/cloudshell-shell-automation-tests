@@ -13,7 +13,7 @@ def get_resource_model_from_shell_definition(shell_path: Path) -> str:
 
     node_type = next(iter(data["node_types"]))
     model = node_type.rsplit(".", 1)[-1]
-    logger.debug("Model: {} for the Shell {}".format(model, shell_path))
+    logger.debug(f"Model: {model} for the Shell {shell_path}")
     return model
 
 

@@ -43,8 +43,8 @@ def get_str_connections_form_blueprint(path, bp_name):
     :return: (first_resource_name, requested_port_names),
         (second_resource_name, requested_port_names)
     """
-    xml_name = "{}.xml".format(bp_name)
-    xml_path = "Topologies/{}".format(xml_name)
+    xml_name = f"{bp_name}.xml"
+    xml_path = f"Topologies/{xml_name}"
 
     with zipfile.ZipFile(path) as zip_file:
         xml_data = zip_file.read(xml_path)
