@@ -52,7 +52,11 @@ class DoHandler:
 
     def finish(self):
         if self._conf.do_conf.cs_on_do_conf is not None:
-            self._cs_creator.finish()
+            if self._conf.do_conf.cs_on_do_conf.delete_cs:
+                self._cs_creator.finish()
+            else:
+                ip = self._conf.cs_conf.host
+                logger.info(f"The CS is not deleted, you can still use it - {ip}")
         self._networking_apps_handler.finish()
 
     def _update_resource_conf_from_deployment_resource(
