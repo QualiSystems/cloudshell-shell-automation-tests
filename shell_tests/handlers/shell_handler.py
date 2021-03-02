@@ -1,5 +1,7 @@
 from typing import Optional
 
+from cloudshell.rest.exceptions import ShellNotFoundException
+
 from shell_tests.configs import ShellConfig
 from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.smb_handler import CloudShellSmbHandler
@@ -67,6 +69,8 @@ class ShellHandler:
         """Delete the Shell and clear Offline PyPI."""
         try:
             self._cs_handler.remove_shell(self.cs_shell_name)
+        except ShellNotFoundException:
+            pass
         except Exception as e:
             if "This shell is used" not in str(e):
                 raise e
