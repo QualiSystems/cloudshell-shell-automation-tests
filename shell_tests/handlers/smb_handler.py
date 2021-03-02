@@ -12,6 +12,7 @@ from pathlib import Path
 from threading import Lock
 from typing import BinaryIO, Union
 
+import xmltodict
 from retrying import retry
 from smb.base import NotConnectedError, NotReadyError, SharedFile, SMBTimeout
 from smb.SMBConnection import OperationFailure, SMBConnection
@@ -193,6 +194,7 @@ class CloudShellSmbHandler:
     _CS_LOGS_INSTALLATION_DIR = (
         fr"{_QS_PATH}TestShell\\ExecutionServer\\Logs\\QsPythonDriverHost"
     )
+    _LOGGER_CONFIG_PATH = Path(__file__).parent.parent / "helpers" / "qs_config.ini"
 
     def __init__(self, conf: CloudShellConfig):
         self.conf = conf
@@ -294,3 +296,24 @@ class CloudShellSmbHandler:
             else:
                 logger.warning(f"Cannot download logs, error: {e}")
         logger.debug("CS logs downloaded")
+
+    def set_debug_log_level(self):
+        self._smb_handler.put_file_path("qs_config.ini", self._LOGGER_CONFIG_PATH)
+        customer_config_path = (
+            r"Program Files (x86)\QualiSystems\TestShell\ExecutionServer"
+            r"\customer.config"
+        )
+        data = self._smb_handler.get_r_file(customer_config_path).decode()
+        data = xmltodict.parse(data)
+        envs = []
+        for i, setting in enumerate(data["appSettings"]["add"].copy()):
+            if setting["@key"] == "DefaultPythonEnvrionmentVariables":
+                envs = list(filter(bool, setting["@value"].split(";")))
+                del data["appSettings"]["add"][i]
+        envs.append(r"QS_CONFIG=C:\qs_config.ini")
+        envs_str = ";".join(envs)
+        envs_dict = {"@key": "DefaultPythonEnvrionmentVariables", "@value": envs_str}
+        data["appSettings"]["add"].append(envs_dict)
+        xml = xmltodict.unparse(data)
+        xml_b = BytesIO(xml.encode())
+        self._smb_handler.put_file_obj(customer_config_path, xml_b)

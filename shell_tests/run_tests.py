@@ -10,6 +10,7 @@ from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.do_handler import DoHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
+from shell_tests.handlers.smb_handler import CloudShellSmbHandler
 from shell_tests.helpers.check_resource_is_alive import check_all_resources_is_alive
 from shell_tests.helpers.handler_storage import HandlerStorage
 from shell_tests.report_result import Reporting
@@ -28,6 +29,8 @@ class AutomatedTestsRunner:
 
         context = DoHandler(self._conf) if self._conf.do_conf else nullcontext()
         with context:
+            CloudShellSmbHandler(self._conf.cs_conf).set_debug_log_level()
+            # todo poweroff/poweron ?? how to restart execution server
             cs_handler = CloudShellHandler(self._conf.cs_conf)
             return self._run_cs_tests(cs_handler)
 
@@ -36,6 +39,7 @@ class AutomatedTestsRunner:
         stop_flag = Event()
         start_time = datetime.now()
         handler_storage = HandlerStorage(cs_handler, self._conf)
+        handler_storage.cs_smb_handler.set_debug_log_level()
         run_tests_instances = {
             RunTestsForSandbox(sh, handler_storage, report, stop_flag)
             for sh in handler_storage.sandbox_handlers
