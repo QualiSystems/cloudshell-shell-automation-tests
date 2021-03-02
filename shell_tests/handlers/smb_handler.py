@@ -9,9 +9,11 @@ from contextlib import suppress
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
+from threading import Lock
 from typing import BinaryIO, Union
 
-from smb.base import NotConnectedError, SharedFile
+from retrying import retry
+from smb.base import NotConnectedError, NotReadyError, SharedFile, SMBTimeout
 from smb.SMBConnection import OperationFailure, SMBConnection
 
 from shell_tests.configs import CloudShellConfig
@@ -22,7 +24,15 @@ from shell_tests.helpers.smb_helpers import (
 )
 
 
+def _retry_on(exception: Exception) -> bool:
+    return isinstance(exception, (NotReadyError, SMBTimeout))
+
+
 class SmbHandler:
+    RETRY_STOP_MAX_ATTEMPT_NUM = 10
+    RETRY_WAIT_FIXED = 3000
+    RETRY_FUNC = _retry_on
+
     def __init__(
         self, username: str, password: str, ip: str, server_name: str, share: str
     ):
@@ -66,6 +76,11 @@ class SmbHandler:
             logger.debug("SMB session created")
         return self._session
 
+    @retry(
+        stop_max_attempt_number=RETRY_STOP_MAX_ATTEMPT_NUM,
+        wait_fixed=RETRY_WAIT_FIXED,
+        retry_on_exception=RETRY_FUNC,
+    )
     def ls(self, r_dir_path: str) -> Iterator[SharedFile]:
         try:
             smb_files = self.session.listPath(self._share, r_dir_path)
@@ -84,6 +99,11 @@ class SmbHandler:
             dir_path = ""
         return dir_path
 
+    @retry(
+        stop_max_attempt_number=RETRY_STOP_MAX_ATTEMPT_NUM,
+        wait_fixed=RETRY_WAIT_FIXED,
+        retry_on_exception=RETRY_FUNC,
+    )
     def create_dir(self, r_dir_path: str, parents: bool = True):
         try:
             logger.debug(f"Creating directory {r_dir_path}")
@@ -96,6 +116,11 @@ class SmbHandler:
             else:
                 raise e
 
+    @retry(
+        stop_max_attempt_number=RETRY_STOP_MAX_ATTEMPT_NUM,
+        wait_fixed=RETRY_WAIT_FIXED,
+        retry_on_exception=RETRY_FUNC,
+    )
     def put_file_obj(
         self, r_file_path: str, file_obj: BinaryIO, create_dirs: bool = False
     ):
@@ -115,9 +140,19 @@ class SmbHandler:
         with open(l_file_path, "rb") as file_obj:
             self.put_file_obj(r_file_path, file_obj, create_dirs)
 
+    @retry(
+        stop_max_attempt_number=RETRY_STOP_MAX_ATTEMPT_NUM,
+        wait_fixed=RETRY_WAIT_FIXED,
+        retry_on_exception=RETRY_FUNC,
+    )
     def remove_file(self, r_file_path: str):
         self.session.deleteFiles(self._share, r_file_path)
 
+    @retry(
+        stop_max_attempt_number=RETRY_STOP_MAX_ATTEMPT_NUM,
+        wait_fixed=RETRY_WAIT_FIXED,
+        retry_on_exception=RETRY_FUNC,
+    )
     def get_r_file(self, r_file_path: str) -> bytes:
         buffer = BytesIO()
         self.session.retrieveFile(self._share, r_file_path, buffer)
@@ -161,6 +196,7 @@ class CloudShellSmbHandler:
 
     def __init__(self, conf: CloudShellConfig):
         self.conf = conf
+        self._lock = Lock()
         self._smb_handler = SmbHandler(
             conf.os_user,
             conf.os_password,
@@ -172,7 +208,8 @@ class CloudShellSmbHandler:
     def add_file_obj_to_offline_pypi(self, file_obj: BinaryIO, file_name: str):
         r_file_path = f"{self._CS_PYPI_PATH}{file_name}"
         logger.debug(f"Adding a file {file_name} to offline PyPI")
-        self._smb_handler.put_file_obj(r_file_path, file_obj)
+        with self._lock:
+            self._smb_handler.put_file_obj(r_file_path, file_obj)
 
     def add_dependencies_to_offline_pypi(self, file: Union[BinaryIO, Path]):
         logger.info("Putting dependecies to offline PyPI")
