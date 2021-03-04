@@ -33,11 +33,23 @@ class AutomatedTestsRunner:
             return self._run_cs_tests(cs_handler)
 
     def _run_cs_tests(self, cs_handler: CloudShellHandler) -> Reporting:
-        report = Reporting()
-        stop_flag = Event()
         start_time = datetime.now()
         handler_storage = HandlerStorage(cs_handler, self._conf)
-        set_debug_log_level(handler_storage)
+        try:
+            set_debug_log_level(handler_storage)
+            report = self._run_tests_for_sandboxes(handler_storage)
+        finally:
+            handler_storage.cs_smb_handler.download_logs(
+                Path("cs_logs"),
+                start_time,
+                {sh.reservation_id for sh in handler_storage.sandbox_handlers},
+            )
+            handler_storage.finish()
+        return report
+
+    def _run_tests_for_sandboxes(self, handler_storage: HandlerStorage) -> Reporting:
+        report = Reporting()
+        stop_flag = Event()
         run_tests_instances = {
             RunTestsForSandbox(sh, handler_storage, report, stop_flag)
             for sh in handler_storage.sandbox_handlers
@@ -51,13 +63,6 @@ class AutomatedTestsRunner:
                 stop_flag.set()
                 self._wait_for_futures(futures, stop_flag)
                 raise
-            finally:
-                handler_storage.cs_smb_handler.download_logs(
-                    Path("cs_logs"),
-                    start_time,
-                    {sh.reservation_id for sh in handler_storage.sandbox_handlers},
-                )
-                handler_storage.finish()
         return report
 
     @staticmethod
