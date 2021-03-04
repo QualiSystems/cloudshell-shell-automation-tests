@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING
 
 from shell_tests.configs import SandboxConfig
 from shell_tests.errors import DeploymentResourceNotFoundError
-from shell_tests.handlers.cs_handler import CloudShellHandler, ReservationId
 
 if TYPE_CHECKING:
+    from shell_tests.handlers.cs_handler import CloudShellHandler, ReservationId
     from shell_tests.handlers.resource_handler import ResourceHandler, ServiceHandler
 
 
@@ -12,8 +12,8 @@ class SandboxHandler:
     def __init__(
         self,
         conf: SandboxConfig,
-        reservation_id: ReservationId,
-        cs_handler: CloudShellHandler,
+        reservation_id: "ReservationId",
+        cs_handler: "CloudShellHandler",
     ):
         self.conf = conf
         self.reservation_id = reservation_id
@@ -21,7 +21,10 @@ class SandboxHandler:
 
     @classmethod
     def create(
-        cls, conf: SandboxConfig, cs_handler: CloudShellHandler, duration: int = 2 * 60
+        cls,
+        conf: SandboxConfig,
+        cs_handler: "CloudShellHandler",
+        duration: int = 2 * 60,
     ) -> "SandboxHandler":
         if conf.blueprint_name:
             rid = cs_handler.create_topology_reservation(
@@ -129,5 +132,5 @@ class SandboxHandler:
     def refresh_vm_details(self, app_names: list[str]):
         self._cs_handler.refresh_vm_details(self.reservation_id, app_names)
 
-    def finish(self):
-        self.end_reservation()
+    def finish(self, wait: bool = True):
+        self.end_reservation(wait)

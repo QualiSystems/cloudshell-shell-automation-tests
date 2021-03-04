@@ -193,6 +193,10 @@ class CloudShellSmbHandler:
     _CS_LOGS_INSTALLATION_DIR = (
         fr"{_QS_PATH}TestShell\\ExecutionServer\\Logs\\QsPythonDriverHost"
     )
+    _VENV_DIR = r"ProgramData\QualiSystems\venv"
+    _QS_CONFIG_PATH = (
+        fr"{_VENV_DIR}\{{}}\Lib\site-packages\cloudshell\logging\qs_config.ini"
+    )
 
     def __init__(self, conf: CloudShellConfig):
         self.conf = conf
@@ -294,3 +298,14 @@ class CloudShellSmbHandler:
             else:
                 logger.warning(f"Cannot download logs, error: {e}")
         logger.debug("CS logs downloaded")
+
+    def get_venv_names(self) -> list[str]:
+        return [venv.filename for venv in self._smb_handler.ls(self._VENV_DIR)]
+
+    def get_qs_config(self, venv_name: str) -> bytes:
+        return self._smb_handler.get_r_file(self._QS_CONFIG_PATH.format(venv_name))
+
+    def put_qs_config(self, venv_name: str, config: bytes):
+        self._smb_handler.put_file_obj(
+            self._QS_CONFIG_PATH.format(venv_name), BytesIO(config)
+        )

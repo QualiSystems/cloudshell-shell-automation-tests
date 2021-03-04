@@ -1,6 +1,6 @@
 from enum import Enum
 from functools import cached_property
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from cloudshell.api.cloudshell_api import ResourceInfo
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
@@ -13,10 +13,12 @@ from shell_tests.configs import (
     ServiceConfig,
 )
 from shell_tests.errors import BaseAutomationException, DependenciesBrokenError
-from shell_tests.handlers.cs_handler import CloudShellHandler
-from shell_tests.handlers.sandbox_handler import SandboxHandler
-from shell_tests.handlers.shell_handler import ShellHandler
 from shell_tests.helpers.logger import logger
+
+if TYPE_CHECKING:
+    from shell_tests.handlers.cs_handler import CloudShellHandler
+    from shell_tests.handlers.sandbox_handler import SandboxHandler
+    from shell_tests.handlers.shell_handler import ShellHandler
 
 
 class DeviceType(Enum):
@@ -30,8 +32,8 @@ class ResourceHandler:
     def __init__(
         self,
         conf: ResourceConfig,
-        cs_handler: CloudShellHandler,
-        shell_handler: ShellHandler,
+        cs_handler: "CloudShellHandler",
+        shell_handler: "ShellHandler",
     ):
         self.conf = conf
         self.name = conf.name
@@ -48,8 +50,8 @@ class ResourceHandler:
     def create(
         cls,
         conf: ResourceConfig,
-        cs_handler: CloudShellHandler,
-        shell_handler: ShellHandler,
+        cs_handler: "CloudShellHandler",
+        shell_handler: "ShellHandler",
     ) -> "ResourceHandler":
         logger.info(f"Start preparing the resource {conf.name}")
         resource = cls(conf, cs_handler, shell_handler)
@@ -58,13 +60,13 @@ class ResourceHandler:
         return resource
 
     @property
-    def sandbox_handler(self) -> SandboxHandler:
+    def sandbox_handler(self) -> "SandboxHandler":
         if self._sandbox_handler is None:
             raise BaseAutomationException("You have to add Sandbox Handler")
         return self._sandbox_handler
 
     @sandbox_handler.setter
-    def sandbox_handler(self, val: SandboxHandler):
+    def sandbox_handler(self, val: "SandboxHandler"):
         self._sandbox_handler = val
 
     @cached_property
@@ -302,13 +304,13 @@ class ServiceHandler:
         return cls(conf.name, conf.attributes, conf.model)
 
     @property
-    def sandbox_handler(self) -> SandboxHandler:
+    def sandbox_handler(self) -> "SandboxHandler":
         if self._sandbox_handler is None:
             raise BaseAutomationException("You have to add Sandbox Handler")
         return self._sandbox_handler
 
     @sandbox_handler.setter
-    def sandbox_handler(self, val: SandboxHandler):
+    def sandbox_handler(self, val: "SandboxHandler"):
         self._sandbox_handler = val
 
     @property
@@ -349,7 +351,7 @@ class DeploymentResourceHandler:
         self,
         conf: DeploymentResourceConfig,
         vm_name: str,
-        sandbox_handler: SandboxHandler,
+        sandbox_handler: "SandboxHandler",
     ):
         self.conf = conf
         self.name = vm_name
@@ -360,7 +362,7 @@ class DeploymentResourceHandler:
 
     @classmethod
     def create_resource(
-        cls, conf: DeploymentResourceConfig, sandbox_handler: SandboxHandler
+        cls, conf: DeploymentResourceConfig, sandbox_handler: "SandboxHandler"
     ) -> "DeploymentResourceHandler":
         logger.info(f"Start preparing the resource {conf.name}")
         vm_name = sandbox_handler.get_deployment_resource_name()
