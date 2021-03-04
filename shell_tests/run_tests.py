@@ -11,6 +11,7 @@ from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.do_handler import DoHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
 from shell_tests.helpers.check_resource_is_alive import check_all_resources_is_alive
+from shell_tests.helpers.cs_helpers import set_debug_log_level
 from shell_tests.helpers.handler_storage import HandlerStorage
 from shell_tests.report_result import Reporting
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
@@ -36,6 +37,7 @@ class AutomatedTestsRunner:
         stop_flag = Event()
         start_time = datetime.now()
         handler_storage = HandlerStorage(cs_handler, self._conf)
+        set_debug_log_level(handler_storage)
         run_tests_instances = {
             RunTestsForSandbox(sh, handler_storage, report, stop_flag)
             for sh in handler_storage.sandbox_handlers
