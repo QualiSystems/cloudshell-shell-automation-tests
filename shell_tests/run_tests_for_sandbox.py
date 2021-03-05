@@ -39,7 +39,9 @@ class RunTestsForSandbox:
             for name in self.sandbox_handler.conf.resource_names
         ]
         for handler in handlers:
-            self.sandbox_handler.add_resource_to_reservation(handler)
+            if handler.conf.tests_conf.run_tests:
+                # do not add resources that would be used only for connectivity
+                self.sandbox_handler.add_resource_to_reservation(handler)
         return handlers
 
     def _is_stop_set(self):

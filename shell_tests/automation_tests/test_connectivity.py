@@ -1,30 +1,42 @@
+import itertools
+from contextlib import contextmanager
+from threading import Lock
+from typing import TYPE_CHECKING
+
+from cloudshell.api.cloudshell_api import ResourceInfo
+
 from shell_tests.automation_tests.base import BaseResourceServiceTestCase
 from shell_tests.errors import BaseAutomationException
 
+if TYPE_CHECKING:
+    from shell_tests.handlers.resource_handler import ResourceHandler
 
-def find_port_name(resource_info, excluded=None):
-    """Find port name.
 
-    :param cloudshell.api.cloudshell_api.ResourceInfo resource_info:
-    :param set excluded:
-    :return: port name
-    """
-    if excluded is None:
-        excluded = set()
-
+def find_ports(resource_info: ResourceInfo) -> list[ResourceInfo]:
     if resource_info.ResourceFamilyName == "CS_Port":
-        name = resource_info.Name
-        if name not in excluded:
-            return name
-
+        ports = [resource_info]
+    elif resource_info.ChildResources:
+        ports = list(itertools.chain(*map(find_ports, resource_info.ChildResources)))
     else:
-        for child in resource_info.ChildResources:
-            name = find_port_name(child, excluded)
-            if name and name not in excluded:
-                return name
+        ports = []
+    return ports
+
+
+def get_port_names_for_connectivity(resource_info: ResourceInfo) -> tuple[str, str]:
+    ports = find_ports(resource_info)
+    try:
+        port1_name, port2_name = ports[0].Name, ports[1].Name
+    except IndexError:
+        raise BaseAutomationException(
+            f"Resource {resource_info.Name} has too few ports for "
+            f"connectivity {len(ports)}"
+        )
+    return port1_name, port2_name
 
 
 class TestConnectivity(BaseResourceServiceTestCase):
+    LOCK = Lock()
+
     def get_other_device_for_connectivity(self):
         sandbox_resources_handlers = [
             handler
@@ -41,10 +53,21 @@ class TestConnectivity(BaseResourceServiceTestCase):
             f"{self.handler.sandbox_handler.conf.name} for connectivity tests"
         )
 
-    def test_connectivity(self):
-        other_target_handler = self.get_other_device_for_connectivity()
+    @contextmanager
+    def dut_handler(self):
+        dut_handler = self.get_other_device_for_connectivity()
+        self.handler.sandbox_handler.add_resource_to_reservation(dut_handler)
+        try:
+            yield dut_handler
+        finally:
+            self.handler.sandbox_handler.remove_resource_from_reservation(dut_handler)
 
-        for handler in (self.handler, other_target_handler):
+    def test_connectivity(self):
+        with self.LOCK, self.dut_handler() as dut_handler:
+            self._test_connectivity(dut_handler)
+
+    def _test_connectivity(self, dut_handler: "ResourceHandler"):
+        for handler in (self.handler, dut_handler):
             if not handler.is_autoload_finished:
                 raise BaseAutomationException(
                     f"Autoload doesn't finish for the {handler.name} resource,"
@@ -52,12 +75,10 @@ class TestConnectivity(BaseResourceServiceTestCase):
                 )
 
         res_info = self.handler.get_details()
-        dut_info = other_target_handler.get_details()
+        dut_info = dut_handler.get_details()
 
-        res_port1 = find_port_name(res_info)
-        res_port2 = find_port_name(res_info, {res_port1})
-        dut_port1 = find_port_name(dut_info)
-        dut_port2 = find_port_name(dut_info, {dut_port1})
+        res_port1, res_port2 = get_port_names_for_connectivity(res_info)
+        dut_port1, dut_port2 = get_port_names_for_connectivity(dut_info)
 
         # adding physical connections
         self.handler.sandbox_handler.add_physical_connection(res_port1, dut_port1)
