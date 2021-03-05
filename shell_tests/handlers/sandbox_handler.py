@@ -46,6 +46,12 @@ class SandboxHandler:
         )
         resource_handler.sandbox_handler = self
 
+    def remove_resource_from_reservation(self, resource_handler: "ResourceHandler"):
+        self._cs_handler.remove_resource_from_reservation(
+            self.reservation_id, resource_handler.name
+        )
+        resource_handler.sandbox_handler = None
+
     def add_service_to_reservation(self, service_handler: "ServiceHandler"):
         """Add the service to the reservation."""
         self._cs_handler.add_service_to_reservation(

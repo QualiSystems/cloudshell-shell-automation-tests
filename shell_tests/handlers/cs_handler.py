@@ -258,6 +258,14 @@ class CloudShellHandler:
         self._api.AddResourcesToReservation(reservation_id, [resource_name])
         logger.debug("Added a resource to the reservation")
 
+    def remove_resource_from_reservation(
+        self, reservation_id: ReservationId, resource_name: str
+    ):
+        msg = f"Remove a resource {resource_name} from a reservation {reservation_id}"
+        logger.info(msg)
+        self._api.RemoveResourcesFromReservation(reservation_id, [resource_name])
+        logger.debug("Removed a resource from the reservation")
+
     def add_service_to_reservation(
         self,
         reservation_id: ReservationId,
