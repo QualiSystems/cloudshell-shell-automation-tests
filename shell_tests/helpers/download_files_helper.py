@@ -1,3 +1,4 @@
+import atexit
 import tempfile
 from contextlib import suppress
 from functools import cached_property
@@ -13,7 +14,7 @@ def get_file_name(url: str) -> str:
 
 
 class DownloadFile:
-    _downloaded_files: list["DownloadFile"] = []
+    downloaded_files: list["DownloadFile"] = []
 
     def __init__(self, path_str: str):
         self.original_path = path_str
@@ -36,13 +37,14 @@ class DownloadFile:
         path = self.tmp_dir / get_file_name(self.original_path)
         logger.info(f"Downloading a file {path.name}")
         urlretrieve(self.original_path, path)
-        self._downloaded_files.append(self)
+        self.downloaded_files.append(self)
         return path
 
-    # todo add handler for deleting files before exit from the script
-    @classmethod
-    def remove_downloaded_files(cls):
-        logger.info("Deleting downloaded files")
-        for path in cls._downloaded_files:
-            with suppress(PermissionError):
-                path.path.unlink(missing_ok=True)
+
+def remove_downloaded_files():
+    for path in DownloadFile.downloaded_files:
+        with suppress(PermissionError):
+            path.path.unlink(missing_ok=True)
+
+
+atexit.register(remove_downloaded_files)

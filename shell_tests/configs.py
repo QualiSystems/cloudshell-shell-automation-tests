@@ -143,7 +143,7 @@ class ShellConfig(BaseModel):
         "path", "dependencies_path", "extra_standards_paths", pre=True, each_item=True
     )
     def _download_file(cls, path: str):
-        return DownloadFile(path).path  # todo download files when use it; descriptor?
+        return DownloadFile(path).path
 
 
 class SandboxConfig(BaseModel):
