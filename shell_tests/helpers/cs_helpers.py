@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from shell_tests.configs import SandboxConfig
 from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.sandbox_handler import SandboxHandler
+from shell_tests.helpers.dependencies_helpers import patch_dependencies
+from shell_tests.helpers.logger import logger
 
 if TYPE_CHECKING:
     from shell_tests.handlers.resource_handler import ResourceHandler
@@ -23,7 +25,7 @@ def generate_new_resource_name(name: str) -> str:
     return f"{name}-{version + 1}"
 
 
-def _set_debug_log_level(
+def _set_debug_log_level_for_resource(
     resource: "ResourceHandler",
     sandbox: SandboxHandler,
     handler_storage: "HandlerStorage",
@@ -55,14 +57,19 @@ def _set_debug_log_level(
     handler_storage.cs_smb_handler.put_qs_config(venv_name, data)
 
 
-def set_debug_log_level(handler_storage: "HandlerStorage"):
+def _set_log_level_via_sandbox(handler_storage: "HandlerStorage"):
+    logger.info(
+        "Setting debug log level via creating virtualenv and changing qs_config.ini"
+    )
     sandbox_conf = SandboxConfig(Name="tmp-sandbox", Resources=[])
     temp_sandbox = SandboxHandler.create(sandbox_conf, handler_storage.cs_handler)
 
     try:
         with ft.ThreadPoolExecutor(5, thread_name_prefix="set-debug-level") as executor:
             futures = {
-                executor.submit(_set_debug_log_level, rh, temp_sandbox, handler_storage)
+                executor.submit(
+                    _set_debug_log_level_for_resource, rh, temp_sandbox, handler_storage
+                )
                 for rh in handler_storage.resource_handlers
             }
             ft.wait(futures)
@@ -70,3 +77,11 @@ def set_debug_log_level(handler_storage: "HandlerStorage"):
                 future.result()
     finally:
         temp_sandbox.finish(wait=False)
+
+
+def set_debug_log_level(handler_storage: "HandlerStorage"):
+    if any(conf.dependencies_path for conf in handler_storage.conf.shells_conf):
+        for conf in handler_storage.conf.shells_conf:
+            patch_dependencies(conf.dependencies_path)
+    else:
+        _set_log_level_via_sandbox(handler_storage)
