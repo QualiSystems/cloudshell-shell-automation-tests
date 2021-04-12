@@ -45,7 +45,8 @@ def get_new_config_and_path(zip_file: ZipFile) -> tuple[bytes, str]:
 
 
 def patch_dependencies(path: Path):
-    logger.info("Changing log level to debug via changing dependencies")
+    msg = f"Changing log level to debug via changing dependencies {path.name}"
+    logger.info(msg)
     replacements = {}
     with ZipFile(path) as dep_zip:
         for package_name in dep_zip.namelist():

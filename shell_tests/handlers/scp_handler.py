@@ -52,8 +52,10 @@ class SCPHandler(AbcRemoteFileHandler):
         try:
             resp = self.session.open(file_path)
             data = resp.read()
+        except FileNotFoundError:
+            raise ScpFileNotFoundError(file_path)
         except Exception as e:
-            if str(e).startswith("No such file"):
+            if "No such file" in str(e):
                 raise ScpFileNotFoundError(file_path)
             raise e
         return data
@@ -67,7 +69,9 @@ class SCPHandler(AbcRemoteFileHandler):
         logger.info(f"Deleting file {file_path}")
         try:
             self.session.remove(file_path)
+        except FileNotFoundError:
+            raise ScpFileNotFoundError(file_path)
         except Exception as e:
-            if str(e).startswith("No such file"):
+            if "No such file" in str(e):
                 raise ScpFileNotFoundError(file_path)
             raise e
