@@ -29,6 +29,12 @@ def run_tests(test_conf: Path):
 def check_shellfoundry_templates(template_path: str, test_conf: Path):
     oop_shellfoundry.check_shellfoundry_templates(template_path, test_conf)
 
+@cli.command("prepare-env")
+@click.argument("test_conf", type=PathPath(exists=True, dir_okay=False))
+def prepare_env(test_conf: Path):
+    conf = MainConfig.from_yaml(test_conf)
+    AutomatedPrepareEnv(conf).run()
+
 
 if __name__ == "__main__":
     import sys
