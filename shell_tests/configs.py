@@ -8,7 +8,8 @@ from pydantic import BaseModel, Field, validator
 from shell_tests.helpers.config_helpers import str_version_to_tuple
 from shell_tests.helpers.download_files_helper import DownloadFile
 
-MIN_COMPATIBLE_CONF_VERSION = "0.13"
+MIN_COMPATIBLE_CONF_VER = "0.13"
+MAX_COMPATIBLE_CONF_VER = "0.16"
 
 
 class CloudShellConfig(BaseModel):
@@ -105,6 +106,13 @@ class DeploymentResourceConfig(BaseModel):
     tests_conf: TestsConfig = Field(TestsConfig(), alias="Tests")
 
 
+class AppConfig(BaseModel):
+    name: str = Field(..., alias="Name")
+    cp_resource_name: str = Field(..., alias="CP Resource Name")
+    deployment: str = Field(..., alias="Deployment")
+    attributes: dict[str, str] = Field({}, alias="Attributes")
+
+
 class ServiceConfig(BaseModel):
     name: str = Field(..., alias="Name")
     shell_name: str = Field(None, alias="Shell Name")
@@ -148,7 +156,7 @@ class ShellConfig(BaseModel):
 
 class SandboxConfig(BaseModel):
     name: str = Field(..., alias="Name")
-    resource_names: list[str] = Field(..., alias="Resources")
+    resource_names: list[str] = Field([], alias="Resources")
     deployment_resource_names: list[str] = Field([], alias="Deployment Resources")
     service_names: list[str] = Field([], alias="Services")
     blueprint_name: Optional[str] = Field(None, alias="Blueprint Name")
@@ -158,11 +166,7 @@ class SandboxConfig(BaseModel):
 
 class BlueprintConfig(BaseModel):
     name: str = Field(..., alias="Name")
-    path: Path = Field(..., alias="Path")
-
-    @validator("path", pre=True)
-    def _download_file(cls, path: str):
-        return DownloadFile(path).path
+    app_names: list[str] = Field([], alias="Apps")
 
 
 class VcenterConfig(BaseModel):
@@ -180,19 +184,26 @@ class MainConfig(BaseModel):
     deployment_resources_conf: list[DeploymentResourceConfig] = Field(
         [], alias="Deployment Resources"
     )
+    apps_conf: list[AppConfig] = Field([], alias="Apps")
     services_conf: list[ServiceConfig] = Field([], alias="Services")
     ftp_conf: HostWithUserConfig = Field(..., alias="FTP")
     scp_conf: Optional[HostWithUserConfig] = Field(None, alias="SCP")
     tftp_conf: Optional[HostConfig] = Field(None, alias="TFTP")
-    sandboxes_conf: list[SandboxConfig] = Field(..., alias="Sandboxes")
+    sandboxes_conf: list[SandboxConfig] = Field([], alias="Sandboxes")
     blueprints_conf: list[BlueprintConfig] = Field([], alias="Blueprints")
     vcenter_conf: Optional[VcenterConfig] = Field(None, alias="vCenter")
 
     @validator("version")
     def _is_compatible_version(cls, v: str):
-        if str_version_to_tuple(v) < str_version_to_tuple(MIN_COMPATIBLE_CONF_VERSION):
-            emsg = f"Minimum compatible config version is {MIN_COMPATIBLE_CONF_VERSION}"
-            raise ValueError(emsg)
+        if str_version_to_tuple(v) < str_version_to_tuple(MIN_COMPATIBLE_CONF_VER):
+            msg = f"Minimum compatible config version is {MIN_COMPATIBLE_CONF_VER}"
+            raise ValueError(msg)
+        elif str_version_to_tuple(v) > str_version_to_tuple(MAX_COMPATIBLE_CONF_VER):
+            msg = (
+                f"This version of Auto tests do not supported {v} version of config."
+                f"Update Auto tests"
+            )
+            raise ValueError(msg)
         return v
 
     @validator("cs_conf", pre=True, always=True)

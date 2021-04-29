@@ -6,6 +6,7 @@ from shell_tests import oop_shellfoundry
 from shell_tests.configs import MainConfig
 from shell_tests.helpers.cli_helpers import PathPath
 from shell_tests.helpers.logger import logger
+from shell_tests.prepare_env import AutomatedPrepareEnv
 from shell_tests.run_tests import AutomatedTestsRunner
 
 
@@ -28,6 +29,7 @@ def run_tests(test_conf: Path):
 @click.argument("test_conf", type=PathPath(exists=True, dir_okay=False))
 def check_shellfoundry_templates(template_path: str, test_conf: Path):
     oop_shellfoundry.check_shellfoundry_templates(template_path, test_conf)
+
 
 @cli.command("prepare-env")
 @click.argument("test_conf", type=PathPath(exists=True, dir_okay=False))

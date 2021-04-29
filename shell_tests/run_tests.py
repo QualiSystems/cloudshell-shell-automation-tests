@@ -3,13 +3,11 @@ from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
 from threading import Event
-from typing import Optional
 
 from shell_tests.configs import MainConfig
 from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.do_handler import DoHandler
-from shell_tests.handlers.sandbox_handler import SandboxHandler
 from shell_tests.helpers.check_resource_is_alive import check_all_resources_is_alive
 from shell_tests.helpers.cs_helpers import set_debug_log_level
 from shell_tests.helpers.handler_storage import HandlerStorage
@@ -21,7 +19,6 @@ class AutomatedTestsRunner:
     def __init__(self, conf: MainConfig):
         """Create CloudShell on Do and run tests."""
         self._conf = conf
-        self._do_sandbox_handler: Optional[SandboxHandler] = None
 
     def run(self) -> Reporting:
         """Create CloudShell, prepare, and run tests for all resources."""
