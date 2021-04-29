@@ -1,2 +1,4 @@
 include *.txt
 global-include *.ini
+include shell_tests/helpers/package_api/*Teardown.dll
+global-include *Teardown.dll
