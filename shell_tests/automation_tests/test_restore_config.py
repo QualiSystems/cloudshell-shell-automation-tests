@@ -202,19 +202,19 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
     FTP_PATH = "ftp://localhost/test_conf"
 
     def test_restore_running_config_append(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.restore(self.FTP_PATH, "running", "append")
 
     def test_restore_startup_config_append(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.restore(self.FTP_PATH, "startup", "append")
 
     def test_restore_running_config_override(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.restore(self.FTP_PATH, "running", "override")
 
     def test_restore_startup_config_override(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.restore(self.FTP_PATH, "startup", "override")
 
     def test_orchestration_restore(self):
@@ -229,7 +229,7 @@ class TestRestoreConfigWithoutDevice(TestRestoreConfig):
                 "created_date": "2018-06-13T15:53:34.075000",
             }
         }
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.orchestration_restore(json.dumps(saved_artifact_info))
 
 

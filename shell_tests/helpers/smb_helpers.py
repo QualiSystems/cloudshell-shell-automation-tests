@@ -1,4 +1,4 @@
-from collections import Iterable
+from collections.abc import Iterable
 from datetime import datetime, timedelta
 
 from smb.base import SharedFile

@@ -1,4 +1,4 @@
-from collections import Iterable
+from collections.abc import Iterable
 from concurrent import futures as ft
 from typing import Optional
 

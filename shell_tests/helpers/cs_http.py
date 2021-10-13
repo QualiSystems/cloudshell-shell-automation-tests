@@ -1,5 +1,5 @@
 import base64
-from collections import Generator
+from collections.abc import Generator
 
 import requests
 from cryptography.hazmat.backends import default_backend

@@ -182,19 +182,19 @@ class OptionalTestSaveTftpConfig(OptionalTestCase):
 
 class TestSaveConfigWithoutDevice(TestSaveConfig):
     def test_save_running_config(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.save(self.ftp_path, "running")
 
     def test_save_startup_config(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.save(self.ftp_path, "startup")
 
     def test_orchestration_save_shallow(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.orchestration_save("shallow")
 
     def test_orchestration_save_deep(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.orchestration_save("deep")
 
 
