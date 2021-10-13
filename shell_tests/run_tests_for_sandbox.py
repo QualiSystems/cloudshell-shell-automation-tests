@@ -84,12 +84,11 @@ class RunTestsForSandbox:
                 resource_handler.conf.teardown_commands
             )
         else:
-            if not resource_handler.is_autoload_finished:
-                try:
-                    resource_handler.autoload()
-                except Exception as e:
-                    emsg = f"Cannot autoload {resource_handler.conf.name}\n{e}"
-                    logger.exception(emsg)
+            try:
+                resource_handler.autoload_if_needed()
+            except Exception as e:
+                emsg = f"Cannot autoload {resource_handler.conf.name}\n{e}"
+                logger.exception(emsg)
 
     def _run_resource_tests(self, resource_handler: ResourceHandler) -> ResourceReport:
         """Run tests based on the resource type and config."""

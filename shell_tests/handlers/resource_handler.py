@@ -1,5 +1,6 @@
 from enum import Enum
 from functools import cached_property
+from threading import Event, Lock
 from typing import TYPE_CHECKING, Optional
 
 from cloudshell.api.cloudshell_api import ResourceInfo
@@ -42,9 +43,12 @@ class ResourceHandler:
         self._cs_handler = cs_handler
         self._shell_handler = shell_handler
 
-        self.is_autoload_finished = False
         self.dependencies_are_broken = False
         self._sandbox_handler = None
+        self._autoload_lock = Lock()
+        self._autoload_started = Event()
+        self.autoload_finished = Event()
+        self.is_autoload_success: Optional[bool] = None
 
     @classmethod
     def create(
@@ -121,28 +125,44 @@ class ResourceHandler:
             child_info.Name, namespace, {attribute_name: attribute_value}
         )
 
-    def _autoload(self, name: str):
+    def _autoload(self):
         try:
-            return self._cs_handler.resource_autoload(name)
+            self._cs_handler.resource_autoload(self.name)
+        except CloudShellAPIError as e:
+            if str(e.code) != "129" and e.message != "no driver associated":
+                raise
+            self._cs_handler.update_driver_for_the_resource(self.name, self.model)
+            self._cs_handler.resource_autoload(self.name)
         except DependenciesBrokenError:
             self.dependencies_are_broken = True
             raise
 
     def autoload(self):
         """Run Autoload for the resource."""
-        try:
-            self._autoload(self.name)
-        except CloudShellAPIError as e:
-            if str(e.code) != "129" and e.message != "no driver associated":
+        self._autoload_started.set()
+        with self._autoload_lock:
+            try:
+                self._autoload()
+                if self.conf.additional_ports:
+                    self._add_additional_ports(self.conf.additional_ports)
+                if self.conf.children_attributes:
+                    self.set_children_attributes(self.conf.children_attributes)
+            except Exception:
+                self.is_autoload_success = False
+                self.autoload_finished.set()
                 raise
-            self._cs_handler.update_driver_for_the_resource(self.name, self.model)
-            self._autoload(self.name)
+            else:
+                self.is_autoload_success = True
+                self.autoload_finished.set()
 
-        if self.conf.additional_ports:
-            self._add_additional_ports(self.conf.additional_ports)
-        if self.conf.children_attributes:
-            self.set_children_attributes(self.conf.children_attributes)
-        self.is_autoload_finished = True
+        self._autoload_started.clear()
+
+    def autoload_if_needed(self):
+        if not self.autoload_finished.is_set():
+            if self._autoload_started.is_set():
+                self.autoload_finished.wait()
+            else:
+                self.autoload()
 
     def get_details(self) -> ResourceInfo:
         """Get resource details."""
