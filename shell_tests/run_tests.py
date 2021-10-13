@@ -52,7 +52,9 @@ class AutomatedTestsRunner:
             for sh in handler_storage.sandbox_handlers
         }
 
-        with ft.ThreadPoolExecutor(5, thread_name_prefix="Sandbox-thread") as executor:
+        with ft.ThreadPoolExecutor(
+            5, thread_name_prefix="[Sandbox-thread]"
+        ) as executor:
             futures = {executor.submit(rti.run) for rti in run_tests_instances}
             try:
                 self._wait_for_futures(futures, stop_flag)

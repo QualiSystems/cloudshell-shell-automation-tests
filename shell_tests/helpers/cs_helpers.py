@@ -65,7 +65,9 @@ def _set_log_level_via_sandbox(handler_storage: "HandlerStorage"):
     temp_sandbox = SandboxHandler.create(sandbox_conf, handler_storage.cs_handler)
 
     try:
-        with ft.ThreadPoolExecutor(5, thread_name_prefix="set-debug-level") as executor:
+        with ft.ThreadPoolExecutor(
+            5, thread_name_prefix="[set-debug-level]"
+        ) as executor:
             futures = {
                 executor.submit(
                     _set_debug_log_level_for_resource, rh, temp_sandbox, handler_storage

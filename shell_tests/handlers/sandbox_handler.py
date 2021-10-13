@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from shell_tests.configs import SandboxConfig
 from shell_tests.errors import DeploymentResourceNotFoundError
+from shell_tests.helpers.threads_helper import set_thread_name_with_suffix
 
 if TYPE_CHECKING:
     from shell_tests.handlers.cs_handler import CloudShellHandler, ReservationId
@@ -26,6 +27,7 @@ class SandboxHandler:
         cs_handler: "CloudShellHandler",
         duration: int = 2 * 60,
     ) -> "SandboxHandler":
+        set_thread_name_with_suffix(conf.name)
         if conf.blueprint_name:
             rid = cs_handler.create_topology_reservation(
                 conf.name, conf.blueprint_name, duration, conf.specific_version
