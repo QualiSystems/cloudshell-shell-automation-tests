@@ -29,7 +29,7 @@ class BaseTestCase(unittest.TestCase):
 
     def _expect_failure(self, func, expected_message):
         def wrapped(*args, **kwargs):
-            with self.assertRaisesRegexp(Exception, expected_message):
+            with self.assertRaisesRegex(Exception, expected_message):
                 func(*args, **kwargs)
 
         return wrapped

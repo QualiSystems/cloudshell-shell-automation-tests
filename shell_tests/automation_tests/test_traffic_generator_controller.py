@@ -71,7 +71,7 @@ class TestLoadConfigWithoutDevice(TestLoadConfig):
 
     def test_load_config(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
-        with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
+        with self.assertRaisesRegex(CloudShellAPIError, error_pattern):
             super().test_load_config()
 
 
@@ -80,7 +80,7 @@ class TestStartTrafficWithoutDevice(TestStartTraffic):
 
     def test_start_traffic(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
-        with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
+        with self.assertRaisesRegex(CloudShellAPIError, error_pattern):
             super().test_start_traffic()
 
 
@@ -89,7 +89,7 @@ class TestStopTrafficWithoutDevice(TestStopTraffic):
 
     def test_stop_traffic(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
-        with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
+        with self.assertRaisesRegex(CloudShellAPIError, error_pattern):
             super().test_stop_traffic()
 
 
@@ -98,7 +98,7 @@ class TestGetStatisticsWithoutDevice(TestGetStatistics):
 
     def test_get_statistics(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
-        with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
+        with self.assertRaisesRegex(CloudShellAPIError, error_pattern):
             super().test_get_statistics()
 
 
@@ -107,5 +107,5 @@ class TestGetTestFileWithoutDevice(TestGetTestFile):
 
     def test_get_test_file(self):
         error_pattern = r"(SessionManagerException|\'ConnectionError\')"
-        with self.assertRaisesRegexp(CloudShellAPIError, error_pattern):
+        with self.assertRaisesRegex(CloudShellAPIError, error_pattern):
             super().test_get_test_file()

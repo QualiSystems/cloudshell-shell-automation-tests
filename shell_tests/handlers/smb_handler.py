@@ -3,8 +3,7 @@ import re
 import shutil
 import socket
 import zipfile
-from collections import Iterator
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import suppress
 from datetime import datetime
 from io import BytesIO

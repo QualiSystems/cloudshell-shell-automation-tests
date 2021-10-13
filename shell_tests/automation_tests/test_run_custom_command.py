@@ -15,11 +15,11 @@ class TestRunCustomCommand(BaseResourceServiceTestCase):
 
 class TestRunCustomCommandWithoutDevice(BaseResourceServiceTestCase):
     def test_run_custom_command(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.run_custom_command("show version")
 
     def test_run_custom_config_command(self):
-        with self.assertRaisesRegexp(CloudShellAPIError, r"SessionManagerException"):
+        with self.assertRaisesRegex(CloudShellAPIError, r"SessionManagerException"):
             self.handler.run_custom_config_command("show version")
 
 
