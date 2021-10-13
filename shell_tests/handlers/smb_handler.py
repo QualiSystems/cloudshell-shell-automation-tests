@@ -215,7 +215,7 @@ class CloudShellSmbHandler:
             self._smb_handler.put_file_obj(r_file_path, file_obj)
 
     def add_dependencies_to_offline_pypi(self, file: Union[BinaryIO, Path]):
-        logger.info("Putting dependecies to offline PyPI")
+        logger.info("Putting dependencies to offline PyPI")
         with zipfile.ZipFile(file) as zip_file:
             for file_obj in map(zip_file.open, zip_file.filelist):
                 package_name = file_obj.name

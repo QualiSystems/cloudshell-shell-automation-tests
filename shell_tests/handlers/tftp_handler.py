@@ -60,4 +60,3 @@ class TFTPHandler(AbcRemoteFileHandler):
     def _delete_file(self, file_path: str):
         # todo find ability to delete file after TFTP
         logger.warning("We cannot delete files from TFTP server.")
-        logger.info(f"Trying to delete {file_path}")
