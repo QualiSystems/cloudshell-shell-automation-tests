@@ -10,6 +10,7 @@ from shell_tests.helpers.shell_helpers import (
     get_resource_model_from_shell_definition,
     get_shell_name_from_shell_definition,
 )
+from shell_tests.helpers.threads_helper import set_thread_name_with_suffix
 
 
 class ShellHandler:
@@ -32,6 +33,7 @@ class ShellHandler:
         cs_handler: CloudShellHandler,
         cs_smb_handler: Optional[CloudShellSmbHandler] = None,
     ) -> "ShellHandler":
+        set_thread_name_with_suffix(conf.name)
         handler = cls(conf, cs_handler, cs_smb_handler)
         handler.prepare()
         return handler

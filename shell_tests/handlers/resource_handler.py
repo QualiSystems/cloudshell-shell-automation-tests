@@ -15,6 +15,7 @@ from shell_tests.configs import (
 )
 from shell_tests.errors import BaseAutomationException, DependenciesBrokenError
 from shell_tests.helpers.logger import logger
+from shell_tests.helpers.threads_helper import set_thread_name_with_suffix
 
 if TYPE_CHECKING:
     from shell_tests.handlers.cs_handler import CloudShellHandler
@@ -57,6 +58,7 @@ class ResourceHandler:
         cs_handler: "CloudShellHandler",
         shell_handler: "ShellHandler",
     ) -> "ResourceHandler":
+        set_thread_name_with_suffix(conf.name)
         logger.info(f"Start preparing the resource {conf.name}")
         resource = cls(conf, cs_handler, shell_handler)
         resource._create_resource()

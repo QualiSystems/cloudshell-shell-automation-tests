@@ -12,7 +12,7 @@ from shell_tests.helpers.tests_helpers import (
     get_test_suite,
     run_test_suite,
 )
-from shell_tests.helpers.threads_helper import set_thread_name_with_prefix
+from shell_tests.helpers.threads_helper import set_thread_name_with_suffix
 from shell_tests.report_result import Reporting, ResourceReport, SandboxReport
 
 
@@ -50,11 +50,11 @@ class RunTestsForSandbox:
 
     def run(self):
         """Run tests for the Sandbox and resources."""
-        set_thread_name_with_prefix(self.sandbox_handler.conf.name)
+        set_thread_name_with_suffix(self.sandbox_handler.conf.name)
         self._is_stop_set()
         sandbox_report = self._run_sandbox_tests()
 
-        with ft.ThreadPoolExecutor() as executor:
+        with ft.ThreadPoolExecutor(thread_name_prefix="[Resource tests]") as executor:
             futures = {
                 executor.submit(self._execute_resource_tests, rh, sandbox_report)
                 for rh in self.resource_handlers
@@ -72,6 +72,8 @@ class RunTestsForSandbox:
     def _execute_resource_tests(
         self, resource_handler: ResourceHandler, sandbox_report: SandboxReport
     ):
+        thread_name = f"({self.sandbox_handler.conf.name})-{resource_handler.name}"
+        set_thread_name_with_suffix(thread_name)
         self._is_stop_set()
         resource_handler.run_resource_commands(resource_handler.conf.setup_commands)
         self._is_stop_set()

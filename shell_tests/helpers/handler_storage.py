@@ -73,7 +73,9 @@ class HandlerStorage:
             self._shell_handlers = []
             exception = None
 
-            with ft.ThreadPoolExecutor() as executor:
+            with ft.ThreadPoolExecutor(
+                thread_name_prefix="[Create shell handler]"
+            ) as executor:
                 futures = {
                     executor.submit(
                         ShellHandler.create, conf, self.cs_handler, self.cs_smb_handler
@@ -104,7 +106,9 @@ class HandlerStorage:
             self._resource_handlers = []
             exception = None
 
-            with ft.ThreadPoolExecutor() as executor:
+            with ft.ThreadPoolExecutor(
+                thread_name_prefix="[Create resource handler]"
+            ) as executor:
                 futures = {
                     executor.submit(
                         ResourceHandler.create,
@@ -138,7 +142,9 @@ class HandlerStorage:
             self._sandbox_handlers = []
             exception = None
 
-            with ft.ThreadPoolExecutor() as executor:
+            with ft.ThreadPoolExecutor(
+                thread_name_prefix="[Create sandbox handler]"
+            ) as executor:
                 futures = {
                     executor.submit(SandboxHandler.create, conf, self.cs_handler)
                     for conf in self.conf.sandboxes_conf

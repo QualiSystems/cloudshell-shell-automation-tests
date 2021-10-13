@@ -17,7 +17,7 @@ from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.resource_handler import DeploymentResourceHandler
 from shell_tests.handlers.sandbox_handler import SandboxHandler
 from shell_tests.helpers.logger import logger
-from shell_tests.helpers.threads_helper import set_thread_name_with_prefix
+from shell_tests.helpers.threads_helper import set_thread_name_with_suffix
 
 
 class DoHandler:
@@ -30,7 +30,9 @@ class DoHandler:
         )
 
     def _prepare(self):
-        with ft.ThreadPoolExecutor(5, thread_name_prefix="Do-reservation") as executor:
+        with ft.ThreadPoolExecutor(
+            5, thread_name_prefix="[Do-reservation]"
+        ) as executor:
             cs_future = None
             if self._conf.do_conf.cs_on_do_conf is not None:
                 cs_future = self._cs_creator.create_cloudshell(executor)
@@ -109,7 +111,7 @@ class CSCreator:
         logger.debug(f"Creating CloudShell {topology_name}")
         conf = SandboxConfig(
             **{
-                "Name": "auto tests",
+                "Name": topology_name,
                 "Resources": [],
                 "Blueprint Name": topology_name,
                 "Specific Version": self._cs_on_do_conf.cs_specific_version,
@@ -144,7 +146,7 @@ class CSCreator:
         retry_on_exception=lambda e: isinstance(e, CSIsNotAliveError),
     )
     def _create_cloudshell(self) -> CloudShellConfig:
-        set_thread_name_with_prefix("CloudShell")
+        set_thread_name_with_suffix("CloudShell")
         self._cs_on_do_sandbox_handler = self._start_cs_sandbox()
         try:
             conf = self._get_cs_config(self._cs_on_do_sandbox_handler)
@@ -179,7 +181,7 @@ class NetworkingAppsHandler:
         self._sandbox_handlers: set[SandboxHandler] = set()
 
     def _create_app(self, app_conf: NetworkingAppConf) -> DeploymentResourceHandler:
-        set_thread_name_with_prefix(f"Networking-App-{app_conf.name}")
+        set_thread_name_with_suffix(f"Networking-App-{app_conf.name}")
         sandbox_handler = self._start_app_sandbox(app_conf.blueprint_name)
         self._sandbox_handlers.add(sandbox_handler)
         return self._get_app_resource(sandbox_handler, app_conf)
