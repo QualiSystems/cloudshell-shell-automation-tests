@@ -56,6 +56,7 @@ class TestConnectivity(BaseResourceServiceTestCase):
     @contextmanager
     def dut_handler(self):
         dut_handler = self.get_other_device_for_connectivity()
+        dut_handler.autoload_finished.wait(600)
         self.handler.sandbox_handler.add_resource_to_reservation(dut_handler)
         try:
             yield dut_handler
@@ -68,7 +69,10 @@ class TestConnectivity(BaseResourceServiceTestCase):
 
     def _test_connectivity(self, dut_handler: "ResourceHandler"):
         for handler in (self.handler, dut_handler):
-            if not handler.is_autoload_finished:
+            if (
+                not handler.autoload_finished.is_set()
+                or not handler.is_autoload_success
+            ):
                 raise BaseAutomationException(
                     f"Autoload doesn't finish for the {handler.name} resource,"
                     f" so skip testing connectivity"
