@@ -36,11 +36,12 @@ class AutomatedTestsRunner:
             set_debug_log_level(handler_storage)
             report = self._run_tests_for_sandboxes(handler_storage)
         finally:
-            handler_storage.cs_smb_handler.download_logs(
-                Path("cs_logs"),
-                start_time,
-                {sh.reservation_id for sh in handler_storage.sandbox_handlers},
-            )
+            if handler_storage.cs_smb_handler:
+                handler_storage.cs_smb_handler.download_logs(
+                    Path("cs_logs"),
+                    start_time,
+                    {sh.reservation_id for sh in handler_storage.sandbox_handlers},
+                )
             handler_storage.finish()
         return report
 
