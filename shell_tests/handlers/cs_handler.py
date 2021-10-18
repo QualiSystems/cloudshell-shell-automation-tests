@@ -420,7 +420,6 @@ class CloudShellHandler:
         """
         logger.info(f"Create physical connection between {port1} and {port2}")
         self._api.UpdatePhysicalConnection(port1, port2)
-        self._api.AddRoutesToReservation(reservation_id, [port1], [port2], "bi")
 
     def connect_ports_with_connector(
         self, reservation_id: ReservationId, port1: str, port2: str, connector_name: str
