@@ -123,6 +123,7 @@ def test_do_reservation_is_not_started_in_time(conf, api_mock, sleepless, monkey
     api_mock.GetTopologiesByCategory.return_value = _DO_TOPOLOGIES_INFO
     api_mock.CreateImmediateTopologyReservation.return_value = _CREATE_RESERVATION_INFO
     api_mock.GetReservationStatus.return_value = _RESERVATION_STATUS_INFO_SETUP
+    topology_full_name = f"Environments/{conf.do_conf.cs_on_do_conf.cs_version}"
 
     # run
     do = DoHandler(conf)
@@ -135,10 +136,10 @@ def test_do_reservation_is_not_started_in_time(conf, api_mock, sleepless, monkey
     expected_calls = [
         call.GetTopologiesByCategory(""),
         call.CreateImmediateTopologyReservation(
-            "auto tests",
+            topology_full_name,
             conf.do_conf.user,
             120,
-            topologyFullPath=f"Environments/{conf.do_conf.cs_on_do_conf.cs_version}",
+            topologyFullPath=topology_full_name,
             globalInputs=[],
         ),
         *[call.GetReservationStatus(_RESERVATION_ID)] * 60,
@@ -183,7 +184,7 @@ def test_cs_is_not_installed_properly_on_do(
     expected_calls = [
         call.GetTopologiesByCategory(""),
         call.CreateImmediateTopologyReservation(
-            "auto tests",
+            topology_full_name,
             conf.do_conf.user,
             120,
             topologyFullPath=topology_full_name,
@@ -229,7 +230,7 @@ def test_cs_is_started(
     expected_calls = [
         call.GetTopologiesByCategory(""),
         call.CreateImmediateTopologyReservation(
-            "auto tests",
+            topology_full_name,
             conf.do_conf.user,
             120,
             topologyFullPath=topology_full_name,
