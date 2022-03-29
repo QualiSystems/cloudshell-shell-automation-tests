@@ -185,16 +185,16 @@ class CloudShellSmbHandler:
     _CS_SERVER_NAME = "User-PC"
     _CS_SHARE = "C$"
     _QS_PATH = r"Program Files (x86)\\QualiSystems\\"
-    _CS_PYPI_PATH = fr"{_QS_PATH}CloudShell\\Server\\Config\\Pypi Server Repository\\"
-    _CS_STANDARDS_PATH = fr"{_QS_PATH}CloudShell\\Server\\ToscaStandard\\"
+    _CS_PYPI_PATH = rf"{_QS_PATH}CloudShell\\Server\\Config\\Pypi Server Repository\\"
+    _CS_STANDARDS_PATH = rf"{_QS_PATH}CloudShell\\Server\\ToscaStandard\\"
     _CS_LOGS_SHELL_DIR = r"ProgramData\\QualiSystems\\logs"
-    _CS_LOGS_AUTOLOAD_DIR = fr"{_CS_LOGS_SHELL_DIR}\\inventory"
+    _CS_LOGS_AUTOLOAD_DIR = rf"{_CS_LOGS_SHELL_DIR}\\inventory"
     _CS_LOGS_INSTALLATION_DIR = (
-        fr"{_QS_PATH}TestShell\\ExecutionServer\\Logs\\QsPythonDriverHost"
+        rf"{_QS_PATH}TestShell\\ExecutionServer\\Logs\\QsPythonDriverHost"
     )
     _VENV_DIR = r"ProgramData\QualiSystems\venv"
     _QS_CONFIG_PATH = (
-        fr"{_VENV_DIR}\{{}}\Lib\site-packages\cloudshell\logging\qs_config.ini"
+        rf"{_VENV_DIR}\{{}}\Lib\site-packages\cloudshell\logging\qs_config.ini"
     )
 
     def __init__(self, conf: CloudShellConfig):
