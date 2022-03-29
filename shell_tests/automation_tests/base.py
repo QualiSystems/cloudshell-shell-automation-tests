@@ -5,6 +5,7 @@ from threading import Event
 from shell_tests.configs import TestsConfig
 from shell_tests.handlers.resource_handler import ResourceHandler
 from shell_tests.helpers.handler_storage import HandlerStorage
+from shell_tests.helpers.logger import logger
 
 
 class BaseTestCase(unittest.TestCase):
@@ -54,11 +55,12 @@ class BaseResourceServiceTestCase(BaseTestCase):
 
     def id(self):  # noqa: A003
         id_ = unittest.TestCase.id(self)
-        return f"{id_}-{self.handler.name}-{type(self)}"
+        return f"{id_} - {self.handler.name}"
 
     def _callTestMethod(self, method):
         if self.handler.dependencies_are_broken:
             self.fail("Dependencies are broken")
+        logger.info(f"Start {self.id()}")
         super()._callTestMethod(method)
 
 

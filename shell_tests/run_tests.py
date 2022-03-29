@@ -1,3 +1,4 @@
+import sys
 from concurrent import futures as ft
 from contextlib import nullcontext
 from datetime import datetime
@@ -9,7 +10,6 @@ from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.do_handler import DoHandler
 from shell_tests.helpers.check_resource_is_alive import check_all_resources_is_alive
-from shell_tests.helpers.cs_helpers import set_debug_log_level
 from shell_tests.helpers.handler_storage import HandlerStorage
 from shell_tests.report_result import Reporting
 from shell_tests.run_tests_for_sandbox import RunTestsForSandbox
@@ -33,17 +33,21 @@ class AutomatedTestsRunner:
         start_time = datetime.now()
         handler_storage = HandlerStorage(cs_handler, self._conf)
         try:
-            set_debug_log_level(handler_storage)
             report = self._run_tests_for_sandboxes(handler_storage)
         finally:
-            if handler_storage.cs_smb_handler:
-                handler_storage.cs_smb_handler.download_logs(
-                    Path("cs_logs"),
-                    start_time,
-                    {sh.reservation_id for sh in handler_storage.sandbox_handlers},
-                )
+            self._download_logs(handler_storage, start_time)
             handler_storage.finish()
         return report
+
+    def _download_logs(self, handler_storage: HandlerStorage, start_time: datetime):
+        exc_cls, *_ = sys.exc_info()
+
+        if handler_storage.cs_smb_handler and exc_cls != KeyboardInterrupt:
+            handler_storage.cs_smb_handler.download_logs(
+                Path("cs_logs"),
+                start_time,
+                {sh.reservation_id for sh in handler_storage.sandbox_handlers},
+            )
 
     def _run_tests_for_sandboxes(self, handler_storage: HandlerStorage) -> Reporting:
         report = Reporting()
@@ -74,5 +78,9 @@ class AutomatedTestsRunner:
                 ft.wait(futures)
         exceptions = set(filter(None, map(ft.Future.exception, futures)))
         if exceptions:
+            if len(exceptions) == 1 and isinstance(
+                next(iter(exceptions)), KeyboardInterrupt
+            ):
+                raise KeyboardInterrupt
             emsg = f"Sandbox threads finished with exceptions: {exceptions}"
             raise BaseAutomationException(emsg)
