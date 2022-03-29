@@ -119,7 +119,7 @@ class TestVMConnections(BaseSandboxTestCase):
         if conn_name == "any":
             return None
 
-        port_regex = re.compile(fr"\W{conn_name}$")
+        port_regex = re.compile(rf"\W{conn_name}$")
         for port_name, port_info in app_info.ports.items():
             if port_regex.search(port_name):
                 break
