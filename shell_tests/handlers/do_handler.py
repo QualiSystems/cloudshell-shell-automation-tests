@@ -139,7 +139,7 @@ class CSCreator:
             "OS User": attrs["OS Login"],
             "OS Password": attrs["OS Password"],
         }
-        logger.info(f"CloudShell created IP: {info.Address}")
+        logger.info(f"CloudShell created IP: http://{info.Address}")
         return CloudShellConfig(**data)
 
     @retry(
