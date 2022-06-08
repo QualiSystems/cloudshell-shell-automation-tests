@@ -62,7 +62,7 @@ class TestGetTestFile(BaseControllerTestCase):
         cs = self.sandbox_handler._cs_handler
         files = cs.smb.ls(cs.CS_SHARE, dir_path)
 
-        file_names = map(lambda f: f.filename, files)
+        file_names = (f.filename for f in files)
         self.assertIn(test_file_name, file_names)
 
 
