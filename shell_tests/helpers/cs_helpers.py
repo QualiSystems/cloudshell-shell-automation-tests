@@ -2,12 +2,12 @@ import concurrent.futures as ft
 import re
 from typing import TYPE_CHECKING
 
-from shell_tests import BASE_DIR
 from shell_tests.configs import SandboxConfig
 from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.sandbox_handler import SandboxHandler
 from shell_tests.helpers.dependencies_helpers import patch_dependencies
 from shell_tests.helpers.logger import logger
+from shell_tests.helpers.package_api import BP_SCRIPT_PATH
 
 if TYPE_CHECKING:
     from shell_tests.handlers.resource_handler import ResourceHandler
@@ -91,7 +91,6 @@ def set_debug_log_level(handler_storage: "HandlerStorage"):
 
 
 def set_debug_level_via_blueprint(cs):
-    package_path = BASE_DIR / "scripts.zip"
-    cs.import_package(package_path)
+    cs.import_package(BP_SCRIPT_PATH)
     rid = cs.create_topology_reservation("scripts", topology_name="scripts")
     cs.execute_reservation_command(rid, "set_debug_logs")
