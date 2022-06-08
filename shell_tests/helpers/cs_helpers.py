@@ -2,6 +2,7 @@ import concurrent.futures as ft
 import re
 from typing import TYPE_CHECKING
 
+from shell_tests import BASE_DIR
 from shell_tests.configs import SandboxConfig
 from shell_tests.errors import BaseAutomationException
 from shell_tests.handlers.sandbox_handler import SandboxHandler
@@ -87,3 +88,10 @@ def set_debug_log_level(handler_storage: "HandlerStorage"):
             patch_dependencies(conf.dependencies_path)
     else:
         _set_log_level_via_sandbox(handler_storage)
+
+
+def set_debug_level_via_blueprint(cs):
+    package_path = BASE_DIR / "scripts.zip"
+    cs.import_package(package_path)
+    rid = cs.create_topology_reservation("scripts", topology_name="scripts")
+    cs.execute_reservation_command(rid, "set_debug_logs")

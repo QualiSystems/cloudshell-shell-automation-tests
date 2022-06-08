@@ -369,6 +369,22 @@ class CloudShellHandler:
             reservation_id, service_name, "Service", command_name, command_kwargs
         )
 
+    def execute_reservation_command(
+        self,
+        reservation_id: ReservationId,
+        command_name: str,
+        params: dict | None = None,
+    ) -> str:
+        logger.info(f"Executing reservation command {command_name}")
+        if params:
+            params = [InputNameValue(k, v) for k, v in params.items()]
+        else:
+            params = []
+        result = self._api.ExecuteEnvironmentCommand(
+            reservation_id, command_name, params
+        )
+        return result.Output
+
     def get_resource_details(self, resource_name: str) -> ResourceInfo:
         """Get resource details."""
         logger.info(f"Getting resource details for {resource_name}")
