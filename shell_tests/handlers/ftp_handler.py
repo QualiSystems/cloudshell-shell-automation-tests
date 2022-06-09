@@ -1,5 +1,5 @@
 import ftplib
-from functools import cached_property
+import socket
 from io import BytesIO
 
 from retrying import retry
@@ -27,6 +27,15 @@ def _retry_on_file_not_found(exception: Exception) -> bool:
     return isinstance(exception, FtpFileNotFoundError)
 
 
+def _is_session_alive(session: ftplib.FTP) -> bool:
+    try:
+        session.retrlines("LIST")
+    except (ftplib.Error, OSError, socket.timeout):
+        return False
+    else:
+        return True
+
+
 class FTPHandler(AbcRemoteFileHandler):
     RETRY_STOP_MAX_ATTEMPT_NUM = 10
     RETRY_WAIT_FIXED = 3000
@@ -35,14 +44,16 @@ class FTPHandler(AbcRemoteFileHandler):
     def __init__(self, conf: HostWithUserConfig):
         super().__init__(conf)
         self.conf = conf
+        self._session = None
 
-    @cached_property
+    @property
     def session(self):
-        session = ftplib.FTP(self.conf.host)
-        logger.info("Connecting to FTP")
-        if self.conf.user and self.conf.password:
-            session.login(self.conf.user, self.conf.password)
-        return session
+        if self._session is None or not _is_session_alive(self._session):
+            self._session = ftplib.FTP(self.conf.host, timeout=30)
+            logger.info("Connecting to FTP")
+            if self.conf.user and self.conf.password:
+                self._session.login(self.conf.user, self.conf.password)
+        return self._session
 
     @retry(
         stop_max_attempt_number=RETRY_STOP_MAX_ATTEMPT_NUM,
