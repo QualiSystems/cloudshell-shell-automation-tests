@@ -186,7 +186,7 @@ class MainConfig(BaseModel):
     )
     apps_conf: list[AppConfig] = Field([], alias="Apps")
     services_conf: list[ServiceConfig] = Field([], alias="Services")
-    ftp_conf: HostWithUserConfig = Field(..., alias="FTP")
+    ftp_conf: Optional[HostWithUserConfig] = Field(None, alias="FTP")
     scp_conf: Optional[HostWithUserConfig] = Field(None, alias="SCP")
     tftp_conf: Optional[HostConfig] = Field(None, alias="TFTP")
     sandboxes_conf: list[SandboxConfig] = Field([], alias="Sandboxes")
