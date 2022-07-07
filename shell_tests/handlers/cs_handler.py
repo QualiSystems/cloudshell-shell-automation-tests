@@ -180,6 +180,7 @@ class CloudShellHandler:
         address: str,
         family: str = "",
         parent_path: str = "",
+        create_new_resources_if_exists: bool = False,
     ) -> str:
         """Create resource, can be generated new name if current is exists."""
         logger.info(f"Creating the resource {name}")
@@ -192,7 +193,10 @@ class CloudShellHandler:
             except CloudShellAPIError as e:
                 if str(e.code) != "114":
                     raise
-                name = generate_new_resource_name(name)
+                if create_new_resources_if_exists:
+                    name = generate_new_resource_name(name)
+                else:
+                    break
             else:
                 break
         logger.debug(f"Created the resource {name}")
