@@ -14,6 +14,7 @@ setup(
     install_requires=get_file_content("requirements.txt"),
     version=get_file_content("version.txt").strip(),
     description="QualiSystems automation tests for Shells",
+    long_description="QualiSystems automation tests for Shells",
     include_package_data=True,
     python_requires="~=3.10",
     entry_points={
