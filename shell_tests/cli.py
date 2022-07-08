@@ -17,8 +17,14 @@ def cli():
 
 @cli.command("run-tests")
 @click.argument("test_conf", type=PathPath(exists=True, dir_okay=False))
-def run_tests(test_conf: Path):
+@click.option(
+    "--1st-shell-dependencies-path",
+    "first_shell_dependencies_path",
+    type=PathPath(exists=True, dir_okay=False),
+)
+def run_tests(test_conf: Path, first_shell_dependencies_path: Path):
     conf = MainConfig.from_yaml(test_conf)
+    conf.update_from_cli_params(first_shell_dependencies_path)
     report = AutomatedTestsRunner(conf).run()
     logger.info(f"\n\nTest results:\n{report}")
     return report.is_success, report
@@ -33,8 +39,14 @@ def check_shellfoundry_templates(template_path: str, test_conf: Path):
 
 @cli.command("prepare-env")
 @click.argument("test_conf", type=PathPath(exists=True, dir_okay=False))
-def prepare_env(test_conf: Path):
+@click.option(
+    "--1st-shell-dependencies-path",
+    "first_shell_dependencies_path",
+    type=PathPath(exists=True, dir_okay=False),
+)
+def prepare_env(test_conf: Path, first_shell_dependencies_path: Path):
     conf = MainConfig.from_yaml(test_conf)
+    conf.update_from_cli_params(first_shell_dependencies_path)
     AutomatedPrepareEnv(conf).run()
 
 

@@ -228,3 +228,7 @@ class MainConfig(BaseModel):
         with file_path.open() as f:
             data = yaml.safe_load(f)
         return cls.parse_obj(data)
+
+    def update_from_cli_params(self, first_shell_dependencies_path: Path) -> None:
+        if first_shell_dependencies_path:
+            self.shells_conf[0].dependencies_path = first_shell_dependencies_path
