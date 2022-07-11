@@ -15,6 +15,7 @@ setup(
     version=get_file_content("version.txt").strip(),
     description="QualiSystems automation tests for Shells",
     long_description="QualiSystems automation tests for Shells",
+    long_description_content_type="text/x-rst",
     include_package_data=True,
     python_requires="~=3.10",
     entry_points={
