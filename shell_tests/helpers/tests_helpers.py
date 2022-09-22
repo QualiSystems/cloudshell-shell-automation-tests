@@ -1,3 +1,4 @@
+from copy import deepcopy
 from io import StringIO
 from threading import Event
 from unittest import TestLoader, TestSuite, TextTestRunner
@@ -89,7 +90,8 @@ TEST_CASES_FIREWALL = {
         "restore": TestRestoreConfigFromTemplate,
     },
 }
-TEST_CASES_ROUTER = TEST_CASES_FIREWALL
+TEST_CASES_LOADBALANCER = deepcopy(TEST_CASES_FIREWALL)
+TEST_CASES_ROUTER = deepcopy(TEST_CASES_FIREWALL)
 TEST_CASES_ROUTER[DeviceType.REAL_DEVICE]["applyconnectivitychanges"] = TestConnectivity
 TEST_CASES_SWITCH = TEST_CASES_ROUTER
 TEST_CASES_TRAFFIC_GENERATOR_CHASSIS = {
@@ -132,6 +134,7 @@ TEST_CASES_GENERIC_RESOURCE = {
 
 TEST_CASES_MAP = {
     "CS_Firewall": TEST_CASES_FIREWALL,
+    "CS_LoadBalancer": TEST_CASES_LOADBALANCER,
     "CS_Router": TEST_CASES_ROUTER,
     "CS_Switch": TEST_CASES_SWITCH,
     "CS_TrafficGeneratorChassis": TEST_CASES_TRAFFIC_GENERATOR_CHASSIS,
@@ -143,6 +146,7 @@ TEST_CASES_MAP = {
 AUTOLOAD_TEST_FOR_FAMILIES = {
     "CS_Router",
     "CS_Firewall",
+    "CS_LoadBalancer",
     "CS_Switch",
     "CS_TrafficGeneratorChassis",
     "CS_VirtualTrafficGeneratorChassis",
