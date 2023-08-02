@@ -1,0 +1,14 @@
+name: package CI
+on:
+  push:
+    paths-ignore:
+      - README.md
+    branches-ignore:
+      - master
+jobs:
+  tox-ci:
+    uses: QualiSystems/.github/.github/workflows/package-tox-py.yml@master
+    with:
+      pre-commit-py-version: "3.10"
+      build-py-version: "3.10"
+      tests-py-version: "3.10"
