@@ -3,6 +3,7 @@ from shell_tests.handlers.cs_handler import CloudShellHandler
 from shell_tests.handlers.do_handler import DoHandler
 from shell_tests.helpers.app_helpers import create_apps, create_blueprints
 from shell_tests.helpers.check_resource_is_alive import check_all_resources_is_alive
+from shell_tests.helpers.cs_helpers import set_debug_level_via_blueprint
 from shell_tests.helpers.handler_storage import HandlerStorage
 from shell_tests.helpers.logger import logger
 
@@ -17,6 +18,7 @@ class AutomatedPrepareEnv:
             DoHandler(self._conf).prepare()
 
         cs_handler = CloudShellHandler(self._conf.cs_conf)
+        set_debug_level_via_blueprint(cs_handler)
         handler_storage = HandlerStorage(cs_handler, self._conf)
 
         # create resources on CS

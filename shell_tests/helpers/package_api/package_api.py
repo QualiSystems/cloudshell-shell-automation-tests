@@ -2,7 +2,6 @@ import os
 import tempfile
 from contextlib import suppress
 from pathlib import Path
-from typing import Optional
 from zipfile import ZipFile
 
 from shell_tests.helpers.logger import logger
@@ -52,7 +51,7 @@ class PackageApi:
         return False
 
     @classmethod
-    def create_package(cls, cs_version: Optional[str] = None) -> "PackageApi":
+    def create_package(cls, cs_version: str | None = None) -> "PackageApi":
         logger.info("Creating a new package")
         path = None
         try:

@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Optional
 
 import xmltodict
 
@@ -39,7 +38,7 @@ class XmlRoot(XmlNode):
 
 
 class MetaData(XmlRoot):
-    def __init__(self, cs_version="9.3.0", now: Optional[datetime] = None):
+    def __init__(self, cs_version="9.3.0", now: datetime | None = None):
         if not cs_version:
             cs_version = "9.3.0"
         self.cs_version = cs_version

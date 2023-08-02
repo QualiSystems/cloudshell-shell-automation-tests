@@ -1,7 +1,7 @@
 from enum import Enum
 from functools import cached_property
 from threading import Event, Lock
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from cloudshell.api.cloudshell_api import ResourceInfo
 from cloudshell.api.common_cloudshell_api import CloudShellAPIError
@@ -49,7 +49,7 @@ class ResourceHandler:
         self._autoload_lock = Lock()
         self._autoload_started = Event()
         self.autoload_finished = Event()
-        self.is_autoload_success: Optional[bool] = None
+        self.is_autoload_success: bool | None = None
 
     @classmethod
     def create(
@@ -345,21 +345,21 @@ class ServiceHandler:
             self.name, command_name, command_kwargs
         )
 
-    def load_config(self, config_path: str, extra_kwargs: Optional[dict] = None) -> str:
+    def load_config(self, config_path: str, extra_kwargs: dict | None = None) -> str:
         """Execute a command load_config for the service."""
         extra_kwargs = extra_kwargs or {}
         extra_kwargs.update({"config_file_location": config_path})
         return self.execute_command("load_config", extra_kwargs)
 
-    def start_traffic(self, extra_kwargs: Optional[dict] = None) -> str:
+    def start_traffic(self, extra_kwargs: dict | None = None) -> str:
         """Execute a command start traffic for the service."""
         return self.execute_command("start_traffic", extra_kwargs or {})
 
-    def stop_traffic(self, extra_kwargs: Optional[dict] = None) -> str:
+    def stop_traffic(self, extra_kwargs: dict | None = None) -> str:
         """Execute a command stop traffic for the service."""
         return self.execute_command("stop_traffic", extra_kwargs or {})
 
-    def get_statistics(self, extra_kwargs: Optional[dict] = None) -> str:
+    def get_statistics(self, extra_kwargs: dict | None = None) -> str:
         """Execute a command get statistics for the service."""
         return self.execute_command("get_statistics", extra_kwargs or {})
 

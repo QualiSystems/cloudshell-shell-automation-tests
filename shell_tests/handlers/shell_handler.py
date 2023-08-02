@@ -1,5 +1,3 @@
-from typing import Optional
-
 from cloudshell.rest.exceptions import ShellNotFoundException
 
 from shell_tests.configs import ShellConfig
@@ -18,7 +16,7 @@ class ShellHandler:
         self,
         conf: ShellConfig,
         cs_handler: CloudShellHandler,
-        cs_smb_handler: Optional[CloudShellSmbHandler],
+        cs_smb_handler: CloudShellSmbHandler | None,
     ):
         self.conf = conf
         self.model = get_resource_model_from_shell_definition(self.conf.path)
@@ -31,7 +29,7 @@ class ShellHandler:
         cls,
         conf: ShellConfig,
         cs_handler: CloudShellHandler,
-        cs_smb_handler: Optional[CloudShellSmbHandler] = None,
+        cs_smb_handler: CloudShellSmbHandler | None = None,
     ) -> "ShellHandler":
         set_thread_name_with_suffix(conf.name)
         handler = cls(conf, cs_handler, cs_smb_handler)

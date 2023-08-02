@@ -3,7 +3,6 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 from shell_tests.configs import MainConfig
 from shell_tests.helpers.logger import logger
@@ -46,8 +45,8 @@ class Shellfoundry:
     def new(
         self,
         shell_name: str = "name_for_test_shell",
-        template: Optional[str] = None,
-        version: Optional[str] = None,
+        template: str | None = None,
+        version: str | None = None,
     ):
         if template is not None and "local" not in template and shell_name == "":
             shell_name = re.sub(r"([/,-])", r"_", template)

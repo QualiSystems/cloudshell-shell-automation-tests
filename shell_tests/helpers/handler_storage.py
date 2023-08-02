@@ -1,5 +1,5 @@
 from concurrent import futures as ft
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from shell_tests.configs import MainConfig
 from shell_tests.handlers.cs_handler import CloudShellHandler
@@ -34,7 +34,7 @@ class HandlerStorage:
         self._sandbox_handlers = None
 
     @property
-    def cs_smb_handler(self) -> Optional[CloudShellSmbHandler]:
+    def cs_smb_handler(self) -> CloudShellSmbHandler | None:
         if (
             self._cs_smb_handler is None
             and self.conf.cs_conf.os_user
@@ -44,25 +44,25 @@ class HandlerStorage:
         return self._cs_smb_handler
 
     @property
-    def ftp_handler(self) -> Optional[FTPHandler]:
+    def ftp_handler(self) -> FTPHandler | None:
         if self._ftp_handler is None and self.conf.ftp_conf:
             self._ftp_handler = FTPHandler(self.conf.ftp_conf)
         return self._ftp_handler
 
     @property
-    def scp_handler(self) -> Optional[SCPHandler]:
+    def scp_handler(self) -> SCPHandler | None:
         if self._scp_handler is None and self.conf.scp_conf:
             self._scp_handler = SCPHandler(self.conf.scp_conf)
         return self._scp_handler
 
     @property
-    def tftp_handler(self) -> Optional[TFTPHandler]:
+    def tftp_handler(self) -> TFTPHandler | None:
         if self._tftp_handler is None and self.conf.tftp_conf:
             self._tftp_handler = TFTPHandler(self.conf.tftp_conf)
         return self._tftp_handler
 
     @property
-    def vcenter_handler(self) -> Optional[VcenterHandler]:
+    def vcenter_handler(self) -> VcenterHandler | None:
         if self._vcenter_handler is None and self.conf.vcenter_conf:
             self._vcenter_handler = VcenterHandler(self.conf.vcenter_conf)
         return self._vcenter_handler

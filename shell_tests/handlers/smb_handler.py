@@ -9,7 +9,7 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from threading import Lock
-from typing import BinaryIO, Union
+from typing import BinaryIO
 
 from retrying import retry
 from smb.base import NotConnectedError, NotReadyError, SharedFile, SMBTimeout
@@ -134,7 +134,7 @@ class SmbHandler:
                 raise e
 
     def put_file_path(
-        self, r_file_path: str, l_file_path: Union[Path, str], create_dirs: bool = False
+        self, r_file_path: str, l_file_path: Path | str, create_dirs: bool = False
     ):
         with open(l_file_path, "rb") as file_obj:
             self.put_file_obj(r_file_path, file_obj, create_dirs)
@@ -159,7 +159,7 @@ class SmbHandler:
         buffer.close()
         return data
 
-    def download_r_file(self, r_file_path: str, l_file_path: Union[Path, str]):
+    def download_r_file(self, r_file_path: str, l_file_path: Path | str):
         with open(l_file_path, "wb") as file_obj:
             file_obj.write(self.get_r_file(r_file_path))
 
@@ -214,7 +214,7 @@ class CloudShellSmbHandler:
         with self._lock:
             self._smb_handler.put_file_obj(r_file_path, file_obj)
 
-    def add_dependencies_to_offline_pypi(self, file: Union[BinaryIO, Path]):
+    def add_dependencies_to_offline_pypi(self, file: BinaryIO | Path):
         logger.info("Putting dependencies to offline PyPI")
         with zipfile.ZipFile(file) as zip_file:
             for file_obj in map(zip_file.open, zip_file.filelist):

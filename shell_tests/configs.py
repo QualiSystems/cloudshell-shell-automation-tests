@@ -1,6 +1,5 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 import yaml
 from pydantic import BaseModel, Field, validator
@@ -33,14 +32,14 @@ class CSonDoConfig(BaseModel):
 
 
 class DoConfig(CloudShellConfig):
-    cs_on_do_conf: Optional[CSonDoConfig] = Field(None, alias="CloudShell")
+    cs_on_do_conf: CSonDoConfig | None = Field(None, alias="CloudShell")
     networking_apps: list[NetworkingAppConf] = Field([], alias="Networking Apps")
 
 
 class TestsConfig(BaseModel):
     expected_failures: dict[str, str] = Field({}, alias="Expected failures")
     run_tests: bool = Field(True, alias="Run Tests")
-    original_run_tests: Optional[bool] = Field(None, alias="Run Tests")
+    original_run_tests: bool | None = Field(None, alias="Run Tests")
 
     def __iadd__(self, other: "TestsConfig"):
         if not isinstance(other, TestsConfig):
@@ -70,14 +69,14 @@ class ResourceCommand(BaseModel):
 class ResourceConfig(BaseModel):
     name: str = Field(..., alias="Name")
     shell_name: str = Field(..., alias="Shell Name")
-    device_ip: Optional[str] = Field(None, alias="Device IP")
+    device_ip: str | None = Field(None, alias="Device IP")
     attributes: dict[str, str] = Field({}, alias="Attributes")
     children_attributes: dict[str, dict[str, str]] = Field(
         {}, alias="Children Attributes"
     )
     tests_conf: TestsConfig = Field(TestsConfig(), alias="Tests")
     is_first_gen: bool = Field(False, alias="First Gen")
-    networking_app_name: Optional[str] = Field(None, alias="Networking App")
+    networking_app_name: str | None = Field(None, alias="Networking App")
     additional_ports: list[AdditionalPort] = Field([], alias="Additional Ports")
     setup_commands: list[ResourceCommand] = Field([], alias="Setup Commands")
     teardown_commands: list[ResourceCommand] = Field([], alias="Teardown Commands")
@@ -136,14 +135,14 @@ class HostConfig(BaseModel):
 
 
 class HostWithUserConfig(HostConfig):
-    user: Optional[str] = Field(None, alias="User")
-    password: Optional[str] = Field(None, alias="Password")
+    user: str | None = Field(None, alias="User")
+    password: str | None = Field(None, alias="Password")
 
 
 class ShellConfig(BaseModel):
     name: str = Field(..., alias="Name")
     path: Path = Field(..., alias="Path")
-    dependencies_path: Optional[Path] = Field(None, alias="Dependencies Path")
+    dependencies_path: Path | None = Field(None, alias="Dependencies Path")
     extra_standards_paths: list[Path] = Field([], alias="Extra CS Standards")
     tests_conf: TestsConfig = Field(TestsConfig(), alias="Tests")
 
@@ -159,8 +158,8 @@ class SandboxConfig(BaseModel):
     resource_names: list[str] = Field([], alias="Resources")
     deployment_resource_names: list[str] = Field([], alias="Deployment Resources")
     service_names: list[str] = Field([], alias="Services")
-    blueprint_name: Optional[str] = Field(None, alias="Blueprint Name")
-    specific_version: Optional[str] = Field(None, alias="Specific Version")
+    blueprint_name: str | None = Field(None, alias="Blueprint Name")
+    specific_version: str | None = Field(None, alias="Specific Version")
     tests_conf: TestsConfig = Field(TestsConfig, alias="Tests")
 
 
@@ -177,8 +176,8 @@ class VcenterConfig(BaseModel):
 
 class MainConfig(BaseModel):
     version: str = Field(..., alias="Version")
-    do_conf: Optional[DoConfig] = Field(None, alias="Do")
-    cs_conf: Optional[CloudShellConfig] = Field(None, alias="CloudShell")
+    do_conf: DoConfig | None = Field(None, alias="Do")
+    cs_conf: CloudShellConfig | None = Field(None, alias="CloudShell")
     shells_conf: list[ShellConfig] = Field(..., alias="Shells")
     resources_conf: list[ResourceConfig] = Field(..., alias="Resources")
     deployment_resources_conf: list[DeploymentResourceConfig] = Field(
@@ -186,12 +185,12 @@ class MainConfig(BaseModel):
     )
     apps_conf: list[AppConfig] = Field([], alias="Apps")
     services_conf: list[ServiceConfig] = Field([], alias="Services")
-    ftp_conf: Optional[HostWithUserConfig] = Field(None, alias="FTP")
-    scp_conf: Optional[HostWithUserConfig] = Field(None, alias="SCP")
-    tftp_conf: Optional[HostConfig] = Field(None, alias="TFTP")
+    ftp_conf: HostWithUserConfig | None = Field(None, alias="FTP")
+    scp_conf: HostWithUserConfig | None = Field(None, alias="SCP")
+    tftp_conf: HostConfig | None = Field(None, alias="TFTP")
     sandboxes_conf: list[SandboxConfig] = Field([], alias="Sandboxes")
     blueprints_conf: list[BlueprintConfig] = Field([], alias="Blueprints")
-    vcenter_conf: Optional[VcenterConfig] = Field(None, alias="vCenter")
+    vcenter_conf: VcenterConfig | None = Field(None, alias="vCenter")
 
     @validator("version")
     def _is_compatible_version(cls, v: str):

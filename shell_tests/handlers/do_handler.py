@@ -1,6 +1,5 @@
 from collections.abc import Iterable
 from concurrent import futures as ft
-from typing import Optional
 
 from retrying import retry
 
@@ -96,7 +95,7 @@ class CSCreator:
     def __init__(self, do_handler: CloudShellHandler, cs_on_do_conf: CSonDoConfig):
         self._do_handler = do_handler
         self._cs_on_do_conf = cs_on_do_conf
-        self._cs_on_do_sandbox_handler: Optional[SandboxHandler] = None
+        self._cs_on_do_sandbox_handler: SandboxHandler | None = None
 
     def _find_topology_name_for_cloudshell(self) -> str:
         cs_names = sorted(self._do_handler.get_topologies_by_category(""))
