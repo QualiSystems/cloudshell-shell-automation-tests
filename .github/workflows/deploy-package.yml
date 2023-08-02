@@ -4,7 +4,11 @@ on:
     types: [ published ]
 jobs:
   tox-ci:
-    uses: QualiSystems/.github/.github/workflows/package-tox-py-39.yml@master
+    uses: QualiSystems/.github/.github/workflows/package-tox-py.yml@master
+    with:
+      pre-commit-py-version: "3.10"
+      build-py-version: "3.10"
+      tests-py-version: "3.10"
   pypi-deploy:
     needs: tox-ci
     uses: QualiSystems/.github/.github/workflows/package-deploy-pypi.yml@master
